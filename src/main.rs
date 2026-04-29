@@ -1,0 +1,222 @@
+use std::f32::consts::PI;
+
+use bevy::{color::palettes::tailwind::*, picking::pointer::PointerInteraction, prelude::*};
+
+mod scene4d;
+use scene4d::{Scene4D, create_cube_3d, rotate_3d};
+
+fn main() {
+    App::new()
+        // MeshPickingPlugin is not a default plugin
+        .add_plugins((DefaultPlugins, MeshPickingPlugin))
+        .insert_resource(Scene {
+            scene_4d: Scene4D::new(),
+        })
+        .add_systems(Startup, setup_scene)
+        .add_systems(Update, (draw_mesh_intersections, rotate, rotate_cube_3d))
+        .run();
+}
+
+/// A marker component for our shapes so we can query them separately from the ground plane.
+#[derive(Component)]
+struct Shape;
+
+#[derive(Component)]
+struct Atom {
+    index: usize,
+}
+
+#[derive(Resource)]
+struct Scene {
+    scene_4d: Scene4D,
+}
+
+fn setup_scene(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut scene: ResMut<Scene>,
+) {
+    //scene.scene_4d = Scene4D::new();
+
+    // Set up the materials.
+    let white_matl = materials.add(Color::WHITE);
+    let ground_matl = materials.add(Color::from(GRAY_300));
+    let hover_matl = materials.add(Color::from(CYAN_300));
+    let pressed_matl = materials.add(Color::from(YELLOW_300));
+
+    // cube
+    commands
+        .spawn((
+            Mesh3d(meshes.add(Cuboid::default())),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(3.0, 1.0, 4.0).with_rotation(Quat::from_rotation_x(-PI / 4.)),
+            //Shape,
+        ))
+        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(rotate_on_drag);
+
+    ////composed
+    // 1. Parent Entity (Holds position/transform)
+    commands
+        .spawn((
+            Name::new("CompoundObject"),
+            Transform::from_xyz(0.0, 4.0, 0.0),
+            Visibility::default(), // Erforderlich, damit Kinder sichtbar sind
+            Shape,                 // Damit wir die Rotation auf alle drei Meshes anwenden können
+        ))
+        .with_children(|parent| {
+            // 2. Erstes Mesh (Kind 1)
+            parent.spawn((
+                Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+                MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
+            ));
+
+            // 3. Zweites Mesh (Kind 2, leicht versetzt)
+            parent.spawn((
+                Mesh3d(meshes.add(Sphere::new(0.5))),
+                MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
+                Transform::from_xyz(1.0, 0.0, 0.0),
+                Visibility::Hidden, // Dieses Kind ist unsichtbar
+            ));
+
+            // 4. Drittes Mesh (Kind 3, leicht versetzt)
+            parent.spawn((
+                Mesh3d(meshes.add(Sphere::new(0.5))),
+                MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
+                Transform::from_xyz(-1.0, 0.0, 0.0),
+            ));
+        })
+        .observe(rotate_on_drag);
+
+    // cube composed of 10 by 10 by 10 smaller cubes
+    commands
+        .spawn((
+            Name::new("CompoundObject2"),
+            Transform::from_xyz(-3.0, 4.0, -4.0),
+            Visibility::default(), // Erforderlich, damit Kinder sichtbar sind
+            Shape,                 // Damit wir die Rotation auf alle Meshes anwenden können
+        ))
+        .with_children(|parent| {
+            let cube_3d = create_cube_3d(0.3, 10);
+            for (index, position) in cube_3d.positions.iter().enumerate() {
+                parent.spawn((
+                    Mesh3d(meshes.add(Cuboid::new(cube_3d.size_of_atom, cube_3d.size_of_atom, cube_3d.size_of_atom))),
+                    MeshMaterial3d(materials.add(cube_3d.colors[index])),
+                    Transform::from_translation(vec3(position.x, position.y, position.z)),
+                ));
+            }
+        })
+        .observe(rotate_on_drag);
+
+    // spawn the scene
+    for (index, position) in scene.scene_4d.positions.iter().enumerate() {
+        commands.spawn((
+            Mesh3d(meshes.add(Sphere::new(scene.scene_4d.size_of_atom * 0.8))),
+            MeshMaterial3d(materials.add(scene.scene_4d.colors[index])),
+            Transform::from_translation(vec3(position.x, position.y, position.z)),
+            Atom { index }, // to identify these entities
+        ));
+    }
+
+    // Ground
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10))),
+        MeshMaterial3d(ground_matl.clone()),
+        Pickable::IGNORE, // Disable picking for the ground plane.
+    ));
+
+    // Light
+    commands.spawn((
+        PointLight {
+            shadows_enabled: true,
+            intensity: 10_000_000.,
+            range: 100.0,
+            shadow_depth_bias: 0.2,
+            ..default()
+        },
+        Transform::from_xyz(8.0, 16.0, 8.0),
+    ));
+
+    // Camera
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0.0, 7., 14.0).looking_at(Vec3::new(0., 1., 0.), Vec3::Y),
+    ));
+
+    // Instructions
+    commands.spawn((
+        Text::new("Hover over the shapes to pick them\nDrag to rotate"),
+        Node {
+            position_type: PositionType::Absolute,
+            top: px(12),
+            left: px(12),
+            ..default()
+        },
+    ));
+}
+
+/// Returns an observer that updates the entity's material to the one specified.
+fn update_material_on<E: EntityEvent>(
+    new_material: Handle<StandardMaterial>,
+) -> impl Fn(On<E>, Query<&mut MeshMaterial3d<StandardMaterial>>) {
+    // An observer closure that captures `new_material`. We do this to avoid needing to write four
+    // versions of this observer, each triggered by a different event and with a different hardcoded
+    // material. Instead, the event type is a generic, and the material is passed in.
+    move |event, mut query| {
+        if let Ok(mut material) = query.get_mut(event.event_target()) {
+            material.0 = new_material.clone();
+        }
+    }
+}
+
+/// A system that draws hit indicators for every pointer.
+fn draw_mesh_intersections(pointers: Query<&PointerInteraction>, mut gizmos: Gizmos) {
+    for (point, normal) in pointers
+        .iter()
+        .filter_map(|interaction| interaction.get_nearest_hit())
+        .filter_map(|(_entity, hit)| hit.position.zip(hit.normal))
+    {
+        gizmos.sphere(point, 0.05, RED_500);
+        gizmos.arrow(point, point + normal.normalize() * 0.5, PINK_100);
+    }
+}
+
+/// A system that rotates all shapes.
+fn rotate(mut query: Query<&mut Transform, With<Shape>>, time: Res<Time>) {
+    for mut transform in &mut query {
+        transform.rotate_y(time.delta_secs() / 2.);
+    }
+}
+
+fn rotate_cube_3d(
+    mut query: Query<(&mut Transform, &mut Visibility, &Atom)>,
+    time: Res<Time>,
+    scene: Res<Scene>,
+) {
+    // rotate the positions of the atoms in 3D space
+    let rotated_positions = rotate_3d(&scene.scene_4d.positions, time.elapsed_secs());
+
+    // update the transforms of the atom entities based on the rotated positions
+    for (mut transform, mut visibility, atom_entity) in &mut query {
+        let index = atom_entity.index;
+        if let Some(position) = rotated_positions.get(index) {
+            transform.translation = vec3(position.x, position.y, position.z);
+            if position.x > 0.0 {
+                *visibility = Visibility::Hidden;
+            } else {
+                *visibility = Visibility::Visible;
+            }
+        }
+    }
+}
+
+/// An observer to rotate an entity when it is dragged
+fn rotate_on_drag(drag: On<Pointer<Drag>>, mut transforms: Query<&mut Transform>) {
+    let mut transform = transforms.get_mut(drag.entity).unwrap();
+    transform.rotate_y(drag.delta.x * 0.02);
+    transform.rotate_x(drag.delta.y * 0.02);
+}

@@ -11,7 +11,9 @@ pub struct Atoms4D{
 struct Object4D {
     start_index: usize,
     number_of_atoms: usize,
+    drag: Vec2, //for dragging the object with the mouse.
 }
+
 impl Object4D {
     fn start(&self) -> usize {
         self.start_index
@@ -21,6 +23,9 @@ impl Object4D {
     }
     fn range(&self) -> std::ops::Range<usize> {
         self.start()..self.end()
+    }
+    fn drag_rotation(&self) -> Mat3 {
+        Mat3::from_rotation_y(self.drag.x) * Mat3::from_rotation_x(self.drag.y)
     }
 }
 
@@ -44,7 +49,8 @@ impl Scene4D {
         };
         //add some objects to the scene. 
         scene.add_object(create_cube_3d(scene.size_of_atom, 10));
-        scene.add_object(create_cube_4d(scene.size_of_atom, 6));
+        scene.add_object(create_cube_3d(scene.size_of_atom, 10));
+        scene.add_object(create_cube_4d(scene.size_of_atom, 10));
 
         scene
     }
@@ -54,10 +60,20 @@ impl Scene4D {
         position.w < self.size_of_atom && position.w > -self.size_of_atom
     }
 
+    pub fn drag_object_from_atom(&mut self, atom_index: usize, delta: Vec2) {
+        for object in &mut self.objects {
+            if object.range().contains(&atom_index) {
+                object.drag += delta * 0.02;
+                break;
+            }
+        }
+    }
+
     fn add_object(&mut self, new_atoms: Atoms4D) {
         self.objects.push(Object4D {
             start_index: self.atoms.positions.len(),
             number_of_atoms: new_atoms.positions.len(),
+            drag: Vec2::ZERO,
         });
         self.atoms.positions.extend(new_atoms.positions);
         self.atoms.colors.extend(new_atoms.colors);
@@ -134,6 +150,32 @@ pub fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
     }
 }
 
+// Rotates a point in 4D space around the YZ plane by a given angle.
+pub fn rotate_4d_yz(point: Vec4, angle: f32) -> Vec4 {
+    let cos_angle = angle.cos();
+    let sin_angle = angle.sin();
+
+    Vec4::new(
+        point.x * cos_angle - point.w * sin_angle,
+        point.y,
+        point.z,
+        point.x * sin_angle + point.w * cos_angle,
+    )
+}
+
+// Rotates a point in 4D space around the XZ plane by a given angle.
+pub fn rotate_4d_xz(point: Vec4, angle: f32) -> Vec4 {
+    let cos_angle = angle.cos();
+    let sin_angle = angle.sin();
+
+    Vec4::new(
+        point.x,
+        point.y * cos_angle - point.w * sin_angle,
+        point.z,
+        point.y * sin_angle + point.w * cos_angle,
+    )
+}
+
 /// transforms all atoms in the 4D scene.
 /// Currently, this function applies a simple rotation in 3D space, but you can replace it with any transformation you like (e.g., a 4D rotation).
 pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
@@ -141,12 +183,16 @@ pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
 
     //local movements
     let angle = time; // Rotation angle in radians
-    let rotation_matrix = Mat3::from_rotation_z(angle); // Rotate around the Z-axis
-
+    
+    // cube3d
     let cube_3d = &scene.objects[0];
+    let rotation_matrix = Mat3::from_rotation_z(angle); // Rotate around the Z-axis
+    let drag_matrix = cube_3d.drag_rotation(); // Get the drag rotation matrix for the 3D cube
     for index in cube_3d.range() {  
         let position = &scene.atoms.positions[index];
-        let rotated_position = rotation_matrix * vec3(position.x, position.y, position.z);
+        let mut rotated_position = rotation_matrix * vec3(position.x, position.y, position.z);
+        rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
+
         new_positions[index] = Vec4::new(
             rotated_position.x,
             rotated_position.y,
@@ -155,16 +201,38 @@ pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
         );
     }
 
-    let rotation_matrix_x = Mat3::from_rotation_x(angle/2.0); // Rotate around the X-axis
-    let cube_4d = &scene.objects[1];
+    // cube3d (not rotated, only dragged)
+    let cube_3d = &scene.objects[1];
+    let drag_matrix = cube_3d.drag_rotation(); // Get the drag rotation matrix for the 3D cube
+    for index in cube_3d.range() {  
+        let position = &scene.atoms.positions[index];
+        let rotated_position = drag_matrix * vec3(position.x, position.y, position.z); // Apply dragging transformation
+
+        new_positions[index] = Vec4::new(
+            rotated_position.x-6.0,
+            rotated_position.y,
+            rotated_position.z,
+            position.w,
+        );
+    }
+
+    // cube4d
+    let cube_4d = &scene.objects[2];
+    let drag_matrix = cube_4d.drag_rotation(); // Get the drag rotation matrix for the 4D cube
     for index in cube_4d.range() {  
         let position = &scene.atoms.positions[index];
-        let rotated_position = rotation_matrix_x * vec3(position.x, position.y, position.z);
+
+        let mut rotated_position4d = rotate_4d_yz(*position, angle/2.0);
+        rotated_position4d = rotate_4d_xz(rotated_position4d, angle/2.0);
+
+        let mut position3d = vec3(rotated_position4d.x, rotated_position4d.y, rotated_position4d.z);
+        position3d = drag_matrix * position3d; // Apply dragging transformation
+        
         new_positions[index] = Vec4::new(
-            rotated_position.x + 4.0,
-            rotated_position.y + 4.0,
-            rotated_position.z + 4.0,
-            position.w + 4.0,
+            position3d.x + 6.0,
+            position3d.y + 0.0,
+            position3d.z + 0.0,
+            rotated_position4d.w,
         );
     }
 

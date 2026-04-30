@@ -51,7 +51,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Cuboid::default())),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(3.0, 1.0, 4.0).with_rotation(Quat::from_rotation_x(-PI / 4.)),
+            Transform::from_xyz(0.0, 5.0, 0.0).with_rotation(Quat::from_rotation_x(-PI / 4.)),
             //Shape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -59,7 +59,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(rotate_on_drag);
-
+/*
     ////composed
     // 1. Parent Entity (Holds position/transform)
     commands
@@ -116,7 +116,7 @@ fn setup_scene(
             }
         })
         .observe(rotate_on_drag);
-
+*/
     // 4d scene
     for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands.spawn((
@@ -124,13 +124,15 @@ fn setup_scene(
             MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[index])),
             Transform::from_translation(vec3(position.x, position.y, position.z)),
             Atom { index }, // to identify these entities
-        ));
+        ))
+        .observe(rotate_object_on_drag);
     }
 
     // Ground
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10))),
         MeshMaterial3d(ground_matl.clone()),
+        Transform::from_translation(vec3(0., -5., 0.)),
         Pickable::IGNORE, // Disable picking for the ground plane.
     ));
 
@@ -225,4 +227,11 @@ fn rotate_on_drag(drag: On<Pointer<Drag>>, mut transforms: Query<&mut Transform>
     let mut transform = transforms.get_mut(drag.entity).unwrap();
     transform.rotate_y(drag.delta.x * 0.02);
     transform.rotate_x(drag.delta.y * 0.02);
+}
+
+/// An observer to rotate an entity in a more complex way when it is dragged, 
+/// based on the drag delta and the atom's index in the 4D scene.
+fn rotate_object_on_drag(drag: On<Pointer<Drag>>, mut atoms: Query<&mut Atom>, mut scene: ResMut<Scene>) {
+    let atom = atoms.get_mut(drag.entity).unwrap();
+    scene.scene_4d.drag_object_from_atom(atom.index, drag.delta);
 }

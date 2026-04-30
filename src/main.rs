@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::{color::palettes::tailwind::*, picking::pointer::PointerInteraction, prelude::*};
 
 mod scene4d;
-use scene4d::{Scene4D, create_cube_3d, rotate_3d};
+use scene4d::*;
 
 fn main() {
     App::new()
@@ -13,7 +13,10 @@ fn main() {
             scene_4d: Scene4D::new(),
         })
         .add_systems(Startup, setup_scene)
-        .add_systems(Update, (draw_mesh_intersections, rotate, rotate_cube_3d))
+        .add_systems(
+            Update,
+            (draw_mesh_intersections, rotate, transform_scene_4d),
+        )
         .run();
 }
 
@@ -35,10 +38,8 @@ fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut scene: ResMut<Scene>,
+    scene: ResMut<Scene>,
 ) {
-    //scene.scene_4d = Scene4D::new();
-
     // Set up the materials.
     let white_matl = materials.add(Color::WHITE);
     let ground_matl = materials.add(Color::from(GRAY_300));
@@ -101,22 +102,26 @@ fn setup_scene(
             Shape,                 // Damit wir die Rotation auf alle Meshes anwenden können
         ))
         .with_children(|parent| {
-            let cube_3d = create_cube_3d(0.3, 10);
-            for (index, position) in cube_3d.positions.iter().enumerate() {
+            let cube_4d = create_cube_4d(0.3, 10);
+            for (index, position) in cube_4d.positions.iter().enumerate() {
                 parent.spawn((
-                    Mesh3d(meshes.add(Cuboid::new(cube_3d.size_of_atom, cube_3d.size_of_atom, cube_3d.size_of_atom))),
-                    MeshMaterial3d(materials.add(cube_3d.colors[index])),
+                    Mesh3d(meshes.add(Cuboid::new(
+                        scene.scene_4d.size_of_atom,
+                        scene.scene_4d.size_of_atom,
+                        scene.scene_4d.size_of_atom,
+                    ))),
+                    MeshMaterial3d(materials.add(cube_4d.colors[index])),
                     Transform::from_translation(vec3(position.x, position.y, position.z)),
                 ));
             }
         })
         .observe(rotate_on_drag);
 
-    // spawn the scene
-    for (index, position) in scene.scene_4d.positions.iter().enumerate() {
+    // 4d scene
+    for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands.spawn((
             Mesh3d(meshes.add(Sphere::new(scene.scene_4d.size_of_atom * 0.8))),
-            MeshMaterial3d(materials.add(scene.scene_4d.colors[index])),
+            MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[index])),
             Transform::from_translation(vec3(position.x, position.y, position.z)),
             Atom { index }, // to identify these entities
         ));
@@ -192,24 +197,25 @@ fn rotate(mut query: Query<&mut Transform, With<Shape>>, time: Res<Time>) {
     }
 }
 
-fn rotate_cube_3d(
+/// A system that transforms the 4D scene and updates the positions of the corresponding entities in the 3D world.
+fn transform_scene_4d(
     mut query: Query<(&mut Transform, &mut Visibility, &Atom)>,
     time: Res<Time>,
     scene: Res<Scene>,
 ) {
-    // rotate the positions of the atoms in 3D space
-    let rotated_positions = rotate_3d(&scene.scene_4d.positions, time.elapsed_secs());
+    // get updated positions for all atoms in the 4D scene based on the current time (for animation)
+    let new_positions = transform_scene(&scene.scene_4d, time.elapsed_secs());
 
     // update the transforms of the atom entities based on the rotated positions
     for (mut transform, mut visibility, atom_entity) in &mut query {
         let index = atom_entity.index;
-        if let Some(position) = rotated_positions.get(index) {
+        if let Some(position) = new_positions.get(index) {
             transform.translation = vec3(position.x, position.y, position.z);
-            if position.x > 0.0 {
-                *visibility = Visibility::Hidden;
+            *visibility = if scene.scene_4d.is_atom_visible(index) {
+                Visibility::Visible
             } else {
-                *visibility = Visibility::Visible;
-            }
+                Visibility::Hidden
+            };
         }
     }
 }

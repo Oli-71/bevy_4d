@@ -23,6 +23,14 @@ codegen-units = 1
 # Slows compile times, marginal improvements.
 lto = "thin"
 
+[profile.release-fast]
+inherits = "release"
+# Keep good runtime performance while compiling faster.
+opt-level = 3
+codegen-units = 16
+lto = false
+panic = "abort"
+
 # Optimize for size in the wasm-release profile to reduce load times and bandwidth usage on web.
 [profile.wasm-release]
 # Default to release profile values.

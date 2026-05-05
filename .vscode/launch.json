@@ -18,6 +18,19 @@
             "args": []
         },
         {
+            "name": "Launch executable 'bevy_4d' (release-fast)",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "run",
+                    "--profile=release-fast",
+                    "--bin=bevy_4d"
+                ]
+            },
+            "args": []
+        },
+        {
             "name": "Debug unit tests in executable 'bevy_4d'",
             "type": "lldb",
             "request": "launch",

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::prelude::ops::abs;
 
 /// Sequence of atoms, represented by equal numbered positions and colors.
 pub struct Atoms4D{    
@@ -34,30 +35,35 @@ pub struct Scene4D {
     pub atoms: Atoms4D,
     pub size_of_atom: f32,
     objects: Vec<Object4D>,
+    pub is_4d_view: bool,
 }
 
 impl Scene4D {
     pub fn new() -> Self {
+        let size = 3.0;
+        let number_per_side = 16;
+        let size_of_atom = size / number_per_side as f32;
         //empty scene 
         let mut scene = Self {
             atoms: Atoms4D {
                 positions: Vec::new(),
                 colors: Vec::new(),
             },
-            size_of_atom: 0.3,
+            size_of_atom,
             objects: Vec::new(),
+            is_4d_view: false,
         };
         //add some objects to the scene. 
-        scene.add_object(create_cube_3d(scene.size_of_atom, 10));
-        scene.add_object(create_cube_3d(scene.size_of_atom, 10));
-        scene.add_object(create_cube_4d(scene.size_of_atom, 10));
+        scene.add_object(create_cube_3d(scene.size_of_atom, number_per_side));
+        scene.add_object(create_cube_3d(scene.size_of_atom, number_per_side));
+        scene.add_object(create_cube_4d(scene.size_of_atom, number_per_side));
 
         scene
     }
 
-    pub fn is_atom_visible(&self, index: usize) -> bool {
-        let position = &self.atoms.positions[index];
-        position.w < self.size_of_atom && position.w > -self.size_of_atom
+    pub fn is_atom_visible(&self, position: Vec4) -> bool {
+        let threshold = self.size_of_atom; // Atoms with |w| less than this threshold will be visible
+        abs(position.w) < threshold
     }
 
     pub fn drag_object_from_atom(&mut self, atom_index: usize, delta: Vec2) {
@@ -91,10 +97,14 @@ pub fn create_cube_3d(size_atom: f32, number_per_side: usize) -> Atoms4D {
     let end = (number_per_side / 2) as i32;
     let start = -end;
     let spacing = 1.1 * size_atom;
+    let wall_thickness = 1; // Number of atoms to keep on each side to create a hollow cube
 
-    for x in start..end {
-        for y in start..end {
-            for z in start..end {
+    for x in start..=end {
+        for y in start..=end {
+            for z in start..=end {
+                if x>start+wall_thickness && x<end-wall_thickness && y>start+wall_thickness && y<end-wall_thickness && z>start+wall_thickness && z<end-wall_thickness {
+                    continue; // Skip inner atoms to create a hollow cube
+                }
                 positions.push(Vec4::new(
                     x as f32 * spacing,
                     y as f32 * spacing,
@@ -123,11 +133,15 @@ pub fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
     let end = (number_per_side / 2) as i32;
     let start = -end;
     let spacing = 1.1 * size_atom;
+    let wall_thickness = 1; // Number of atoms to keep on each side to create a hollow cube
 
-    for x in start..end {
-        for y in start..end {
-            for z in start..end {
-                for w in start..end {
+    for x in start..=end {
+        for y in start..=end {
+            for z in start..=end {
+                for w in start..=end {
+                    if x>start+wall_thickness && x<end-wall_thickness && y>start+wall_thickness && y<end-wall_thickness && z>start+wall_thickness && z<end-wall_thickness && w>start+wall_thickness && w<end-wall_thickness {
+                        continue; // Skip inner atoms to create a hollow cube
+                    }
                     positions.push(Vec4::new(
                         x as f32 * spacing,
                         y as f32 * spacing,
@@ -150,16 +164,15 @@ pub fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
     }
 }
 
-// Rotates a point in 4D space around the YZ plane by a given angle.
-pub fn rotate_4d_yz(point: Vec4, angle: f32) -> Vec4 {
+pub fn rotate_4d_xy(point: Vec4, angle: f32) -> Vec4 {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
     Vec4::new(
-        point.x * cos_angle - point.w * sin_angle,
+        point.x,
         point.y,
-        point.z,
-        point.x * sin_angle + point.w * cos_angle,
+        point.z * cos_angle - point.w * sin_angle,
+        point.z * sin_angle + point.w * cos_angle,
     )
 }
 
@@ -173,6 +186,57 @@ pub fn rotate_4d_xz(point: Vec4, angle: f32) -> Vec4 {
         point.y * cos_angle - point.w * sin_angle,
         point.z,
         point.y * sin_angle + point.w * cos_angle,
+    )
+}
+
+pub fn rotate_4d_xw(point: Vec4, angle: f32) -> Vec4 {
+    let cos_angle = angle.cos();
+    let sin_angle = angle.sin();
+
+    Vec4::new(
+        point.x,
+        point.y * cos_angle - point.z * sin_angle,
+        point.y * sin_angle + point.z * cos_angle,
+        point.w,
+    )
+}
+
+// Rotates a point in 4D space around the YZ plane by a given angle.
+pub fn rotate_4d_yz(point: Vec4, angle: f32) -> Vec4 {
+    let cos_angle = angle.cos();
+    let sin_angle = angle.sin();
+
+    Vec4::new(
+        point.x * cos_angle - point.w * sin_angle,
+        point.y,
+        point.z,
+        point.x * sin_angle + point.w * cos_angle,
+    )
+}
+
+// Rotates a point in 4D space around the YW plane by a given angle.
+pub fn rotate_4d_yw(point: Vec4, angle: f32) -> Vec4 {
+    let cos_angle = angle.cos();
+    let sin_angle = angle.sin();
+
+    Vec4::new(
+        point.x * cos_angle - point.z * sin_angle,
+        point.y,
+        point.x * sin_angle + point.z * cos_angle,
+        point.w,
+    )
+}
+
+// Rotates a point in 4D space around the ZW plane by a given angle.
+pub fn rotate_4d_zw(point: Vec4, angle: f32) -> Vec4 {
+    let cos_angle = angle.cos();
+    let sin_angle = angle.sin();
+
+    Vec4::new(
+        point.x * cos_angle - point.y * sin_angle,
+        point.x * sin_angle + point.y * cos_angle,
+        point.z,
+        point.w,
     )
 }
 
@@ -222,6 +286,7 @@ pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
     for index in cube_4d.range() {  
         let position = &scene.atoms.positions[index];
 
+        //let rotated_position4d = *position; // No rotation, only dragging
         let mut rotated_position4d = rotate_4d_yz(*position, angle/2.0);
         rotated_position4d = rotate_4d_xz(rotated_position4d, angle/2.0);
 
@@ -235,10 +300,15 @@ pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
             rotated_position4d.w,
         );
     }
-
-    //transformation to 4d
     
-    //todo: implement a 4D rotation and apply it here on top of of the 3D rotation above. 
-    //This will create a more interesting animation as the atoms will move in and out of the 3D space we can see.
+    // 4D transformation of the whole scene
+    // applied on top of the local transformations above. 
+    // This will create a more interesting animation as the atoms will move in and out of the 3D space we can see.
+    if scene.is_4d_view {
+        for position in &mut new_positions {
+            // Example of a simple 4D rotation around the XZ plane
+            *position = rotate_4d_xz(*position, angle/4.0);
+        }
+    }
     new_positions
 }

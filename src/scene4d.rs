@@ -1,13 +1,14 @@
-use bevy::prelude::*;
+use bevy::color::palettes::css::GOLD;
 use bevy::prelude::ops::abs;
+use bevy::prelude::*;
 
 /// Sequence of atoms, represented by equal numbered positions and colors.
-pub struct Atoms4D{    
+pub struct Atoms4D {
     pub positions: Vec<Vec4>,
     pub colors: Vec<Color>,
 }
 
-/// An object in the 4D scene, which consists of a sequence of atoms. 
+/// An object in the 4D scene, which consists of a sequence of atoms.
 /// The `start_index` and `number_of_atoms` fields specify which atoms belong to this object.
 struct Object4D {
     start_index: usize,
@@ -43,7 +44,7 @@ impl Scene4D {
         let size = 3.0;
         let number_per_side = 16;
         let size_of_atom = size / number_per_side as f32;
-        //empty scene 
+        //empty scene
         let mut scene = Self {
             atoms: Atoms4D {
                 positions: Vec::new(),
@@ -53,10 +54,14 @@ impl Scene4D {
             objects: Vec::new(),
             is_4d_view: false,
         };
-        //add some objects to the scene. 
-        scene.add_object(create_cube_3d(scene.size_of_atom, number_per_side));
-        scene.add_object(create_cube_3d(scene.size_of_atom, number_per_side));
-        scene.add_object(create_cube_4d(scene.size_of_atom, number_per_side));
+        //add some objects to the scene.
+        scene.add_object(create_cube_3d(size_of_atom, number_per_side));
+
+        //scene.add_object(create_cube_3d(size_of_atom, number_per_side));
+        scene.add_object(create_heart_3d(size_of_atom, number_per_side * 3));
+
+        //scene.add_object(create_cube_4d(size_of_atom, number_per_side));
+        scene.add_object(create_cube_4d_surface(size_of_atom, number_per_side));
 
         scene
     }
@@ -83,7 +88,7 @@ impl Scene4D {
         });
         self.atoms.positions.extend(new_atoms.positions);
         self.atoms.colors.extend(new_atoms.colors);
-    }   
+    }
 }
 
 /// Creates a cube composed of atoms.
@@ -102,7 +107,13 @@ pub fn create_cube_3d(size_atom: f32, number_per_side: usize) -> Atoms4D {
     for x in start..=end {
         for y in start..=end {
             for z in start..=end {
-                if x>start+wall_thickness && x<end-wall_thickness && y>start+wall_thickness && y<end-wall_thickness && z>start+wall_thickness && z<end-wall_thickness {
+                if x > start + wall_thickness
+                    && x < end - wall_thickness
+                    && y > start + wall_thickness
+                    && y < end - wall_thickness
+                    && z > start + wall_thickness
+                    && z < end - wall_thickness
+                {
                     continue; // Skip inner atoms to create a hollow cube
                 }
                 positions.push(Vec4::new(
@@ -119,10 +130,7 @@ pub fn create_cube_3d(size_atom: f32, number_per_side: usize) -> Atoms4D {
             }
         }
     }
-    Atoms4D {
-        positions,
-        colors,
-    }
+    Atoms4D { positions, colors }
 }
 
 pub fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
@@ -139,7 +147,15 @@ pub fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
         for y in start..=end {
             for z in start..=end {
                 for w in start..=end {
-                    if x>start+wall_thickness && x<end-wall_thickness && y>start+wall_thickness && y<end-wall_thickness && z>start+wall_thickness && z<end-wall_thickness && w>start+wall_thickness && w<end-wall_thickness {
+                    if x > start + wall_thickness
+                        && x < end - wall_thickness
+                        && y > start + wall_thickness
+                        && y < end - wall_thickness
+                        && z > start + wall_thickness
+                        && z < end - wall_thickness
+                        && w > start + wall_thickness
+                        && w < end - wall_thickness
+                    {
                         continue; // Skip inner atoms to create a hollow cube
                     }
                     positions.push(Vec4::new(
@@ -158,10 +174,203 @@ pub fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
             }
         }
     }
-    Atoms4D {
-        positions,
-        colors,
+    Atoms4D { positions, colors }
+}
+
+pub fn create_cube_4d_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
+    let capacity = number_per_side * number_per_side * number_per_side * 8;
+    let mut positions = Vec::with_capacity(capacity);
+    let mut colors = Vec::with_capacity(capacity);
+
+    let end = (number_per_side / 2) as i32;
+    let start = end;
+    let spacing = 1.1 * size_atom;
+
+    //1st and 2nd cube (w=0 and w=end)
+    for x in start..=end {
+        for y in start..=end {
+            for z in start..=end {
+                positions.push(Vec4::new(
+                    x as f32 * spacing,
+                    y as f32 * spacing,
+                    z as f32 * spacing,
+                    start as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=0
+            }
+        }
     }
+    for x in start..=end {
+        for y in start..=end {
+            for z in start..=end {
+                positions.push(Vec4::new(
+                    x as f32 * spacing,
+                    y as f32 * spacing,
+                    z as f32 * spacing,
+                    end as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=end
+            }
+        }
+    }
+    // 3rd and 4th cube (z=0 and z=end)
+    for x in start..=end {
+        for y in start..=end {
+            for w in start..=end {
+                positions.push(Vec4::new(
+                    x as f32 * spacing,
+                    y as f32 * spacing,
+                    start as f32 * spacing,
+                    w as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=0
+            }
+        }
+    }
+    for x in start..=end {
+        for y in start..=end {
+            for w in start..=end {
+                positions.push(Vec4::new(
+                    x as f32 * spacing,
+                    y as f32 * spacing,
+                    end as f32 * spacing,
+                    w as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=end
+            }
+        }
+    }
+    // 5th and 6th cube (y=0 and y=end)
+    for x in start..=end {
+        for z in start..=end {
+            for w in start..=end {
+                positions.push(Vec4::new(
+                    x as f32 * spacing,
+                    start as f32 * spacing,
+                    z as f32 * spacing,
+                    w as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue for y=0
+            }
+        }
+    }
+    for x in start..=end {
+        for z in start..=end {
+            for w in start..=end {
+                positions.push(Vec4::new(
+                    x as f32 * spacing,
+                    end as f32 * spacing,
+                    z as f32 * spacing,
+                    w as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple for y=end
+            }
+        }
+    }
+    // 7th and 8th cube (x=0 and x=end)
+    for y in start..=end {
+        for z in start..=end {
+            for w in start..=end {
+                positions.push(Vec4::new(
+                    start as f32 * spacing,
+                    y as f32 * spacing,
+                    z as f32 * spacing,
+                    w as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white for x=0
+            }
+        }
+    }
+    for y in start..=end {
+        for z in start..=end {
+            for w in start..=end {
+                positions.push(Vec4::new(
+                    end as f32 * spacing,
+                    y as f32 * spacing,
+                    z as f32 * spacing,
+                    w as f32 * spacing,
+                ));
+                colors.push(Color::from(Srgba::rgb_u8(0, 0, 0))); //black for x=end
+            }
+        }
+    }
+
+    Atoms4D { positions, colors }
+}
+
+fn create_heart_3d(size_atom: f32, number_per_side: usize) -> Atoms4D {
+    let capacity = number_per_side * number_per_side * number_per_side;
+    let mut positions = Vec::with_capacity(capacity);
+    let mut colors = Vec::with_capacity(capacity);
+
+    let end = (number_per_side / 2) as i32;
+    let start = -end;
+    let spacing = 1.1 * size_atom;
+    let scale = 4.0 / (spacing * number_per_side as f32); // Scale the heart to fit within the cube
+
+    for x in start..=end {
+        for y in start..=end {
+            for z in start..=end {
+                let mut xx = x as f32 * spacing;
+                let mut yy = y as f32 * spacing;
+                let mut zz = z as f32 * spacing;
+                let pos = Vec3::new(xx, yy, zz);
+                // try later: Heart shape formula: (x^2 + (5/4)y^2 + z^2 - 1)^3 - x^2z^3 - (5/4)y^2z^3 <= 0
+                // Heart shape formula: (x^2 + 2y^2 + z^2 - 1)^3 - x^2z^3 - (1/10)y^2z^3 = 0
+                xx *= scale;
+                let yyy = yy; // switch y and z to make the heart stand upright, instead of lying on its side
+                yy = scale * zz;
+                zz = scale * yyy;
+                let part: f32 = xx.powi(2) + 2.0 * yy.powi(2) + zz.powi(2) - 1.0;
+                let value =
+                    part.powi(3) - xx.powi(2) * zz.powi(3) - (1.0 / 10.0) * yy.powi(2) * zz.powi(3);
+                if value <= 0.0 {
+                    positions.push(Vec4::new(pos.x, pos.y, pos.z, 0.0));
+                    if x.abs() < 3 && y.abs() < 3 && z.abs() < 3 {
+                        colors.push(Color::from(GOLD));
+                    } else {
+                        colors.push(Color::from(Srgba::rgb(1., 0., 0.)));
+                    }
+                }
+            }
+        }
+    }
+    Atoms4D { positions, colors }
+}
+
+pub fn create_sphere_4d(radius: f32, number_per_side: usize) -> Atoms4D {
+    let capacity = number_per_side * number_per_side * number_per_side * number_per_side;
+    let mut positions = Vec::with_capacity(capacity);
+    let mut colors = Vec::with_capacity(capacity);
+
+    let end = (number_per_side / 2) as i32;
+    let start = -end;
+    let spacing = 1.1 * radius / (number_per_side as f32 / 2.0);
+
+    for x in start..=end {
+        for y in start..=end {
+            for z in start..=end {
+                for w in start..=end {
+                    let pos = Vec4::new(
+                        x as f32 * spacing,
+                        y as f32 * spacing,
+                        z as f32 * spacing,
+                        w as f32 * spacing,
+                    );
+                    if pos.length() <= radius {
+                        positions.push(pos);
+                        colors.push(Color::from(Srgba::rgba_u8(
+                            ((x + end) * 255 / number_per_side as i32) as u8,
+                            ((y + end) * 255 / number_per_side as i32) as u8,
+                            ((z + end) * 255 / number_per_side as i32) as u8,
+                            ((w + end) * 255 / number_per_side as i32) as u8,
+                        )));
+                    }
+                }
+            }
+        }
+    }
+    Atoms4D { positions, colors }
 }
 
 pub fn rotate_4d_xy(point: Vec4, angle: f32) -> Vec4 {
@@ -247,14 +456,14 @@ pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
 
     //local movements
     let angle = time; // Rotation angle in radians
-    
+
     // cube3d
     let cube_3d = &scene.objects[0];
-    let rotation_matrix = Mat3::from_rotation_z(angle); // Rotate around the Z-axis
+    let rotation_z_matrix = Mat3::from_rotation_z(angle); // Rotate around the Z-axis
     let drag_matrix = cube_3d.drag_rotation(); // Get the drag rotation matrix for the 3D cube
-    for index in cube_3d.range() {  
+    for index in cube_3d.range() {
         let position = &scene.atoms.positions[index];
-        let mut rotated_position = rotation_matrix * vec3(position.x, position.y, position.z);
+        let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
         rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
 
         new_positions[index] = Vec4::new(
@@ -265,15 +474,15 @@ pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
         );
     }
 
-    // cube3d (not rotated, only dragged)
+    // heart/cube3d (not rotated, only dragged)
     let cube_3d = &scene.objects[1];
     let drag_matrix = cube_3d.drag_rotation(); // Get the drag rotation matrix for the 3D cube
-    for index in cube_3d.range() {  
+    for index in cube_3d.range() {
         let position = &scene.atoms.positions[index];
         let rotated_position = drag_matrix * vec3(position.x, position.y, position.z); // Apply dragging transformation
 
         new_positions[index] = Vec4::new(
-            rotated_position.x-6.0,
+            rotated_position.x - 6.0,
             rotated_position.y,
             rotated_position.z,
             position.w,
@@ -283,31 +492,26 @@ pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
     // cube4d
     let cube_4d = &scene.objects[2];
     let drag_matrix = cube_4d.drag_rotation(); // Get the drag rotation matrix for the 4D cube
-    for index in cube_4d.range() {  
+    for index in cube_4d.range() {
         let position = &scene.atoms.positions[index];
+        let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
+        rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
 
-        //let rotated_position4d = *position; // No rotation, only dragging
-        let mut rotated_position4d = rotate_4d_yz(*position, angle/2.0);
-        rotated_position4d = rotate_4d_xz(rotated_position4d, angle/2.0);
-
-        let mut position3d = vec3(rotated_position4d.x, rotated_position4d.y, rotated_position4d.z);
-        position3d = drag_matrix * position3d; // Apply dragging transformation
-        
         new_positions[index] = Vec4::new(
-            position3d.x + 6.0,
-            position3d.y + 0.0,
-            position3d.z + 0.0,
-            rotated_position4d.w,
+            rotated_position.x + 6.0,
+            rotated_position.y,
+            rotated_position.z,
+            position.w,
         );
     }
-    
+
     // 4D transformation of the whole scene
-    // applied on top of the local transformations above. 
+    // applied on top of the local transformations above.
     // This will create a more interesting animation as the atoms will move in and out of the 3D space we can see.
     if scene.is_4d_view {
         for position in &mut new_positions {
             // Example of a simple 4D rotation around the XZ plane
-            *position = rotate_4d_xz(*position, angle/4.0);
+            *position = rotate_4d_xz(*position, angle / 4.0);
         }
     }
     new_positions

@@ -20,7 +20,6 @@ fn main() {
             Update,
             (
                 draw_mesh_intersections,
-                //rotate,
                 transform_scene_4d,
             ),
         )
@@ -70,64 +69,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(rotate_on_drag)
         .observe(goto_4d_on_press);
-    /*
-        ////composed
-        // 1. Parent Entity (Holds position/transform)
-        commands
-            .spawn((
-                Name::new("CompoundObject"),
-                Transform::from_xyz(0.0, 4.0, 0.0),
-                Visibility::default(), // Erforderlich, damit Kinder sichtbar sind
-                Control_Shape,         // Damit wir die Rotation auf alle drei Meshes anwenden können
-            ))
-            .with_children(|parent| {
-                // 2. Erstes Mesh (Kind 1)
-                parent.spawn((
-                    Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
-                    MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
-                ));
-
-                // 3. Zweites Mesh (Kind 2, leicht versetzt)
-                parent.spawn((
-                    Mesh3d(meshes.add(Sphere::new(0.5))),
-                    MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
-                    Transform::from_xyz(1.0, 0.0, 0.0),
-                    Visibility::Hidden, // Dieses Kind ist unsichtbar
-                ));
-
-                // 4. Drittes Mesh (Kind 3, leicht versetzt)
-                parent.spawn((
-                    Mesh3d(meshes.add(Sphere::new(0.5))),
-                    MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
-                    Transform::from_xyz(-1.0, 0.0, 0.0),
-                ));
-            })
-            .observe(rotate_on_drag);
-
-        // cube composed of 10 by 10 by 10 smaller cubes
-        commands
-            .spawn((
-                Name::new("CompoundObject2"),
-                Transform::from_xyz(-3.0, 4.0, -4.0),
-                Visibility::default(), // Erforderlich, damit Kinder sichtbar sind
-                Control_Shape,         // Damit wir die Rotation auf alle Meshes anwenden können
-            ))
-            .with_children(|parent| {
-                let cube_4d = create_cube_4d(0.3, 10);
-                for (index, position) in cube_4d.positions.iter().enumerate() {
-                    parent.spawn((
-                        Mesh3d(meshes.add(Cuboid::new(
-                            scene.scene_4d.size_of_atom,
-                            scene.scene_4d.size_of_atom,
-                            scene.scene_4d.size_of_atom,
-                        ))),
-                        MeshMaterial3d(materials.add(cube_4d.colors[index])),
-                        Transform::from_translation(vec3(position.x, position.y, position.z)),
-                    ));
-                }
-            })
-            .observe(rotate_on_drag);
-    */
+    
     // 4d scene
     for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
@@ -205,14 +147,6 @@ fn draw_mesh_intersections(pointers: Query<&PointerInteraction>, mut gizmos: Giz
     }
 }
 
-/// A system that rotates all shapes.
-/*
-fn rotate(mut query: Query<&mut Transform, With<Shape>>, time: Res<Time>) {
-    for mut transform in &mut query {
-        transform.rotate_y(time.delta_secs() / 2.);
-    }
-}*/
-
 /// A system that transforms the 4D scene and updates the positions of the corresponding entities in the 3D world.
 fn transform_scene_4d(
     mut query: Query<(&mut Transform, &mut Visibility, &Atom)>,
@@ -220,7 +154,7 @@ fn transform_scene_4d(
     scene: Res<Scene>,
 ) {
     // get updated positions for all atoms in the 4D scene based on the current time (for animation)
-    let new_positions = transform_scene(&scene.scene_4d, time.elapsed_secs());
+    let new_positions = scene.scene_4d.transform_scene(time.elapsed_secs());
 
     // update the transforms of the atom entities based on the rotated positions
     for (mut transform, mut visibility, atom_entity) in &mut query {
@@ -260,11 +194,12 @@ fn goto_4d_on_press(
     _press: On<Pointer<Press>>,
     mut vis: Query<&mut Visibility , With<Ground>>,
     mut scene: ResMut<Scene>,
+    time: Res<Time>,
 ) {
-    scene.scene_4d.is_4d_view = !scene.scene_4d.is_4d_view;
+    scene.scene_4d.toggle_4d_view(time.elapsed_secs());
     
     for mut v in &mut vis {
-        *v = if scene.scene_4d.is_4d_view {
+        *v = if scene.scene_4d.is_4d_view() {
             Visibility::Hidden
         } else {
             Visibility::Visible

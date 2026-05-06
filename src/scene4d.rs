@@ -36,7 +36,9 @@ pub struct Scene4D {
     pub atoms: Atoms4D,
     pub size_of_atom: f32,
     objects: Vec<Object4D>,
-    pub is_4d_view: bool,
+    
+    is_4d_view: bool,
+    start_time_4d: f32,
 }
 
 impl Scene4D {
@@ -53,6 +55,7 @@ impl Scene4D {
             size_of_atom,
             objects: Vec::new(),
             is_4d_view: false,
+            start_time_4d: 0.0,
         };
         //add some objects to the scene.
         scene.add_object(create_cube_3d(size_of_atom, number_per_side));
@@ -67,7 +70,7 @@ impl Scene4D {
     }
 
     pub fn is_atom_visible(&self, position: Vec4) -> bool {
-        let threshold = self.size_of_atom; // Atoms with |w| less than this threshold will be visible
+        let threshold = 0.8 * self.size_of_atom; // Atoms with |w| less than this threshold will be visible
         abs(position.w) < threshold
     }
 
@@ -88,6 +91,92 @@ impl Scene4D {
         });
         self.atoms.positions.extend(new_atoms.positions);
         self.atoms.colors.extend(new_atoms.colors);
+    }
+
+    pub fn toggle_4d_view(&mut self, current_time: f32) {
+        self.is_4d_view = !self.is_4d_view;
+        if self.is_4d_view {
+            self.start_time_4d = current_time;
+        }
+    }
+
+    pub fn is_4d_view(&self) -> bool {
+        self.is_4d_view
+    }
+
+    pub fn time_in_4d_view(&self, current_time: f32) -> f32 {
+        if self.is_4d_view {
+            current_time - self.start_time_4d
+        } else {
+            0.0
+        }
+    }
+
+    /// transforms all atoms in the 4D scene.
+    pub fn transform_scene(&self, time: f32) -> Vec<Vec4> {
+        let mut new_positions = self.atoms.positions.clone();
+
+        //local movements
+        let angle = time; // Rotation angle in radians
+        let offset = 6.0; // Distance to offset the left and right objects from the center
+
+        // left: heart/cube3d (not rotated, only dragged)
+        let left_object = &self.objects[1];
+        let drag_matrix = left_object.drag_rotation(); // Get the drag rotation matrix for the left object
+        for index in left_object.range() {
+            let position = &self.atoms.positions[index];
+            let rotated_position = drag_matrix * vec3(position.x, position.y, position.z); // Apply dragging transformation
+
+            new_positions[index] = Vec4::new(
+                rotated_position.x - offset,
+                rotated_position.y,
+                rotated_position.z,
+                position.w,
+            );
+        }
+
+        // middle: cube3d
+        let middle_object = &self.objects[0];
+        let rotation_z_matrix = Mat3::from_rotation_z(angle); // Rotate around the Z-axis
+        let drag_matrix = middle_object.drag_rotation(); // Get the drag rotation matrix for the 3D cube
+        for index in middle_object.range() {
+            let position = &self.atoms.positions[index];
+            let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
+            rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
+
+            new_positions[index] = Vec4::new(
+                rotated_position.x,
+                rotated_position.y,
+                rotated_position.z,
+                position.w,
+            );
+        }
+
+        // right: cube4d
+        let right_object = &self.objects[2];
+        let drag_matrix = right_object.drag_rotation(); // Get the drag rotation matrix for the 4D cube
+        for index in right_object.range() {
+            let position = &self.atoms.positions[index];
+            let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
+            rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
+
+            new_positions[index] = Vec4::new(
+                rotated_position.x + offset,
+                rotated_position.y,
+                rotated_position.z,
+                position.w,
+            );
+        }
+
+        // 4D transformation of the whole scene
+        // applied on top of the local transformations above.
+        // Atoms will move in and out of the 3D space we can see.
+        if self.is_4d_view() {
+            for position in &mut new_positions {
+                *position = rotate_4d_xz(*position, self.time_in_4d_view(time) / 4.0);
+            }
+        }
+        new_positions
     }
 }
 
@@ -182,115 +271,45 @@ pub fn create_cube_4d_surface(size_atom: f32, number_per_side: usize) -> Atoms4D
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
-    let end = (number_per_side / 2) as i32;
-    let start = end;
+    let end = (number_per_side / 2) as i32 - 1;
+    let start = -end;
+
     let spacing = 1.1 * size_atom;
 
-    //1st and 2nd cube (w=0 and w=end)
-    for x in start..=end {
-        for y in start..=end {
-            for z in start..=end {
-                positions.push(Vec4::new(
-                    x as f32 * spacing,
-                    y as f32 * spacing,
-                    z as f32 * spacing,
-                    start as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=0
-            }
-        }
-    }
-    for x in start..=end {
-        for y in start..=end {
-            for z in start..=end {
-                positions.push(Vec4::new(
-                    x as f32 * spacing,
-                    y as f32 * spacing,
-                    z as f32 * spacing,
-                    end as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=end
-            }
-        }
-    }
-    // 3rd and 4th cube (z=0 and z=end)
-    for x in start..=end {
-        for y in start..=end {
-            for w in start..=end {
-                positions.push(Vec4::new(
-                    x as f32 * spacing,
-                    y as f32 * spacing,
-                    start as f32 * spacing,
-                    w as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=0
-            }
-        }
-    }
-    for x in start..=end {
-        for y in start..=end {
-            for w in start..=end {
-                positions.push(Vec4::new(
-                    x as f32 * spacing,
-                    y as f32 * spacing,
-                    end as f32 * spacing,
-                    w as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=end
-            }
-        }
-    }
-    // 5th and 6th cube (y=0 and y=end)
-    for x in start..=end {
-        for z in start..=end {
-            for w in start..=end {
-                positions.push(Vec4::new(
-                    x as f32 * spacing,
-                    start as f32 * spacing,
-                    z as f32 * spacing,
-                    w as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue for y=0
-            }
-        }
-    }
-    for x in start..=end {
-        for z in start..=end {
-            for w in start..=end {
-                positions.push(Vec4::new(
-                    x as f32 * spacing,
-                    end as f32 * spacing,
-                    z as f32 * spacing,
-                    w as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple for y=end
-            }
-        }
-    }
-    // 7th and 8th cube (x=0 and x=end)
-    for y in start..=end {
-        for z in start..=end {
-            for w in start..=end {
-                positions.push(Vec4::new(
-                    start as f32 * spacing,
-                    y as f32 * spacing,
-                    z as f32 * spacing,
-                    w as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white for x=0
-            }
-        }
-    }
-    for y in start..=end {
-        for z in start..=end {
-            for w in start..=end {
-                positions.push(Vec4::new(
-                    end as f32 * spacing,
-                    y as f32 * spacing,
-                    z as f32 * spacing,
-                    w as f32 * spacing,
-                ));
-                colors.push(Color::from(Srgba::rgb_u8(0, 0, 0))); //black for x=end
+    let low = (start - 1) as f32 * spacing;// Position for the "low" side of the cube (e.g., w = low)
+    let high = (end + 1) as f32 * spacing;// Position for the "high" side of the cube (e.g., w = high)
+
+    // Create atoms for the 8 faces of the 4D cube (each face is a 3D cube in the 4D space).
+    for a in start..=end {
+        for b in start..=end {
+            for c in start..=end {
+                let aa = a as f32 * spacing;
+                let bb = b as f32 * spacing;
+                let cc = c as f32 * spacing;
+
+                positions.push(Vec4::new(aa, bb, cc, low));
+                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
+
+                positions.push(Vec4::new(aa, bb, cc, high));
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=high
+
+                positions.push(Vec4::new(aa, bb, low, cc));
+                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
+
+                positions.push(Vec4::new(aa, bb, high, cc));
+                colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
+
+                positions.push(Vec4::new(aa, low, bb, cc));
+                colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue for y=low
+
+                positions.push(Vec4::new(aa, high, bb, cc));
+                colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple for y=high
+
+                positions.push(Vec4::new(low, aa, bb, cc));
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white for x=low
+
+                positions.push(Vec4::new(high, aa, bb, cc));
+                colors.push(Color::from(Srgba::rgb_u8(0, 0, 0))); //black for x=high
             }
         }
     }
@@ -373,7 +392,7 @@ pub fn create_sphere_4d(radius: f32, number_per_side: usize) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub fn rotate_4d_xy(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_xy(point: Vec4, angle: f32) -> Vec4 {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
@@ -385,8 +404,7 @@ pub fn rotate_4d_xy(point: Vec4, angle: f32) -> Vec4 {
     )
 }
 
-// Rotates a point in 4D space around the XZ plane by a given angle.
-pub fn rotate_4d_xz(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_xz(point: Vec4, angle: f32) -> Vec4 {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
@@ -398,7 +416,7 @@ pub fn rotate_4d_xz(point: Vec4, angle: f32) -> Vec4 {
     )
 }
 
-pub fn rotate_4d_xw(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_xw(point: Vec4, angle: f32) -> Vec4 {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
@@ -410,8 +428,7 @@ pub fn rotate_4d_xw(point: Vec4, angle: f32) -> Vec4 {
     )
 }
 
-// Rotates a point in 4D space around the YZ plane by a given angle.
-pub fn rotate_4d_yz(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_yz(point: Vec4, angle: f32) -> Vec4 {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
@@ -423,8 +440,7 @@ pub fn rotate_4d_yz(point: Vec4, angle: f32) -> Vec4 {
     )
 }
 
-// Rotates a point in 4D space around the YW plane by a given angle.
-pub fn rotate_4d_yw(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_yw(point: Vec4, angle: f32) -> Vec4 {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
@@ -436,8 +452,7 @@ pub fn rotate_4d_yw(point: Vec4, angle: f32) -> Vec4 {
     )
 }
 
-// Rotates a point in 4D space around the ZW plane by a given angle.
-pub fn rotate_4d_zw(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_zw(point: Vec4, angle: f32) -> Vec4 {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
@@ -449,70 +464,3 @@ pub fn rotate_4d_zw(point: Vec4, angle: f32) -> Vec4 {
     )
 }
 
-/// transforms all atoms in the 4D scene.
-/// Currently, this function applies a simple rotation in 3D space, but you can replace it with any transformation you like (e.g., a 4D rotation).
-pub fn transform_scene(scene: &Scene4D, time: f32) -> Vec<Vec4> {
-    let mut new_positions = scene.atoms.positions.clone();
-
-    //local movements
-    let angle = time; // Rotation angle in radians
-
-    // cube3d
-    let cube_3d = &scene.objects[0];
-    let rotation_z_matrix = Mat3::from_rotation_z(angle); // Rotate around the Z-axis
-    let drag_matrix = cube_3d.drag_rotation(); // Get the drag rotation matrix for the 3D cube
-    for index in cube_3d.range() {
-        let position = &scene.atoms.positions[index];
-        let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
-        rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
-
-        new_positions[index] = Vec4::new(
-            rotated_position.x,
-            rotated_position.y,
-            rotated_position.z,
-            position.w,
-        );
-    }
-
-    // heart/cube3d (not rotated, only dragged)
-    let cube_3d = &scene.objects[1];
-    let drag_matrix = cube_3d.drag_rotation(); // Get the drag rotation matrix for the 3D cube
-    for index in cube_3d.range() {
-        let position = &scene.atoms.positions[index];
-        let rotated_position = drag_matrix * vec3(position.x, position.y, position.z); // Apply dragging transformation
-
-        new_positions[index] = Vec4::new(
-            rotated_position.x - 6.0,
-            rotated_position.y,
-            rotated_position.z,
-            position.w,
-        );
-    }
-
-    // cube4d
-    let cube_4d = &scene.objects[2];
-    let drag_matrix = cube_4d.drag_rotation(); // Get the drag rotation matrix for the 4D cube
-    for index in cube_4d.range() {
-        let position = &scene.atoms.positions[index];
-        let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
-        rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
-
-        new_positions[index] = Vec4::new(
-            rotated_position.x + 6.0,
-            rotated_position.y,
-            rotated_position.z,
-            position.w,
-        );
-    }
-
-    // 4D transformation of the whole scene
-    // applied on top of the local transformations above.
-    // This will create a more interesting animation as the atoms will move in and out of the 3D space we can see.
-    if scene.is_4d_view {
-        for position in &mut new_positions {
-            // Example of a simple 4D rotation around the XZ plane
-            *position = rotate_4d_xz(*position, angle / 4.0);
-        }
-    }
-    new_positions
-}

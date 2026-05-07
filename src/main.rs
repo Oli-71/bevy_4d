@@ -1,8 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    color::palettes::tailwind::*, picking::pointer::PointerInteraction,
-    prelude::*,
+    color::palettes::tailwind::*, math::VectorSpace, picking::pointer::PointerInteraction, prelude::*
 };
 
 mod scene4d;
@@ -55,20 +54,62 @@ fn setup_scene(
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
 
-    // cube to rotate and trigger 4d view
+    // gray control objects
+    // sphere to trigger 4d view
     commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::default())),
+            Mesh3d(meshes.add(Sphere::default())),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0.0, 5.0, 0.0).with_rotation(Quat::from_rotation_x(-PI / 4.)),
+            Transform::from_xyz(0.0, 5.0, 0.0),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(rotate_on_drag)
-        .observe(goto_4d_on_press);
+        .observe(toggle_4d_on_press);
+
+    // sphere to trigger projection view
+    commands
+        .spawn((
+            Mesh3d(meshes.add(Sphere::default())),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(3.0, 5.0, 0.0),
+            ControlShape,
+        ))
+        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(toggle_projection_on_press);
+    
+    // cube to rotate
+    commands
+        .spawn((
+            Mesh3d(meshes.add(Cuboid::default())),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(6.0, 5.0, 0.0),
+            ControlShape,
+        ))
+        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(rotate_on_drag);
+
+    // cube to adjust speed of 3d rotation
+    commands
+        .spawn((
+            Mesh3d(meshes.add(Cuboid::default())),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(6.0, -5.0, 0.0),
+            ControlShape,
+        ))
+        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(drag_to_adjust_speed);
     
     // 4d scene
     for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
@@ -86,7 +127,7 @@ fn setup_scene(
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10))),
         MeshMaterial3d(ground_matl.clone()),
-        Transform::from_translation(vec3(0., -5., 0.)),
+        Transform::from_translation(vec3(0., -6.0, 0.)),
         Pickable::IGNORE, // Disable picking for the ground plane.
         Ground,
     ));
@@ -106,12 +147,12 @@ fn setup_scene(
     // Camera
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0.0, 7., 14.0).looking_at(Vec3::new(0., 1., 0.), Vec3::Y),
+        Transform::from_xyz(0.0, 7., 14.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
     ));
 
     // Instructions
     commands.spawn((
-        Text::new("Hover over the shapes to pick them\nDrag to rotate"),
+        Text::new("Drag shapes to rotate.\nTouch gray sphere to toggle 3D/4D view points."),
         Node {
             position_type: PositionType::Absolute,
             top: px(12),
@@ -171,10 +212,38 @@ fn transform_scene_4d(
 }
 
 /// An observer to rotate an entity when it is dragged
-fn rotate_on_drag(drag: On<Pointer<Drag>>, mut transforms: Query<&mut Transform>) {
+fn rotate_on_drag(
+    drag: On<Pointer<Drag>>, 
+    mut transforms: Query<&mut Transform, Without<Camera3d>>, 
+    mut camera3ds: Query<&mut Transform, With<Camera3d>>,
+) {
     let mut transform = transforms.get_mut(drag.entity).unwrap();
-    transform.rotate_y(drag.delta.x * 0.02);
-    transform.rotate_x(drag.delta.y * 0.02);
+    transform.rotate_y(drag.delta.x * 0.01);
+    transform.rotate_x(drag.delta.y * 0.01);
+
+    // rotate the camera in the opposite direction to give a better view of the object being rotated
+    for mut camera_transform in &mut camera3ds {
+        let radius = 14.0;
+        let x = (drag.delta.x * 0.01).sin() * radius;
+        let y = (drag.delta.y * 0.01).cos() * radius;
+        
+        camera_transform.translation = Vec3::new(x, y, 14.);
+        camera_transform.look_at(Vec3::ZERO, Vec3::Y);
+    }
+}
+
+/// An observer to adjust the speed of 3D rotation in the 4D scene.
+fn drag_to_adjust_speed(
+    drag: On<Pointer<Drag>>, 
+    mut transforms: Query<&mut Transform>,
+) {
+    let mut transform = transforms.get_mut(drag.entity).unwrap();
+
+    let target = transform.translation.x + drag.delta.x * 0.05; // Adjust the multiplier to control sensitivity of speed adjustment
+    if (target > -9.0 && target < 9.0) {
+        transform.translation.x = target;
+    }
+    //todo: use the y drag delta to adjust speed of 3d rotation in scene4d, which is currently a fixed value. This will require adding a new resource for rotation speed and updating the transform_scene_4d system to use that speed instead of a fixed value.
 }
 
 /// An observer to rotate an Object4d entity.
@@ -189,8 +258,8 @@ fn rotate_object_on_drag(
     
 }
 
-/// An observer to trigger goto_4d when a ControlShape is pressed.
-fn goto_4d_on_press(
+/// An observer to trigger toggle_4d when the ControlShape is pressed.
+fn toggle_4d_on_press(
     _press: On<Pointer<Press>>,
     mut vis: Query<&mut Visibility , With<Ground>>,
     mut scene: ResMut<Scene>,
@@ -205,4 +274,12 @@ fn goto_4d_on_press(
             Visibility::Visible
         };
     }
+}
+
+/// An observer to trigger toggle_projection when the ControlShape is pressed.
+fn toggle_projection_on_press(
+    _press: On<Pointer<Press>>,
+    mut scene: ResMut<Scene>,
+) {
+    scene.scene_4d.toggle_projection_view();
 }

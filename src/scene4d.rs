@@ -8,9 +8,18 @@ pub struct Atoms4D {
     pub colors: Vec<Color>,
 }
 
+#[derive(PartialEq)]
+enum ObjectName {
+    Heart,
+    Cube3d,
+    Cube4d,
+    Cube4dEdges,
+}
+
 /// An object in the 4D scene, which consists of a sequence of atoms.
 /// The `start_index` and `number_of_atoms` fields specify which atoms belong to this object.
 struct Object4D {
+    name: ObjectName,
     start_index: usize,
     number_of_atoms: usize,
     drag: Vec2, //for dragging the object with the mouse.
@@ -33,12 +42,15 @@ pub struct Scene4D {
     is_projection_view: bool,
     is_4d_view: bool,
     start_time_4d: f32,
+    speed_3d_rotation: f32,
+    w_height: f32,
+    angle_4d: f32,
 }
 
 impl Scene4D {
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, so be careful with this number to avoid performance issues.
+        let number_per_side = 16; // Total atoms will be number_per_side^4, so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
         //empty scene
         let mut scene = Self {
@@ -51,21 +63,37 @@ impl Scene4D {
             is_4d_view: false,
             is_projection_view: false,
             start_time_4d: 0.0,
+            speed_3d_rotation: 0.4,
+            w_height: 0.0,
+            angle_4d: 0.0,
         };
         //add some objects to the scene.
         //0# object
-        scene.add_object(create_heart_3d(size_of_atom, number_per_side * 2));
+        scene.add_object(ObjectName::Heart, create_heart_3d(size_of_atom, number_per_side * 2));
 
         //1# object
-        scene.add_object(create_cube_3d(size_of_atom, number_per_side));
+        scene.add_object(ObjectName::Cube3d, create_cube_3d(size_of_atom, number_per_side));
 
         //2# object
-        scene.add_object(create_cube_4d_surface(size_of_atom, number_per_side));
+        scene.add_object(ObjectName::Cube4d, create_cube_4d_surface(size_of_atom, number_per_side));
 
         //3# object
-        scene.add_object(create_cube_4d_edges2(size_of_atom, number_per_side));
+        scene.add_object(ObjectName::Cube4dEdges, create_cube_4d_edges2(size_of_atom, number_per_side));
 
         scene
+    }
+
+    fn object(&self, name: ObjectName) -> Option<&Object4D> {
+        self.objects.iter().find(|&obj| obj.name == name).map(|v| v as _)
+    }
+
+    fn object_mut(&mut self, name: ObjectName) -> Option<&mut Object4D> {
+        for obj in &mut self.objects {
+            if obj.name == name {
+                return Some(obj);
+            }
+        }
+        None
     }
 
     pub fn is_atom_visible(&self, position: Vec4) -> bool {
@@ -85,8 +113,9 @@ impl Scene4D {
         }
     }
 
-    fn add_object(&mut self, new_atoms: Atoms4D) {
+    fn add_object(&mut self, name: ObjectName, new_atoms: Atoms4D) {
         self.objects.push(Object4D {
+            name,
             start_index: self.atoms.positions.len(),
             number_of_atoms: new_atoms.positions.len(),
             drag: Vec2::ZERO,
@@ -99,6 +128,9 @@ impl Scene4D {
         self.is_4d_view = !self.is_4d_view;
         if self.is_4d_view {
             self.start_time_4d = current_time;
+        }
+        else {
+            self.angle_4d = 0.0;
         }
     }
 
@@ -118,8 +150,20 @@ impl Scene4D {
         }
     }
 
+    pub fn adjust_3d_rotation_speed(&mut self, speed: f32) {
+        self.speed_3d_rotation = (speed).clamp(0.0, 1.0);
+    }
+
+    pub fn adjust_w_height(&mut self, w_height: f32) {
+        self.w_height = w_height.clamp(-3.0, 3.0);
+    }
+
+    pub fn get_angle_4d(& self) -> f32 {
+        self.angle_4d
+    }
+
     /// transforms all atoms in the 4D scene.
-    pub fn transform_scene(&self, time: f32) -> Vec<Vec4> {
+    pub fn transform_scene(&mut self, time: f32) -> Vec<Vec4> {
         let mut new_positions = self.atoms.positions.clone();
 
         //local movements
@@ -127,67 +171,71 @@ impl Scene4D {
         let offset = 2.5; // Distance to move the objects apart
 
         // 0#: heart/cube3d (not rotated, only dragged)
-        let object_0 = &self.objects[0];
-        let drag_matrix = object_0.drag_rotation(); // Get the drag rotation matrix for the left object
-        for index in object_0.range() {
-            let position = &self.atoms.positions[index];
-            let rotated_position = drag_matrix * vec3(position.x, position.y, position.z); // Apply dragging transformation
+        if let Some(heart) = self.object(ObjectName::Heart) {
+            let drag_matrix = heart.drag_rotation(); // Get the drag rotation matrix for the left object
+            for index in heart.range() {
+                let position = &self.atoms.positions[index];
+                let rotated_position = drag_matrix * vec3(position.x, position.y, position.z); // Apply dragging transformation
 
-            new_positions[index] = Vec4::new(
-                rotated_position.x - 3.0 * offset, // Move the heart/cube3d to the left
-                rotated_position.y,
-                rotated_position.z,
-                position.w,
-            );
+                new_positions[index] = Vec4::new(
+                    rotated_position.x - 3.0 * offset, // Move the heart/cube3d to the left
+                    rotated_position.y,
+                    rotated_position.z,
+                    position.w + self.w_height, // Adjust the w coordinate based on the w_height control
+                );
+            }
         }
 
+        let rotation_z_matrix = Mat3::from_rotation_z(self.speed_3d_rotation * angle); // Rotate around the Z-axis
         // 1#: cube3d
-        let object_1 = &self.objects[1];
-        let rotation_z_matrix = Mat3::from_rotation_z(angle); // Rotate around the Z-axis
-        let drag_matrix = object_1.drag_rotation(); // Get the drag rotation matrix for the 3D cube
-        for index in object_1.range() {
-            let position = &self.atoms.positions[index];
-            let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
-            rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
+        if let Some(cube3d) = self.object(ObjectName::Cube3d) {
+        let drag_matrix = cube3d.drag_rotation(); // Get the drag rotation matrix for the 3D cube
+        for index in cube3d.range() {
+                let position = &self.atoms.positions[index];
+                let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
+                rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
 
-            new_positions[index] = Vec4::new(
-                rotated_position.x - offset, // Move the cube3d to the left
-                rotated_position.y,
-                rotated_position.z,
-                position.w,
-            );
+                new_positions[index] = Vec4::new(
+                    rotated_position.x - offset, // Move the cube3d to the left
+                    rotated_position.y,
+                    rotated_position.z,
+                    position.w + self.w_height, // Adjust the w coordinate based on the w_height control
+                );
+            }
         }
 
+        let mut drag_matrix_cube4d = Mat3::default();
         // 2#: cube4d
-        let object_2 = &self.objects[2];
-        let drag_matrix = object_2.drag_rotation(); // Get the drag rotation matrix for the 4D cube
-        for index in object_2.range() {
-            let position = &self.atoms.positions[index];
-            let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
-            rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
+        if let Some(cube4d) = self.object(ObjectName::Cube4d) {
+            drag_matrix_cube4d = cube4d.drag_rotation(); // Get the drag rotation matrix for the 4D cube
+            for index in cube4d.range() {
+                let position = &self.atoms.positions[index];
+                let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
+                rotated_position = drag_matrix_cube4d * rotated_position; // Apply dragging transformation
 
-            new_positions[index] = Vec4::new(
-                rotated_position.x + offset, // Move the cube4d to the right
-                rotated_position.y,
-                rotated_position.z,
-                position.w,
-            );
+                new_positions[index] = Vec4::new(
+                    rotated_position.x + offset, // Move the cube4d to the right
+                    rotated_position.y,
+                    rotated_position.z,
+                    position.w + self.w_height, // Adjust the w coordinate based on the w_height control
+                );
+            }
         }
 
-        // 3#: cube4d_corners
-        let object_3 = &self.objects[3];
-        let drag_matrix = object_2.drag_rotation(); // Get the drag rotation matrix for the 4D cube
-        for index in object_3.range() {
-            let position = &self.atoms.positions[index];
-            let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
-            rotated_position = drag_matrix * rotated_position; // Apply dragging transformation
+        // 3#: cube4d edges
+        if let Some(cube4d_edges) = self.object(ObjectName::Cube4dEdges) {
+            for index in cube4d_edges.range() {
+                let position = &self.atoms.positions[index];
+                let mut rotated_position = rotation_z_matrix * vec3(position.x, position.y, position.z);
+                rotated_position = drag_matrix_cube4d * rotated_position; // Apply dragging transformation
 
-            new_positions[index] = Vec4::new(
-                rotated_position.x + 3.0 * offset, // Move the cube4d_corners to the right
-                rotated_position.y,
-                rotated_position.z,
-                position.w,
-            );
+                new_positions[index] = Vec4::new(
+                    rotated_position.x + 3.0 * offset, // Move the cube4d_corners to the right
+                    rotated_position.y,
+                    rotated_position.z,
+                    position.w + self.w_height, // Adjust the w coordinate based on the w_height control
+                );
+            }
         }
 
         // global movements
@@ -196,8 +244,10 @@ impl Scene4D {
         // Atoms will move in and out of the 3D space we can see.
         if self.is_4d_view() {
             for position in &mut new_positions {
-                //*position = rotate_4d_yw(*position, self.time_in_4d_view(time) / 4.0);
-                *position = rotate_4d_xz(*position, self.time_in_4d_view(time) / 4.0);
+                self.angle_4d = self.time_in_4d_view(time) / 4.0;
+                self.angle_4d = self.angle_4d.sin().asin();// clap to [0..pi/2]
+                //*position = rotate_4d_yw(*position, angle_4d);
+                *position = rotate_4d_xz(*position, self.angle_4d);
             }
         }
         new_positions

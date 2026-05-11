@@ -1,11 +1,20 @@
 use std::f32::consts::PI;
 
-use bevy::{
-    animation::transition, color::palettes::tailwind::*, ecs::system::command, math::VectorSpace, picking::pointer::PointerInteraction, prelude::*
+use bevy::{camera::{ScalingMode, SubCameraView, Viewport},
+    color::palettes::tailwind::*, picking::pointer::PointerInteraction, prelude::*
 };
 
 mod scene4d;
 use scene4d::*;
+mod smooth;
+
+const SCALE: f32 = 6.0; // global scaling to fit the standard screen
+
+const CAMERA_STANDARD_TARGET: Vec3 = vec3(0.,0.,0.);
+const CAMERA_STANDARD_POSITION: Vec3 = vec3(0.,70.,140.);
+const CAMERA_DOWN_POSITION: Vec3 = vec3(0.,0.,140.);
+
+
 
 fn main() {
     App::new()
@@ -21,6 +30,7 @@ fn main() {
                 draw_mesh_intersections,
                 transform_scene_4d,
                 monitor_scene_4d,
+                update_move_position_smooth,
             ),
         )
         .run();
@@ -58,7 +68,9 @@ fn setup_scene(
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
 
-    let size_of_controls = 0.2;
+    let size_of_controls = 0.2 * SCALE;
+    let y_control_top = 9. * SCALE;
+    let y_control_second = 8. * SCALE;
 
     // gray control objects
     // sphere to trigger 4d view
@@ -66,7 +78,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0.0, 5.0, 0.0),
+            Transform::from_xyz(0., y_control_top, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -75,12 +87,21 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(toggle_4d_on_press);
 
+    // Angle Monitor
+    commands
+        .spawn((
+            Mesh3d(meshes.add(Cone::new(size_of_controls,size_of_controls * 2.0))),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(0., y_control_top, 0.),
+            AngleMonitor,
+        ));
+
     // sphere to trigger projection view
     commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(3.0, 5.0, 0.0),
+            Transform::from_xyz(3.*SCALE, y_control_top, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -92,9 +113,9 @@ fn setup_scene(
     // cube to rotate
     commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::default())),
+            Mesh3d(meshes.add(Cuboid::new(SCALE,SCALE,SCALE))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(6.0, 5.0, 0.0),
+            Transform::from_xyz(6.*SCALE, y_control_top, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -104,12 +125,11 @@ fn setup_scene(
         .observe(rotate_on_drag);
 
     // slider to adjust speed of 3d rotation
-    let height = 4.0;
     commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0.0, height, 0.0),
+            Transform::from_xyz(0., y_control_second, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -120,17 +140,19 @@ fn setup_scene(
 
     commands
         .spawn((
-            Mesh3d(meshes.add(Segment3d::new(vec3(-3.,height,0.), vec3(3.,height,0.)))),
+            Mesh3d(meshes.add(Segment3d::new(
+                vec3(-3.*SCALE,y_control_second,0.),
+                vec3( 3.*SCALE,y_control_second,0.)))),
             MeshMaterial3d(white_matl.clone()),
         ));
 
     // slider to adjust w height
-    let left = -10.;
+    let left = -10.*SCALE;
     commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(left, 0.0, 0.0),
+            Transform::from_xyz(left, 5.*SCALE, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -142,8 +164,8 @@ fn setup_scene(
     commands
         .spawn((
             Mesh3d(meshes.add(Segment3d::new(
-                vec3(left,-3.,0.), 
-                vec3(left, 3.,0.)))),
+                vec3(left,2.*SCALE,0.), 
+                vec3(left, 8.*SCALE,0.)))),
             MeshMaterial3d(white_matl.clone()),
         ));
     
@@ -151,9 +173,9 @@ fn setup_scene(
     for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
             .spawn((
-                Mesh3d(meshes.add(Sphere::new(scene.scene_4d.size_of_atom * 0.8))),
+                Mesh3d(meshes.add(Sphere::new(scene.scene_4d.size_of_atom * 0.8 * SCALE))),
                 MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[index])),
-                Transform::from_translation(vec3(position.x, position.y, position.z)),
+                Transform::from_translation(vec3(position.x*SCALE, position.y*SCALE, position.z*SCALE)),
                 Atom { index }, // to identify these entities
             ))
             .observe(rotate_object_on_drag);
@@ -161,37 +183,41 @@ fn setup_scene(
 
     // Ground
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10))),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(200.0, 200.0).subdivisions(10))),
         MeshMaterial3d(ground_matl.clone()),
-        Transform::from_translation(vec3(0., -6.0, 0.)),
+        Transform::from_translation(vec3(0., -4.0*SCALE, 0.)),
         Pickable::IGNORE, // Disable picking for the ground plane.
         Ground,
-    ));
-
-    // Angle Monitor
-    commands.spawn((
-    Mesh3d(meshes.add(Cone::new(size_of_controls,size_of_controls * 2.0))),
-            MeshMaterial3d(white_matl.clone()),
-            Pickable::IGNORE, // Disable picking for the ground plane.
-            AngleMonitor,
     ));
 
     // Light
     commands.spawn((
         PointLight {
             shadows_enabled: true,
-            intensity: 10_000_000.,
-            range: 100.0,
+            intensity: 50_000_000.*SCALE,
+            range: 500.0*SCALE,
             shadow_depth_bias: 0.2,
             ..default()
         },
-        Transform::from_xyz(8.0, 16.0, 8.0),
+        Transform::from_xyz(8.0*SCALE, 16.0*SCALE, 8.0*SCALE),
     ));
 
+    let x = 16;
+    let y= 14;
     // Camera
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0.0, 7., 14.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
+        Camera { // lens shift for nice 2D world
+            sub_camera_view: Some(SubCameraView {
+                full_size: UVec2::new(x, y),
+                offset: Vec2::ZERO,
+                size: UVec2::new(x, y * 7 / 10),
+            }),
+            order: 3,
+            ..default()
+        },
+        Transform::from_translation(CAMERA_STANDARD_POSITION).looking_at(CAMERA_STANDARD_TARGET, Vec3::Y),
+        smooth::PositionTarget::new(CAMERA_STANDARD_POSITION),// can be moved smoothly
     ));
 
     // Instructions
@@ -247,7 +273,7 @@ fn transform_scene_4d(
     for (mut transform, mut visibility, atom_entity) in &mut query {
         let index = atom_entity.index;
         if let Some(position) = new_positions.get(index) {
-            transform.translation = vec3(position.x, position.y, position.z);
+            transform.translation = vec3(position.x*SCALE, position.y*SCALE, position.z*SCALE);
             *visibility = if scene.scene_4d.is_atom_visible(*position) {
                 Visibility::Visible
             } else {
@@ -257,6 +283,25 @@ fn transform_scene_4d(
     }
 }
 
+/// smooth: a system to smoothly move an entity (with PositionTarget component)
+fn update_move_position_smooth(
+    time: Res<Time>,
+    mut position_query: Query<(&mut smooth::PositionTarget, &mut Transform)>,
+) {
+    for (mut position, mut trafo) in &mut position_query {
+        // calculate the position motion based on the difference between where the object is
+        // and where it should be; the greater the distance, the faster the motion;
+        // smooth out the object movement using the frame time
+        if position.has_been_reached() {
+            continue;
+        }
+
+        let t = position.get_next_translation(trafo.translation,time.delta_secs());;
+        *trafo = trafo.looking_at(CAMERA_STANDARD_TARGET, Vec3::Y).with_translation(t);
+    }
+}
+
+/// a system to reflect the Scene4d state in the the general scene
 fn monitor_scene_4d(
     mut vis: Query<&mut Visibility , With<Ground>>,
     mut trafos: Query<&mut Transform , With<AngleMonitor>>,
@@ -274,7 +319,7 @@ fn monitor_scene_4d(
     // visualize 4D rotation
     for mut trafo in &mut trafos {
         *trafo = Transform::from_rotation(Quat::from_rotation_z(PI/2.0 + scene.scene_4d.get_angle_4d()));
-        trafo.translation = vec3(0., 5.0, 0.);
+        trafo.translation = vec3(0., 9.*SCALE, 0.);
     }
 }
 
@@ -282,20 +327,14 @@ fn monitor_scene_4d(
 fn rotate_on_drag(
     drag: On<Pointer<Drag>>, 
     mut transforms: Query<&mut Transform, Without<Camera3d>>, 
-    mut camera3ds: Query<&mut Transform, With<Camera3d>>,
+    mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
 ) {
     let mut transform = transforms.get_mut(drag.entity).unwrap();
     transform.rotate_y(drag.delta.x * 0.01);
     transform.rotate_x(drag.delta.y * 0.01);
 
-    // rotate the camera in the opposite direction to give a better view of the object being rotated
-    for mut camera_transform in &mut camera3ds {
-        let radius = 14.0;
-        let x = (drag.delta.x * 0.01).sin() * radius;
-        let y = (drag.delta.y * 0.01).cos() * radius;
-        
-        camera_transform.translation = Vec3::new(x, y, 14.);
-        camera_transform.look_at(Vec3::ZERO, Vec3::Y);
+    for mut camera in &mut camera3ds {
+        camera.set_target(CAMERA_DOWN_POSITION);
     }
 }
 
@@ -308,8 +347,8 @@ fn drag_to_adjust_speed(
     let mut transform = transforms.get_mut(drag.entity).unwrap();
 
     let sensitivity = 0.02;
-    let x = transform.translation.x + drag.delta.x * sensitivity;
-    let bound = 3.0; // Set a x coordinate bound for how far the control can be dragged
+    let x = transform.translation.x + drag.delta.x * SCALE * sensitivity;
+    let bound = 3.0*SCALE; // Set a x coordinate bound for how far the control can be dragged
     if (-bound..=bound).contains(&x) {
         transform.translation.x = x;
         // map x to 0..1
@@ -327,8 +366,8 @@ fn drag_to_adjust_w_height(
     let mut transform = transforms.get_mut(drag.entity).unwrap();
 
     let sensitivity = 0.02;
-    let y = transform.translation.y - drag.delta.y * sensitivity;
-    let bound = 3.0; // Set a y coordinate bound for how far the control can be dragged
+    let y = transform.translation.y - 5. - drag.delta.y * SCALE * sensitivity;
+    let bound = 3.0*SCALE; // Set a y coordinate bound for how far the control can be dragged
     if (-bound..=bound).contains(&y) {
         transform.translation.y = y;
 
@@ -344,8 +383,7 @@ fn rotate_object_on_drag(
 ) {
     // Update the drag state in the 4D scene based on the drag delta and the atom index
     let atom = atoms.get_mut(drag.entity).unwrap();
-    scene.scene_4d.drag_object_from_atom(atom.index, drag.delta); 
-    
+    scene.scene_4d.drag_object_from_atom(atom.index, drag.delta);
 }
 
 /// An observer to trigger toggle_4d when the ControlShape is pressed.

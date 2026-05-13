@@ -49,6 +49,8 @@ pub struct Scene4D {
     pub size_of_atom: f32,
     pub number_of_atoms_per_side: usize,
     objects: Vec<Object4D>,
+    objects_3d: Vec<usize>,
+    objects_2d: Vec<usize>,
     is_projection_view: bool,
     is_4d_view: bool,
     start_time_4d: f32,
@@ -61,7 +63,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 16; // Total atoms will be number_per_side^4, so be careful with this number to avoid performance issues.
+        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
         
         //empty scene
@@ -73,6 +75,8 @@ impl Scene4D {
             size_of_atom,
             number_of_atoms_per_side: number_per_side,
             objects: Vec::new(),
+            objects_3d: Vec::new(),
+            objects_2d: Vec::new(),
             is_4d_view: false,
             is_projection_view: false,
             start_time_4d: 0.0,
@@ -82,13 +86,16 @@ impl Scene4D {
         };
 
         //add some objects to the scene.
-        scene.add_object(ObjectName::Heart, create_heart_3d(size_of_atom, number_per_side * 2));
-        scene.add_object(ObjectName::Cube3d, create_cube_3d(size_of_atom, number_per_side));
-        scene.add_object(ObjectName::Cube4d, create_cube_4d_surface(size_of_atom, number_per_side));
-        scene.add_object(ObjectName::Cube4dEdges, create_cube_4d_edges2(size_of_atom, number_per_side));
-        scene.add_object(ObjectName::Circle, create_circle(size_of_atom, number_per_side));
-        scene.add_object(ObjectName::Square, create_square_surface(size_of_atom, number_per_side)); 
-        scene.add_object(ObjectName::Cube, create_cube_surface(size_of_atom, number_per_side ));
+        let heart_index = scene.add_object(ObjectName::Heart, create_heart_3d(size_of_atom, number_per_side * 2));
+        let cube3d_index = scene.add_object(ObjectName::Cube3d, create_cube_3d(size_of_atom, number_per_side));
+        let cube4d_index = scene.add_object(ObjectName::Cube4d, create_cube_4d_surface(size_of_atom, number_per_side));
+        let cube4d_edges_index = scene.add_object(ObjectName::Cube4dEdges, create_cube_4d_edges2(size_of_atom, number_per_side));
+        let circle_index = scene.add_object(ObjectName::Circle, create_circle(size_of_atom, number_per_side));
+        let square_index = scene.add_object(ObjectName::Square, create_square_surface(size_of_atom, number_per_side));
+        let cube_index = scene.add_object(ObjectName::Cube, create_cube_surface(size_of_atom, number_per_side));
+        
+        scene.objects_3d = vec![heart_index, cube3d_index, cube4d_index, cube4d_edges_index];
+        scene.objects_2d = vec![circle_index, square_index, cube_index];
 
         scene
     }
@@ -118,7 +125,8 @@ impl Scene4D {
         }
     }
 
-    fn add_object(&mut self, name: ObjectName, new_atoms: Atoms4D) {
+    fn add_object(&mut self, name: ObjectName, new_atoms: Atoms4D) -> usize {
+        let index = self.objects.len();
         self.objects.push(Object4D {
             name,
             start_index: self.atoms.positions.len(),
@@ -127,6 +135,7 @@ impl Scene4D {
         });
         self.atoms.positions.extend(new_atoms.positions);
         self.atoms.colors.extend(new_atoms.colors);
+        index
     }
 
     pub fn toggle_4d_view(&mut self, current_time: f32) {
@@ -145,6 +154,14 @@ impl Scene4D {
 
     pub fn is_4d_view(&self) -> bool {
         self.is_4d_view
+    }
+
+    fn objects_2d(&self) -> impl Iterator<Item = &Object4D> {
+        self.objects_2d.iter().map(move |&index| &self.objects[index])
+    }
+
+    fn objects_3d(&self) -> impl Iterator<Item = &Object4D> {
+        self.objects_3d.iter().map(move |&index| &self.objects[index])
     }
 
     fn time_in_4d_view(&self, current_time: f32) -> f32 {
@@ -175,12 +192,16 @@ impl Scene4D {
         let angle = time; // Rotation angle in radians
         let x_offset = 2.5; // Distance to move the objects apart
 
+        // standard 3D rotation (continuously)
+        let continuous_rotation_matrix = Mat3::from_rotation_y(self.speed_3d_rotation * angle); // Rotate around the Z-axis
+
         // heart (not rotated, only dragged)
         if let Some(heart) = self.object(ObjectName::Heart) {
-            let drag_matrix = heart.drag_rotation_xy(); 
+            let drag_matrix_xy = heart.drag_rotation_xy(); 
             for index in heart.range() {
                 let position = &self.atoms.positions[index];
-                let rotated_position = drag_matrix * vec3(position.x, position.y, position.z); // Apply dragging transformation
+                let mut rotated_position = continuous_rotation_matrix * vec3(position.x, position.y, position.z);
+                rotated_position = drag_matrix_xy * rotated_position; // Apply dragging transformation
 
                 new_positions[index] = Vec4::new(
                     rotated_position.x - 3.0 * x_offset, // Move the heart to the left
@@ -191,9 +212,6 @@ impl Scene4D {
             }
         }
 
-        // standard 3D rotation (continuously)
-        let continuous_rotation_matrix = Mat3::from_rotation_y(self.speed_3d_rotation * angle); // Rotate around the Z-axis
-        
         // cube3d
         if let Some(cube3d) = self.object(ObjectName::Cube3d) {
             let drag_matrix_xy = cube3d.drag_rotation_xy(); // Get the drag rotation matrix for the 3D cube
@@ -280,6 +298,7 @@ impl Scene4D {
             }
         }
 
+        // cube
         if let Some(cube) = self.object(ObjectName::Cube) {
             let drag_matrix_x = cube.drag_rotation_x(); // Get the drag rotation matrix for the 3D cube
             for index in cube.range() {
@@ -301,36 +320,26 @@ impl Scene4D {
         // applied on top of the local transformations above.
         // Atoms will move in and out of the 3D space we can see.
         if self.is_4d_view() {
-            for position in &mut new_positions {
-                self.angle_4d = self.time_in_4d_view(time) / 4.0;
-                self.angle_4d %= 2.0 * PI;// clap to [0..pi/2]
+            self.angle_4d = self.time_in_4d_view(time) / 4.0;
+            self.angle_4d %= 2.0 * PI;// clap to [0..pi/2]
 
-                // select a rotation:
-                *position = rotate_4d_xw(*position, self.angle_4d);
-                //*position = rotate_4d_xz(*position, self.angle_4d);
+            for object_2d in self.objects_2d() { 
+                for atom_index in object_2d.range() {
+                    new_positions[atom_index] = rotate_4d_xw(new_positions[atom_index], self.angle_4d);
+                }
             }
+            for object_3d in self.objects_3d() { 
+                for atom_index in object_3d.range() {
+                    new_positions[atom_index] = rotate_4d_xy(new_positions[atom_index], self.angle_4d);
+                }
+            }    
         }
 
-        // move top row upwards
+        // move top row (3D) upwards
         let y_offset = 2.0 * x_offset;
-        if let Some(cube4d_edges) = self.object(ObjectName::Heart) {
-            for index in cube4d_edges.range() {
-                new_positions[index].y += y_offset;
-            }
-        }
-        if let Some(cube4d_edges) = self.object(ObjectName::Cube3d) {
-            for index in cube4d_edges.range() {
-                new_positions[index].y += y_offset;
-            }
-        }
-        if let Some(cube4d_edges) = self.object(ObjectName::Cube4d) {
-            for index in cube4d_edges.range() {
-                new_positions[index].y += y_offset;
-            }
-        }
-        if let Some(cube4d_edges) = self.object(ObjectName::Cube4dEdges) {
-            for index in cube4d_edges.range() {
-                new_positions[index].y += y_offset;
+        for object_3d in self.objects_3d(){ 
+            for atom_index in object_3d.range() {
+                new_positions[atom_index].y += y_offset;
             }
         }
 

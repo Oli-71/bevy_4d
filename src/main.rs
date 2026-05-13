@@ -25,7 +25,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                draw_mesh_intersections,
+                //draw_mesh_intersections,
                 transform_scene_4d,
                 monitor_scene_4d,
                 update_move_position_smooth,
@@ -108,10 +108,10 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(toggle_projection_on_press);
     
-    // cube to rotate
+    // cube to rotate view
     commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::new(SCALE,SCALE,SCALE))),
+            Mesh3d(meshes.add(Cuboid::new(0.8*SCALE,0.8*SCALE,0.8*SCALE))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6.*SCALE, y_ctr_row1, 0.),
             ControlShape,
@@ -120,7 +120,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(rotate_on_drag);
+        .observe(rotate_global_view_on_drag);
 
     // slider to adjust speed of 3d rotation
     commands
@@ -362,7 +362,7 @@ fn monitor_scene_4d(
 }
 
 /// An observer to rotate an entity when it is dragged
-fn rotate_on_drag(
+fn rotate_global_view_on_drag(
     drag: On<Pointer<Drag>>, 
     mut transforms: Query<&mut Transform, Without<Camera3d>>, 
     mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
@@ -372,7 +372,7 @@ fn rotate_on_drag(
     transform.rotate_x(drag.delta.y * 0.01);
 
     for mut camera in &mut camera3ds {
-        if(drag.delta.y > 0.) {
+        if drag.delta.y > 0. {
             camera.set_target(CAMERA_SPACELAND_POSITION);
         } else {
             camera.set_target(CAMERA_FLATLAND_POSITION);

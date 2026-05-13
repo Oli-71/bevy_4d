@@ -11,10 +11,8 @@ mod smooth;
 const SCALE: f32 = 6.0; // global scaling to fit the standard screen
 
 const CAMERA_STANDARD_TARGET: Vec3 = vec3(0.,0.,0.);
-const CAMERA_STANDARD_POSITION: Vec3 = vec3(0.,70.,140.);
-const CAMERA_DOWN_POSITION: Vec3 = vec3(0.,0.,140.);
-
-
+const CAMERA_SPACELAND_POSITION: Vec3 = vec3(0.,70.,140.);
+const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0.,0.,140.);
 
 fn main() {
     App::new()
@@ -69,8 +67,8 @@ fn setup_scene(
     let pressed_matl = materials.add(Color::from(YELLOW_300));
 
     let size_of_controls = 0.2 * SCALE;
-    let y_control_top = 9. * SCALE;
-    let y_control_second = 8. * SCALE;
+    let y_ctr_row1 = 9. * SCALE;
+    let y_ctr_row2 = 8. * SCALE;
 
     // gray control objects
     // sphere to trigger 4d view
@@ -78,7 +76,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0., y_control_top, 0.),
+            Transform::from_xyz(0., y_ctr_row1, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -92,7 +90,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Cone::new(size_of_controls,size_of_controls * 2.0))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0., y_control_top, 0.),
+            Transform::from_xyz(0., y_ctr_row1, 0.),
             AngleMonitor,
         ));
 
@@ -101,7 +99,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(3.*SCALE, y_control_top, 0.),
+            Transform::from_xyz(3.*SCALE, y_ctr_row1, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -115,7 +113,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Cuboid::new(SCALE,SCALE,SCALE))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(6.*SCALE, y_control_top, 0.),
+            Transform::from_xyz(6.*SCALE, y_ctr_row1, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -129,7 +127,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0., y_control_second, 0.),
+            Transform::from_xyz(0., y_ctr_row2, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -141,8 +139,8 @@ fn setup_scene(
     commands
         .spawn((
             Mesh3d(meshes.add(Segment3d::new(
-                vec3(-3.*SCALE,y_control_second,0.),
-                vec3( 3.*SCALE,y_control_second,0.)))),
+                vec3(-3.*SCALE,y_ctr_row2,0.),
+                vec3( 3.*SCALE,y_ctr_row2,0.)))),
             MeshMaterial3d(white_matl.clone()),
         ));
 
@@ -169,7 +167,7 @@ fn setup_scene(
             MeshMaterial3d(white_matl.clone()),
         ));
     
-    // 4d scene
+    // 4D Scene
     for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
             .spawn((
@@ -182,10 +180,38 @@ fn setup_scene(
     }
 
     // Ground
+    let size_of_ground = 33. * SCALE;
+    let color = 200;
+    let offset_atom_thickness = scene.scene_4d.size_of_atom * 0.5 * SCALE;
+    let z_offset = scene.scene_4d.size_of_atom * 0.9 * SCALE * scene.scene_4d.number_of_atoms_per_side as f32;
+
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(200.0, 200.0).subdivisions(10))),
-        MeshMaterial3d(ground_matl.clone()),
-        Transform::from_translation(vec3(0., -4.0*SCALE, 0.)),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_ground, size_of_ground).subdivisions(10))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
+        Transform::from_translation(vec3(0., 0. + offset_atom_thickness, z_offset - size_of_ground / 2.)),
+        Pickable::IGNORE, // Disable picking for the ground plane.
+        Ground,
+    ));
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_ground, size_of_ground).subdivisions(10))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
+        Transform::from_translation(vec3(0., 0. - offset_atom_thickness, z_offset - size_of_ground / 2.)),
+        Pickable::IGNORE, // Disable picking for the ground plane.
+        Ground,
+    ));
+
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_ground, z_offset/2.5)))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
+        Transform::from_translation(vec3(0., 0. + z_offset/2.5+offset_atom_thickness, z_offset)),
+        Pickable::IGNORE, // Disable picking for the ground plane.
+        Ground,
+    ));
+
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_ground, z_offset/2.5)))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
+        Transform::from_translation(vec3(0., 0. - z_offset/2.5-offset_atom_thickness, z_offset)),
         Pickable::IGNORE, // Disable picking for the ground plane.
         Ground,
     ));
@@ -202,12 +228,24 @@ fn setup_scene(
         Transform::from_xyz(8.0*SCALE, 16.0*SCALE, 8.0*SCALE),
     ));
 
+    commands.spawn((
+        PointLight {
+            shadows_enabled: true,
+            intensity: 50_000_000.*SCALE,
+            range: 500.0*SCALE,
+            shadow_depth_bias: 0.2,
+            ..default()
+        },
+        Transform::from_xyz(8.0*SCALE, 0.0*SCALE, 8.0*SCALE),
+    ));
+
+    //size of window; only the ratio is important 
     let x = 16;
     let y= 14;
     // Camera
     commands.spawn((
         Camera3d::default(),
-        Camera { // lens shift for nice 2D world
+        Camera { // lens shift for nice flatland -> we look within the plane
             sub_camera_view: Some(SubCameraView {
                 full_size: UVec2::new(x, y),
                 offset: Vec2::ZERO,
@@ -216,8 +254,8 @@ fn setup_scene(
             order: 3,
             ..default()
         },
-        Transform::from_translation(CAMERA_STANDARD_POSITION).looking_at(CAMERA_STANDARD_TARGET, Vec3::Y),
-        smooth::PositionTarget::new(CAMERA_STANDARD_POSITION),// can be moved smoothly
+        Transform::from_translation(CAMERA_SPACELAND_POSITION).looking_at(CAMERA_STANDARD_TARGET, Vec3::Y),
+        smooth::PositionTarget::new(CAMERA_SPACELAND_POSITION),// can be moved smoothly
     ));
 
     // Instructions
@@ -283,7 +321,7 @@ fn transform_scene_4d(
     }
 }
 
-/// smooth: a system to smoothly move an entity (with PositionTarget component)
+/// smooth: A system to smoothly move an entity (with PositionTarget component)
 fn update_move_position_smooth(
     time: Res<Time>,
     mut position_query: Query<(&mut smooth::PositionTarget, &mut Transform)>,
@@ -301,20 +339,20 @@ fn update_move_position_smooth(
     }
 }
 
-/// a system to reflect the Scene4d state in the the general scene
+/// A system to reflect the Scene4d state in the the general scene
 fn monitor_scene_4d(
     mut vis: Query<&mut Visibility , With<Ground>>,
     mut trafos: Query<&mut Transform , With<AngleMonitor>>,
     scene: Res<Scene>,
 ) {
     // show ground if 4D rotation is Zero
-    for mut v in &mut vis {
+    /*for mut v in &mut vis {
         *v = if scene.scene_4d.get_angle_4d().abs() < 0.1 {
             Visibility::Visible
         } else {
             Visibility::Hidden
         };
-    }
+    }*/
 
     // visualize 4D rotation
     for mut trafo in &mut trafos {
@@ -334,7 +372,11 @@ fn rotate_on_drag(
     transform.rotate_x(drag.delta.y * 0.01);
 
     for mut camera in &mut camera3ds {
-        camera.set_target(CAMERA_DOWN_POSITION);
+        if(drag.delta.y > 0.) {
+            camera.set_target(CAMERA_SPACELAND_POSITION);
+        } else {
+            camera.set_target(CAMERA_FLATLAND_POSITION);
+        }
     }
 }
 

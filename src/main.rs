@@ -39,7 +39,10 @@ fn main() {
 struct ControlShape;
 
 #[derive(Component)]
-struct Ground;
+struct CoverPanel;
+
+#[derive(Component)]
+struct BackgroundPanel;
 
 #[derive(Component)]
 struct AngleMonitor;
@@ -179,41 +182,50 @@ fn setup_scene(
             .observe(rotate_object_on_drag);
     }
 
-    // Ground
-    let size_of_ground = 33. * SCALE;
+    // Cover Panel to hide invisible 3D-Space for flatland
+    let size_of_panel = 33. * SCALE;
     let color = 200;
     let offset_atom_thickness = scene.scene_4d.size_of_atom * 0.5 * SCALE;
     let z_offset = scene.scene_4d.size_of_atom * 0.9 * SCALE * scene.scene_4d.number_of_atoms_per_side as f32;
 
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_ground, size_of_ground).subdivisions(10))),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_panel, size_of_panel).subdivisions(10))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
-        Transform::from_translation(vec3(0., 0. + offset_atom_thickness, z_offset - size_of_ground / 2.)),
-        Pickable::IGNORE, // Disable picking for the ground plane.
-        Ground,
+        Transform::from_translation(vec3(0., 0. + offset_atom_thickness, z_offset - size_of_panel / 2.)),
+        Pickable::IGNORE, 
+        CoverPanel,
     ));
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_ground, size_of_ground).subdivisions(10))),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_panel, size_of_panel).subdivisions(10))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
-        Transform::from_translation(vec3(0., 0. - offset_atom_thickness, z_offset - size_of_ground / 2.)),
-        Pickable::IGNORE, // Disable picking for the ground plane.
-        Ground,
+        Transform::from_translation(vec3(0., 0. - offset_atom_thickness, z_offset - size_of_panel / 2.)),
+        Pickable::IGNORE, 
+        CoverPanel,
     ));
 
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_ground, z_offset/2.5)))),
+        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, z_offset/2.5)))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
         Transform::from_translation(vec3(0., 0. + z_offset/2.5+offset_atom_thickness, z_offset)),
-        Pickable::IGNORE, // Disable picking for the ground plane.
-        Ground,
+        Pickable::IGNORE, 
+        CoverPanel,
     ));
 
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_ground, z_offset/2.5)))),
+        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, z_offset/2.5)))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
         Transform::from_translation(vec3(0., 0. - z_offset/2.5-offset_atom_thickness, z_offset)),
-        Pickable::IGNORE, // Disable picking for the ground plane.
-        Ground,
+        Pickable::IGNORE, 
+        CoverPanel,
+    ));
+
+    // background panel
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, size_of_panel)))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(0,20,0,255))),
+        Transform::from_translation(vec3(0., 0., - 5.0 * z_offset)),
+        Pickable::IGNORE,
+        BackgroundPanel,
     ));
 
     // Light
@@ -341,18 +353,19 @@ fn update_move_position_smooth(
 
 /// A system to reflect the Scene4d state in the the general scene
 fn monitor_scene_4d(
-    mut vis: Query<&mut Visibility , With<Ground>>,
+    mut vis: Query<&mut Visibility , With<BackgroundPanel>>,
     mut trafos: Query<&mut Transform , With<AngleMonitor>>,
     scene: Res<Scene>,
 ) {
-    // show ground if 4D rotation is Zero
-    /*for mut v in &mut vis {
-        *v = if scene.scene_4d.get_angle_4d().abs() < 0.1 {
+    // show background if 4D rotation is Zero
+    for mut v in &mut vis {
+        let angle = scene.scene_4d.get_angle_4d().abs();
+        *v = if angle < 0.2 || (PI - angle).abs() < 0.2 {
             Visibility::Visible
         } else {
             Visibility::Hidden
         };
-    }*/
+    }
 
     // visualize 4D rotation
     for mut trafo in &mut trafos {

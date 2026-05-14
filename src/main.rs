@@ -1,6 +1,11 @@
 use std::f32::consts::PI;
 
-use bevy::{camera::{self, ScalingMode, SubCameraView, Viewport}, color::palettes::tailwind::*, light::{NotShadowCaster, NotShadowReceiver}, picking::pointer::PointerInteraction, prelude::*
+use bevy::{
+    camera::{self, ScalingMode, SubCameraView, Viewport},
+    color::palettes::tailwind::*,
+    light::{NotShadowCaster, NotShadowReceiver},
+    picking::pointer::PointerInteraction,
+    prelude::*,
 };
 
 mod scene4d;
@@ -9,9 +14,9 @@ mod smooth;
 
 const SCALE: f32 = 6.0; // global scaling to fit the standard screen
 
-const CAMERA_STANDARD_TARGET: Vec3 = vec3(0.,0.,0.);
-const CAMERA_SPACELAND_POSITION: Vec3 = vec3(0.,70.,140.);
-const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0.,0.,140.);
+const CAMERA_STANDARD_TARGET: Vec3 = vec3(0., 0., 0.);
+const CAMERA_SPACELAND_POSITION: Vec3 = vec3(0., 70., 140.);
+const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0., 0., 140.);
 
 fn main() {
     App::new()
@@ -45,8 +50,9 @@ struct CoverPanel;
 struct BackgroundPanel;
 
 #[derive(Component)]
-struct ExampleLabel {
+struct Label {
     entity: Entity,
+    offset_y: f32, // an offset to position the label above the entity
 }
 
 #[derive(Component)]
@@ -94,35 +100,35 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(toggle_4d_on_press);
 
-    // Angle Monitor
-    commands
-        .spawn((
-            Mesh3d(meshes.add(Cone::new(size_of_controls,size_of_controls * 2.0))),
-            MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0., y_ctr_row1, 0.),
-            AngleMonitor,
-        ));
+    // Angle Monitor Cone
+    let angle_monitor_entity = commands.spawn((
+        Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
+        MeshMaterial3d(white_matl.clone()),
+        Transform::from_xyz(0., y_ctr_row1, 0.),
+        AngleMonitor,
+    )).id();
 
     // sphere to trigger projection view
-    commands
+    let projection_control_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(3.*SCALE, y_ctr_row1, 0.),
+            Transform::from_xyz(3. * SCALE, y_ctr_row1, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(toggle_projection_on_press);
-    
+        .observe(toggle_projection_on_press)
+        .id();
+
     // cube to rotate view
-    let xxx = commands
+    let view_control_entity = commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::new(0.8*SCALE,0.8*SCALE,0.8*SCALE))),
+            Mesh3d(meshes.add(Cuboid::new(0.8 * SCALE, 0.8 * SCALE, 0.8 * SCALE))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(6.*SCALE, y_ctr_row1, 0.),
+            Transform::from_xyz(6. * SCALE, y_ctr_row1, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -133,7 +139,7 @@ fn setup_scene(
         .id();
 
     // slider to adjust speed of 3d rotation
-    commands
+    let slider_3d_rotation_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
@@ -144,23 +150,24 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(drag_to_adjust_speed);
+        .observe(drag_to_adjust_speed)
+        .id();
 
-    commands
-        .spawn((
-            Mesh3d(meshes.add(Segment3d::new(
-                vec3(-3.*SCALE,y_ctr_row2,0.),
-                vec3( 3.*SCALE,y_ctr_row2,0.)))),
-            MeshMaterial3d(white_matl.clone()),
-        ));
+    commands.spawn((
+        Mesh3d(meshes.add(Segment3d::new(
+            vec3(-3. * SCALE, y_ctr_row2, 0.),
+            vec3(3. * SCALE, y_ctr_row2, 0.),
+        ))),
+        MeshMaterial3d(white_matl.clone()),
+    ));
 
     // slider to adjust w height
-    let left = -10.*SCALE;
+    let left = -10. * SCALE;
     commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(left, 5.*SCALE, 0.),
+            Transform::from_xyz(left, 5. * SCALE, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -169,72 +176,141 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(drag_to_adjust_w_height);
 
-    commands
-        .spawn((
-            Mesh3d(meshes.add(Segment3d::new(
-                vec3(left,2.*SCALE,0.), 
-                vec3(left, 8.*SCALE,0.)))),
-            MeshMaterial3d(white_matl.clone()),
-        ));
-    
+    commands.spawn((
+        Mesh3d(meshes.add(Segment3d::new(
+            vec3(left, 2. * SCALE, 0.),
+            vec3(left, 8. * SCALE, 0.),
+        ))),
+        MeshMaterial3d(white_matl.clone()),
+    ));
+
     // 4D Scene
     for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
             .spawn((
                 Mesh3d(meshes.add(Sphere::new(scene.scene_4d.size_of_atom * 0.8 * SCALE))),
                 MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[index])),
-                Transform::from_translation(vec3(position.x*SCALE, position.y*SCALE, position.z*SCALE)),
+                Transform::from_translation(vec3(
+                    position.x * SCALE,
+                    position.y * SCALE,
+                    position.z * SCALE,
+                )),
                 Atom { index }, // to identify these entities
             ))
             .observe(rotate_object_on_drag);
     }
 
     // Cover Panel to hide invisible 3D-Space for flatland
-    let size_of_panel = 33. * SCALE;
+    let size_of_panel = 30. * SCALE;
     let color = 200;
     let offset_atom_thickness = scene.scene_4d.size_of_atom * 0.5 * SCALE;
-    let z_offset = scene.scene_4d.size_of_atom * 0.9 * SCALE * scene.scene_4d.number_of_atoms_per_side as f32;
+    let z_offset =
+        scene.scene_4d.size_of_atom * 1.1 * SCALE * scene.scene_4d.number_of_atoms_per_side as f32;
 
+    // top horizontal panel 
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_panel, size_of_panel).subdivisions(10))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
-        Transform::from_translation(vec3(0., 0. + offset_atom_thickness, z_offset - size_of_panel / 2.)),
-        Pickable::IGNORE,
-        NotShadowReceiver,
-        CoverPanel,
-    ));
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_panel, size_of_panel).subdivisions(10))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
-        Transform::from_translation(vec3(0., 0. - offset_atom_thickness, z_offset - size_of_panel / 2.)),
-        Pickable::IGNORE,
-        NotShadowReceiver,
-        CoverPanel,
-    ));
-
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, z_offset/2.5)))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
-        Transform::from_translation(vec3(0., 0. + z_offset/2.5+offset_atom_thickness, z_offset)),
-        Pickable::IGNORE,
-        NotShadowReceiver,
-        CoverPanel,
-    ));
-
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, z_offset/2.5)))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
-        Transform::from_translation(vec3(0., 0. - z_offset/2.5-offset_atom_thickness, z_offset)),
+        Mesh3d(
+            meshes.add(
+                Plane3d::default()
+                    .mesh()
+                    .size(size_of_panel, size_of_panel)
+                    .subdivisions(10),
+            ),
+        ),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
+        Transform::from_translation(vec3(
+            0.,
+            0. + offset_atom_thickness,
+            z_offset - size_of_panel / 2.,
+        )),
         Pickable::IGNORE,
         NotShadowReceiver,
         CoverPanel,
     ));
 
-    // background panel
+    // bottom horizontal panel
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, size_of_panel)))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(80,80,0,255))),
-        Transform::from_translation(vec3(0., 0., - 5.0 * z_offset)),
+        Mesh3d(
+            meshes.add(
+                Plane3d::default()
+                    .mesh()
+                    .size(size_of_panel, size_of_panel)
+                    .subdivisions(10),
+            ),
+        ),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
+        Transform::from_translation(vec3(
+            0.,
+            0. - offset_atom_thickness,
+            z_offset - size_of_panel / 2.,
+        )),
+        Pickable::IGNORE,
+        NotShadowReceiver,
+        CoverPanel,
+    ));
+
+    let y_size = z_offset / 2.9;
+    // vertical top panel
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(
+            vec3(0., 0., 1.),
+            vec2(size_of_panel, y_size),
+        ))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
+        Transform::from_translation(vec3(
+            0.,
+            0. + y_size + offset_atom_thickness,
+            z_offset,
+        )),
+        Pickable::IGNORE,
+        NotShadowReceiver,
+        CoverPanel,
+    ));
+
+    // vertical bottom panel
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(
+            vec3(0., 0., 1.),
+            vec2(size_of_panel, y_size),
+        ))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
+        Transform::from_translation(vec3(
+            0.,
+            0. - y_size - offset_atom_thickness,
+            z_offset,
+        )),
+        Pickable::IGNORE,
+        NotShadowReceiver,
+        CoverPanel,
+    ));
+
+    // Flatland Indicator Lines
+    let flatland_top_line_entity = spawn_thick_line(
+        vec3(- size_of_panel / 2., offset_atom_thickness, z_offset),
+        vec3( size_of_panel / 2., offset_atom_thickness, z_offset),
+        0.02 * SCALE,
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+    );
+    
+    let _flatland_bottom_line_entity = spawn_thick_line(
+        vec3(- size_of_panel / 2., - offset_atom_thickness, z_offset),
+        vec3( size_of_panel / 2., - offset_atom_thickness, z_offset),
+        0.02 * SCALE,
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+    );
+
+    // Background Panel
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(
+            vec3(0., 0., 1.),
+            vec2(size_of_panel, size_of_panel),
+        ))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(80, 80, 0, 255))),
+        Transform::from_translation(vec3(0., 0., -5.0 * z_offset)),
         Pickable::IGNORE,
         NotShadowReceiver,
         BackgroundPanel,
@@ -244,32 +320,33 @@ fn setup_scene(
     commands.spawn((
         PointLight {
             shadows_enabled: true,
-            intensity: 50_000_000.*SCALE,
-            range: 500.0*SCALE,
+            intensity: 50_000_000. * SCALE,
+            range: 500.0 * SCALE,
             shadow_depth_bias: 0.2,
             ..default()
         },
-        Transform::from_xyz(8.0*SCALE, 16.0*SCALE, 8.0*SCALE),
+        Transform::from_xyz(8.0 * SCALE, 16.0 * SCALE, 8.0 * SCALE),
     ));
 
     commands.spawn((
         PointLight {
             shadows_enabled: true,
-            intensity: 50_000_000.*SCALE,
-            range: 500.0*SCALE,
+            intensity: 50_000_000. * SCALE,
+            range: 500.0 * SCALE,
             ..default()
         },
         NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
-        Transform::from_xyz(8.0*SCALE, 0.0*SCALE, 8.0*SCALE),
+        Transform::from_xyz(8.0 * SCALE, 0.0 * SCALE, 8.0 * SCALE),
     ));
 
-    //size of window; only the ratio is important 
-    let x = 16;
-    let y= 14;
     // Camera
+    // size of window; only the ratio is important
+    let x = 16;
+    let y = 14;
     commands.spawn((
         Camera3d::default(),
-        Camera { // lens shift for nice flatland -> we look within the plane
+        Camera {
+            // lens shift for nice flatland -> we look within the plane
             sub_camera_view: Some(SubCameraView {
                 full_size: UVec2::new(x, y),
                 offset: Vec2::ZERO,
@@ -278,38 +355,29 @@ fn setup_scene(
             order: 3,
             ..default()
         },
-        Transform::from_translation(CAMERA_SPACELAND_POSITION).looking_at(CAMERA_STANDARD_TARGET, Vec3::Y),
-        smooth::PositionTarget::new(CAMERA_SPACELAND_POSITION),// can be moved smoothly
+        Transform::from_translation(CAMERA_FLATLAND_POSITION)
+            .looking_at(CAMERA_STANDARD_TARGET, Vec3::Y),
+        smooth::PositionTarget::new(CAMERA_FLATLAND_POSITION), // can be moved smoothly
     ));
 
-    // Instructions
-    /*
-    commands.spawn((
-        Text::new("Two 3D Objects and one 4D Hyper Cube."),
-        Node {
-            position_type: PositionType::Absolute,
-            top: px(12),
-            left: px(12),
-            ..default()
-        },
-    ));
-    */
-
-    // labels
+    // Text Labels
     let text_style = TextFont {
         font: asset_server.load("fonts/CenturyGothicPaneuropeanThin.ttf"),
         ..default()
     };
 
-    let label_text_style = (text_style.clone(), TextColor(Color::srgb_u8(100,200,200)));
+    let label_text_style = (text_style.clone(), TextColor(Color::srgb_u8(200, 200, 200)));
 
-    let mut label = |entity: Entity, label: &str| {
+    // A helper closure to add labels to the control objects.
+    // We use a closure here to avoid repeating the same code for each label,
+    // since they all have the same structure (a parent node with absolute positioning and a child text node with the label).
+    let mut add_label = |entity: Entity, label: &str, offset: f32| {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 ..default()
             },
-            ExampleLabel { entity },
+            Label { entity, offset_y: offset },
             children![(
                 Text::new(label),
                 label_text_style.clone(),
@@ -323,8 +391,61 @@ fn setup_scene(
         ));
     };
 
-    label(xxx, "_____Control View Point");
+    add_label(angle_monitor_entity, "___High Dimension", 0.9);
+    add_label(projection_control_entity, "___Projection", 0.9);
+    add_label(view_control_entity, "_______View Point", -3.0);
+    add_label(slider_3d_rotation_entity, "___Rotation Speed", 0.9);
+    add_label(flatland_top_line_entity, "Flatland", 0.0);
+
+    // Instructions
+    commands.spawn((
+        Text::new("Spaceland (3D) and Flatland (2D)"),
+        Node {
+            position_type: PositionType::Absolute,
+            top: px(12),
+            left: px(12),
+            ..default()
+        },
+    ));
 }
+
+/// A helper function to spawn a thick line between two points using a cylinder mesh.
+fn spawn_thick_line(
+    start: Vec3,
+    end: Vec3,
+    thickness: f32,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) -> Entity {
+    let direction = end - start;
+    let length = direction.length();
+    
+    // Zylinder ausrichten: In Bevy ist der Zylinder standardmäßig Y-Up.
+    // Wir müssen ihn drehen, damit er zwischen Start und Ende passt.
+    let rotation = Quat::from_rotation_arc(Vec3::Y, direction.normalize());
+
+    commands.spawn((
+        Mesh3d(meshes.add(Cylinder::new(thickness, length))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 200))),
+        Transform::from_translation(start + direction / 2.0)
+            .with_rotation(rotation),
+    )).id()
+}
+
+/*
+ // Background Panel
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(
+            vec3(0., 0., 1.),
+            vec2(size_of_panel, size_of_panel),
+        ))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(80, 80, 0, 255))),
+        Transform::from_translation(vec3(0., 0., -5.0 * z_offset)),
+        Pickable::IGNORE,
+        NotShadowReceiver,
+        BackgroundPanel,
+    )); */
 
 /// Returns an observer that updates the entity's material to the one specified.
 fn update_material_on<E: EntityEvent>(
@@ -365,7 +486,8 @@ fn transform_scene_4d(
     for (mut transform, mut visibility, atom_entity) in &mut query {
         let index = atom_entity.index;
         if let Some(position) = new_positions.get(index) {
-            transform.translation = vec3(position.x*SCALE, position.y*SCALE, position.z*SCALE);
+            transform.translation =
+                vec3(position.x * SCALE, position.y * SCALE, position.z * SCALE);
             *visibility = if scene.scene_4d.is_atom_visible(*position) {
                 Visibility::Visible
             } else {
@@ -388,35 +510,30 @@ fn update_move_position_smooth(
             continue;
         }
 
-        let t = position.get_next_translation(trafo.translation,time.delta_secs());
-        *trafo = trafo.looking_at(CAMERA_STANDARD_TARGET, Vec3::Y).with_translation(t);
+        let t = position.get_next_translation(trafo.translation, time.delta_secs());
+        *trafo = trafo
+            .looking_at(CAMERA_STANDARD_TARGET, Vec3::Y)
+            .with_translation(t);
     }
 }
 
+/// A system to update label positions and orientations 
+/// based on the position of the camera and the labeled entities
 fn update_labels(
     labeled: Query<&GlobalTransform>,
-    mut labels: Query<(&mut Node, &ExampleLabel)>,
-    camera: Single<
-        (
-            Entity,
-            &mut Camera,
-            &mut Transform,
-            &GlobalTransform,
-        ),
-        With<Camera3d>,
-    >,
+    mut labels: Query<(&mut Node, &Label)>,
+    camera3d: Single<( &mut Camera, &GlobalTransform), With<Camera3d>>,
 ) {
-    // update label positions
-    //let (entity, camera, mut camera_transform, camera_global_transform, hdr) = camera.into_inner();
-    let camera_global_transform = camera.3;
+    let (camera, camera_global_transform) = camera3d.into_inner();
 
     for (mut node, label) in &mut labels {
-        let world_position = labeled.get(label.entity).unwrap().translation() + Vec3::Y;
+        let world_position = labeled.get(label.entity).unwrap().translation() + label.offset_y * Vec3::Y;
 
-        let viewport_position = camera.1
+        let viewport_position = camera
             .world_to_viewport(camera_global_transform, world_position)
             .unwrap();
 
+        // position the label's node in the viewport based on the world position of the labeled entity
         node.top = px(viewport_position.y);
         node.left = px(viewport_position.x);
     }
@@ -424,14 +541,14 @@ fn update_labels(
 
 /// A system to reflect the Scene4d state in the the general scene
 fn monitor_scene_4d(
-    mut vis: Query<&mut Visibility , With<BackgroundPanel>>,
-    mut trafos: Query<&mut Transform , With<AngleMonitor>>,
+    mut visibilities: Query<&mut Visibility, With<BackgroundPanel>>,
+    mut trafos: Query<&mut Transform, With<AngleMonitor>>,
     scene: Res<Scene>,
 ) {
     // show background if 4D rotation is Zero
-    for mut v in &mut vis {
+    for mut visibility in &mut visibilities {
         let angle = scene.scene_4d.get_angle_high_dimension().abs();
-        *v = if angle < 0.2 || (PI - angle).abs() < 0.2 {
+        *visibility = if angle < 0.2 || (PI - angle).abs() < 0.2 {
             Visibility::Visible
         } else {
             Visibility::Hidden
@@ -440,15 +557,17 @@ fn monitor_scene_4d(
 
     // visualize 4D rotation
     for mut trafo in &mut trafos {
-        *trafo = Transform::from_rotation(Quat::from_rotation_z(PI/2.0 + scene.scene_4d.get_angle_high_dimension()));
-        trafo.translation = vec3(0., 9.*SCALE, 0.);
+        *trafo = Transform::from_rotation(Quat::from_rotation_z(
+            PI / 2.0 + scene.scene_4d.get_angle_high_dimension(),
+        ));
+        trafo.translation = vec3(0., 9. * SCALE, 0.);
     }
 }
 
 /// An observer to rotate an entity when it is dragged
 fn rotate_global_view_on_drag(
-    drag: On<Pointer<Drag>>, 
-    mut transforms: Query<&mut Transform, Without<Camera3d>>, 
+    drag: On<Pointer<Drag>>,
+    mut transforms: Query<&mut Transform, Without<Camera3d>>,
     mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
 ) {
     let mut transform = transforms.get_mut(drag.entity).unwrap();
@@ -466,7 +585,7 @@ fn rotate_global_view_on_drag(
 
 /// An observer to adjust the speed of 3D rotation in the 4D scene.
 fn drag_to_adjust_speed(
-    drag: On<Pointer<Drag>>, 
+    drag: On<Pointer<Drag>>,
     mut transforms: Query<&mut Transform>,
     mut scene: ResMut<Scene>,
 ) {
@@ -474,7 +593,7 @@ fn drag_to_adjust_speed(
 
     let sensitivity = 0.02;
     let x = transform.translation.x + drag.delta.x * SCALE * sensitivity;
-    let bound = 3.0*SCALE; // Set a x coordinate bound for how far the control can be dragged
+    let bound = 3.0 * SCALE; // Set a x coordinate bound for how far the control can be dragged
     if (-bound..=bound).contains(&x) {
         transform.translation.x = x;
         // map x to 0..1
@@ -485,7 +604,7 @@ fn drag_to_adjust_speed(
 
 /// An observer to adjust the w height in the 4D scene.
 fn drag_to_adjust_w_height(
-    drag: On<Pointer<Drag>>, 
+    drag: On<Pointer<Drag>>,
     mut transforms: Query<&mut Transform>,
     mut scene: ResMut<Scene>,
 ) {
@@ -493,11 +612,11 @@ fn drag_to_adjust_w_height(
 
     let sensitivity = 0.02;
     let y = transform.translation.y - 5. - drag.delta.y * SCALE * sensitivity;
-    let bound = 3.0*SCALE; // Set a y coordinate bound for how far the control can be dragged
+    let bound = 3.0 * SCALE; // Set a y coordinate bound for how far the control can be dragged
     if (-bound..=bound).contains(&y) {
         transform.translation.y = y;
 
-        scene.scene_4d.adjust_w_height(-y/2.);
+        scene.scene_4d.adjust_w_height(-y / 2.);
     }
 }
 
@@ -513,18 +632,13 @@ fn rotate_object_on_drag(
 }
 
 /// An observer to trigger toggle_4d when the ControlShape is pressed.
-fn toggle_4d_on_press(
-    _press: On<Pointer<Press>>,
-    mut scene: ResMut<Scene>,
-    time: Res<Time>,
-) {
-    scene.scene_4d.toggle_high_dimension_view(time.elapsed_secs());
+fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time: Res<Time>) {
+    scene
+        .scene_4d
+        .toggle_high_dimension_view(time.elapsed_secs());
 }
 
 /// An observer to trigger toggle_projection when the ControlShape is pressed.
-fn toggle_projection_on_press(
-    _press: On<Pointer<Press>>,
-    mut scene: ResMut<Scene>,
-) {
+fn toggle_projection_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>) {
     scene.scene_4d.toggle_projection_view();
 }

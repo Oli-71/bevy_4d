@@ -10,23 +10,9 @@ pub struct Atoms4D {
     pub colors: Vec<Color>,
 }
 
-/// Object4D's names for save access
-#[derive(PartialEq)]
-enum ObjectName {
-    Heart,
-    Cube3d,
-    Cube4d,
-    Cube4dEdges,
-    Circle,
-    Square,
-    Cube,
-    CubeEdges,
-}
-
 /// An object in the 4D scene, which consists of a sequence of atoms.
 /// The `start_index` and `number_of_atoms` fields specify which atoms belong to this object.
 struct Object4D {
-    name: ObjectName,
     start_index: usize, // in Atoms4d
     number_of_atoms: usize,
     drag: Vec2, //for dragging the object with the mouse.
@@ -87,27 +73,19 @@ impl Scene4D {
         };
 
         //add some objects to the scene.
-        let heart_index = scene.add_object(ObjectName::Heart, create_heart_3d(size_of_atom, number_per_side * 2));
-        let cube3d_index = scene.add_object(ObjectName::Cube3d, create_cube_3d(size_of_atom, number_per_side));
-        let cube4d_index = scene.add_object(ObjectName::Cube4d, create_cube_4d_surface(size_of_atom, number_per_side));
-        let cube4d_edges_index = scene.add_object(ObjectName::Cube4dEdges, create_cube_4d_edges(size_of_atom, number_per_side));
-        let circle_index = scene.add_object(ObjectName::Circle, create_circle(size_of_atom, number_per_side));
-        let square_index = scene.add_object(ObjectName::Square, create_square_surface(size_of_atom, number_per_side));
-        let cube_index = scene.add_object(ObjectName::Cube, create_cube_surface(size_of_atom, number_per_side));
-        let cube_edges_index = scene.add_object(ObjectName::CubeEdges, create_cube_edges(size_of_atom, number_per_side));
+        let heart_index = scene.add_object(create_heart_3d(size_of_atom, number_per_side * 2));
+        let cube3d_index = scene.add_object(create_cube_3d(size_of_atom, number_per_side));
+        let cube4d_index = scene.add_object(create_cube_4d_surface(size_of_atom, number_per_side));
+        let cube4d_edges_index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
+        let circle_index = scene.add_object(create_circle(size_of_atom, number_per_side));
+        let square_index = scene.add_object(create_square_surface(size_of_atom, number_per_side));
+        let cube_index = scene.add_object(create_cube_surface(size_of_atom, number_per_side));
+        let cube_edges_index = scene.add_object(create_cube_edges(size_of_atom, number_per_side));
         
         scene.objects_3d = vec![heart_index, cube3d_index, cube4d_index, cube4d_edges_index];
         scene.objects_2d = vec![circle_index, square_index, cube_index, cube_edges_index];
 
         scene
-    }
-
-    fn object(&self, name: ObjectName) -> Option<&Object4D> {
-        self.objects.iter().find(|&obj| obj.name == name).map(|v| v as _)
-    }
-
-    fn object_mut(&mut self, name: ObjectName) -> Option<&mut Object4D> {
-        self.objects.iter_mut().find(|obj| obj.name == name).map(|v| v as _)
     }
 
     pub fn is_atom_visible(&self, position: Vec4) -> bool {
@@ -124,10 +102,9 @@ impl Scene4D {
         }
     }
 
-    fn add_object(&mut self, name: ObjectName, new_atoms: Atoms4D) -> usize {
+    fn add_object(&mut self, new_atoms: Atoms4D) -> usize {
         let index = self.objects.len();
         self.objects.push(Object4D {
-            name,
             start_index: self.atoms.positions.len(),
             number_of_atoms: new_atoms.positions.len(),
             drag: Vec2::ZERO,

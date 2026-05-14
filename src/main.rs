@@ -193,14 +193,16 @@ fn setup_scene(
         Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_panel, size_of_panel).subdivisions(10))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
         Transform::from_translation(vec3(0., 0. + offset_atom_thickness, z_offset - size_of_panel / 2.)),
-        Pickable::IGNORE, 
+        Pickable::IGNORE,
+        NotShadowReceiver,
         CoverPanel,
     ));
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::default().mesh().size(size_of_panel, size_of_panel).subdivisions(10))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,200))),
         Transform::from_translation(vec3(0., 0. - offset_atom_thickness, z_offset - size_of_panel / 2.)),
-        Pickable::IGNORE, 
+        Pickable::IGNORE,
+        NotShadowReceiver,
         CoverPanel,
     ));
 
@@ -208,7 +210,8 @@ fn setup_scene(
         Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, z_offset/2.5)))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
         Transform::from_translation(vec3(0., 0. + z_offset/2.5+offset_atom_thickness, z_offset)),
-        Pickable::IGNORE, 
+        Pickable::IGNORE,
+        NotShadowReceiver,
         CoverPanel,
     ));
 
@@ -216,14 +219,15 @@ fn setup_scene(
         Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, z_offset/2.5)))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color,color,color,50))),
         Transform::from_translation(vec3(0., 0. - z_offset/2.5-offset_atom_thickness, z_offset)),
-        Pickable::IGNORE, 
+        Pickable::IGNORE,
+        NotShadowReceiver,
         CoverPanel,
     ));
 
     // background panel
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, size_of_panel)))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(0,100,0,255))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(80,80,0,255))),
         Transform::from_translation(vec3(0., 0., - 5.0 * z_offset)),
         Pickable::IGNORE,
         NotShadowReceiver,
@@ -348,7 +352,7 @@ fn update_move_position_smooth(
             continue;
         }
 
-        let t = position.get_next_translation(trafo.translation,time.delta_secs());;
+        let t = position.get_next_translation(trafo.translation,time.delta_secs());
         *trafo = trafo.looking_at(CAMERA_STANDARD_TARGET, Vec3::Y).with_translation(t);
     }
 }
@@ -361,7 +365,7 @@ fn monitor_scene_4d(
 ) {
     // show background if 4D rotation is Zero
     for mut v in &mut vis {
-        let angle = scene.scene_4d.get_angle_4d().abs();
+        let angle = scene.scene_4d.get_angle_high_dimension().abs();
         *v = if angle < 0.2 || (PI - angle).abs() < 0.2 {
             Visibility::Visible
         } else {
@@ -371,7 +375,7 @@ fn monitor_scene_4d(
 
     // visualize 4D rotation
     for mut trafo in &mut trafos {
-        *trafo = Transform::from_rotation(Quat::from_rotation_z(PI/2.0 + scene.scene_4d.get_angle_4d()));
+        *trafo = Transform::from_rotation(Quat::from_rotation_z(PI/2.0 + scene.scene_4d.get_angle_high_dimension()));
         trafo.translation = vec3(0., 9.*SCALE, 0.);
     }
 }
@@ -449,7 +453,7 @@ fn toggle_4d_on_press(
     mut scene: ResMut<Scene>,
     time: Res<Time>,
 ) {
-    scene.scene_4d.toggle_4d_view(time.elapsed_secs());
+    scene.scene_4d.toggle_high_dimension_view(time.elapsed_secs());
 }
 
 /// An observer to trigger toggle_projection when the ControlShape is pressed.

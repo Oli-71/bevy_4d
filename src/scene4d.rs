@@ -20,6 +20,7 @@ enum ObjectName {
     Circle,
     Square,
     Cube,
+    CubeEdges,
 }
 
 /// An object in the 4D scene, which consists of a sequence of atoms.
@@ -52,18 +53,18 @@ pub struct Scene4D {
     objects_3d: Vec<usize>,
     objects_2d: Vec<usize>,
     is_projection_view: bool,
-    is_4d_view: bool,
-    start_time_4d: f32,
+    is_high_dimension_view: bool,
+    start_time_high_dimension: f32,
     speed_3d_rotation: f32,
     w_height: f32,
-    angle_4d: f32,
+    angle_high_dimension: f32,
 }
 
 impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, so be careful with this number to avoid performance issues.
+        let number_per_side = 16; // Total atoms will be number_per_side^4, so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
         
         //empty scene
@@ -77,25 +78,26 @@ impl Scene4D {
             objects: Vec::new(),
             objects_3d: Vec::new(),
             objects_2d: Vec::new(),
-            is_4d_view: false,
+            is_high_dimension_view: false,
             is_projection_view: false,
-            start_time_4d: 0.0,
+            start_time_high_dimension: 0.0,
             speed_3d_rotation: 0.4,
             w_height: 0.0,
-            angle_4d: 0.0,
+            angle_high_dimension: 0.0,
         };
 
         //add some objects to the scene.
         let heart_index = scene.add_object(ObjectName::Heart, create_heart_3d(size_of_atom, number_per_side * 2));
         let cube3d_index = scene.add_object(ObjectName::Cube3d, create_cube_3d(size_of_atom, number_per_side));
         let cube4d_index = scene.add_object(ObjectName::Cube4d, create_cube_4d_surface(size_of_atom, number_per_side));
-        let cube4d_edges_index = scene.add_object(ObjectName::Cube4dEdges, create_cube_4d_edges2(size_of_atom, number_per_side));
+        let cube4d_edges_index = scene.add_object(ObjectName::Cube4dEdges, create_cube_4d_edges(size_of_atom, number_per_side));
         let circle_index = scene.add_object(ObjectName::Circle, create_circle(size_of_atom, number_per_side));
         let square_index = scene.add_object(ObjectName::Square, create_square_surface(size_of_atom, number_per_side));
         let cube_index = scene.add_object(ObjectName::Cube, create_cube_surface(size_of_atom, number_per_side));
+        let cube_edges_index = scene.add_object(ObjectName::CubeEdges, create_cube_edges(size_of_atom, number_per_side));
         
         scene.objects_3d = vec![heart_index, cube3d_index, cube4d_index, cube4d_edges_index];
-        scene.objects_2d = vec![circle_index, square_index, cube_index];
+        scene.objects_2d = vec![circle_index, square_index, cube_index, cube_edges_index];
 
         scene
     }
@@ -135,13 +137,13 @@ impl Scene4D {
         index
     }
 
-    pub fn toggle_4d_view(&mut self, current_time: f32) {
-        self.is_4d_view = !self.is_4d_view;
-        if self.is_4d_view {
-            self.start_time_4d = current_time;
+    pub fn toggle_high_dimension_view(&mut self, current_time: f32) {
+        self.is_high_dimension_view = !self.is_high_dimension_view;
+        if self.is_high_dimension_view {
+            self.start_time_high_dimension = current_time;
         }
         else {
-            self.angle_4d = 0.0;
+            self.angle_high_dimension = 0.0;
         }
     }
 
@@ -149,8 +151,8 @@ impl Scene4D {
         self.is_projection_view = !self.is_projection_view;
     }
 
-    pub fn is_4d_view(&self) -> bool {
-        self.is_4d_view
+    pub fn is_high_dimension_view(&self) -> bool {
+        self.is_high_dimension_view
     }
 
     fn objects_2d(&self) -> impl Iterator<Item = &Object4D> {
@@ -161,9 +163,9 @@ impl Scene4D {
         self.objects_3d.iter().map(move |&index| &self.objects[index])
     }
 
-    fn time_in_4d_view(&self, current_time: f32) -> f32 {
-        if self.is_4d_view {
-            current_time - self.start_time_4d
+    fn time_in_high_dimension_view(&self, current_time: f32) -> f32 {
+        if self.is_high_dimension_view {
+            current_time - self.start_time_high_dimension
         } else {
             0.0
         }
@@ -177,19 +179,15 @@ impl Scene4D {
         self.w_height = w_height.clamp(-3.0, 3.0);
     }
 
-    pub fn get_angle_4d(& self) -> f32 {
-        self.angle_4d
+    pub fn get_angle_high_dimension(& self) -> f32 {
+        self.angle_high_dimension
     }
 
     /// transforms all atoms in the 4D scene. Returns the new positions.
     pub fn transform_scene(&mut self, time: f32) -> Vec<Vec4> {
         let mut new_positions = self.atoms.positions.clone();
 
-        //local movements
-        let angle = time; // Rotation angle in radians
-        let x_offset = 2.5; // Distance to move the objects apart
-
-        // standard 3D rotation (continuously)
+        let angle = time; // Rotation angle for the continuous rotation and the higher-dimension rotation
         let continuous_rotation_matrix = Mat3::from_rotation_y(self.speed_3d_rotation * angle); // Rotate around the Z-axis
 
         // local 3D-transformations for 3d objects
@@ -226,30 +224,36 @@ impl Scene4D {
             }
         }
 
-        // higher dimension transformation
+        // Higher dimension transformation
         // applied on top of the local transformations above.
         // Atoms will move in and out of the visible flat-land and space-land.
-        if self.is_4d_view() {
-            self.angle_4d = self.time_in_4d_view(time) / 4.0;
-            self.angle_4d %= 2.0 * PI;// clap to [0..pi/2]
+        if self.is_high_dimension_view() {
+            self.angle_high_dimension = self.time_in_high_dimension_view(time) / 4.0;
+            self.angle_high_dimension %= 2.0 * PI;// clap to [0..2pi]
 
             // a 3D rotation (y is changing)
             for object_2d in self.objects_2d() { 
                 for atom_index in object_2d.range() {
-                    new_positions[atom_index] = rotate_4d_xw(new_positions[atom_index], self.angle_4d);
+                    new_positions[atom_index] = rotate_4d_xw(new_positions[atom_index], self.angle_high_dimension);
                 }
             }
 
             // a 4D rotation (w is changing)
             for object_3d in self.objects_3d() { 
                 for atom_index in object_3d.range() {
-                    new_positions[atom_index] = rotate_4d_xy(new_positions[atom_index], self.angle_4d);
+                    new_positions[atom_index] = rotate_4d_xy(new_positions[atom_index], self.angle_high_dimension);
                 }
             }    
         }
 
-        // 3d row: move upwards and spread out within the row 
-        // project to w=0 space in projection view
+        // Placement of objects in the scene.
+        // Projection to lower dimension. 
+        let x_offset = 2.5; // Distance to move the objects apart
+
+        // 3d row:
+        // - move upwards
+        // - spread out within the row 
+        // - project to w=0 space in projection view
         let y_offset = 2. * x_offset;
         let mut delta_x = -3. * x_offset;
         for object_3d in self.objects_3d(){
@@ -257,20 +261,21 @@ impl Scene4D {
                 new_positions[atom_index].x += delta_x;
                 new_positions[atom_index].y += y_offset;
                 if self.is_projection_view{
-                    new_positions[atom_index].w = 0.; // align all atoms to the same w level in projection view 
+                    new_positions[atom_index].w = 0.; // move all atoms to the same w level in projection view 
                 }
             }
             delta_x += 2. * x_offset;// next column
         }
 
-        // 2d row: spread out within the row
-        // project to y=0 plane in projection view
+        // 2d row: 
+        // - spread out within the row
+        // - project to y=0 plane in projection view
         let mut delta_x = -3. * x_offset;
         for object_2d in self.objects_2d(){
             for atom_index in object_2d.range() {
                 new_positions[atom_index].x += delta_x;
                 if self.is_projection_view{
-                    new_positions[atom_index].y = 0.; // align all atoms to the same y level in projection view 
+                    new_positions[atom_index].y = 0.; // move all atoms to the same y level in projection view 
                 }
             }
             delta_x += 2. * x_offset;// next column
@@ -464,7 +469,7 @@ fn create_cube_4d_corners(size_atom: f32, number_per_side: usize) -> Atoms4D {
 }
 
 // thick edges with multiple colors to visualize the 3d cubes ("faces") too. 
-fn create_cube_4d_edges2(size_atom: f32, number_per_side: usize) -> Atoms4D {
+fn create_cube_4d_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
     let mut positions = Vec::new();
     let mut colors = Vec::new();
 
@@ -722,24 +727,82 @@ fn create_square_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
 
     // Create atoms for the 8 faces of the 4D cube (each face is a 3D cube in the 4D space).
     for a in start..=end {
-                let aa = a as f32 * spacing;
+        let aa = a as f32 * spacing;
 
-                positions.push(Vec4::new(low,0.0, aa, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
+        positions.push(Vec4::new(low,0.0, aa, 0.0));
+        colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
 
-                positions.push(Vec4::new(high, 0.0, aa, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=high
+        positions.push(Vec4::new(high, 0.0, aa, 0.0));
+        colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=high
 
-                positions.push(Vec4::new(aa,0.0, low, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
+        positions.push(Vec4::new(aa,0.0, low, 0.0));
+        colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
 
-                positions.push(Vec4::new(aa, 0.0, high, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
+        positions.push(Vec4::new(aa, 0.0, high, 0.0));
+        colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
     }
 
     Atoms4D { positions, colors }
 }
 
+fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
+    let capacity = number_per_side * number_per_side * 12;
+    let mut positions = Vec::with_capacity(capacity);
+    let mut colors = Vec::with_capacity(capacity);
+
+    let end = (number_per_side / 2) as i32 - 1;
+    let start = -end;
+
+    let spacing = 1.1 * size_atom;
+
+    let low = (start - 1) as f32 * spacing; // Position for the "low" side of the cube (e.g., w = low)
+    let high = (end + 1) as f32 * spacing; // Position for the "high" side of the cube (e.g., w = high)
+
+    // Create atoms for the 12 edges of the cube.
+    for a in start..=end {
+            let aa = a as f32 * spacing;
+
+            positions.push(Vec4::new(aa, low, low, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
+
+            positions.push(Vec4::new(aa, high, low, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple
+
+            positions.push(Vec4::new(aa, low, high, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple
+
+            positions.push(Vec4::new(aa, high, high, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple
+
+
+            positions.push(Vec4::new(low, aa, low, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue
+
+            positions.push(Vec4::new(high, aa, low, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple
+
+            positions.push(Vec4::new(low, aa, high, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green
+
+            positions.push(Vec4::new(high, aa, high, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan
+
+
+            positions.push(Vec4::new(low, low, aa, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue
+
+            positions.push(Vec4::new(high, low, aa, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple
+
+            positions.push(Vec4::new(low, high, aa, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green
+
+            positions.push(Vec4::new(high, high, aa, 0.0));
+            colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan
+    }
+
+    Atoms4D { positions, colors }
+}
 
 // 4D rotation functions for different planes. Each function takes a point in 4D space and an angle, and returns the rotated point.
 fn rotate_4d_xy(point: Vec4, angle: f32) -> Vec4 {

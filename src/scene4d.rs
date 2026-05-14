@@ -109,9 +109,6 @@ impl Scene4D {
     }
 
     pub fn is_atom_visible(&self, position: Vec4) -> bool {
-        if self.is_projection_view {
-            return true; // In projection view, all atoms are visible regardless of their w coordinate.
-        }
         let threshold = 0.8 * self.size_of_atom; // Atoms with |w| less than this threshold will be visible
         abs(position.w) < threshold
     }
@@ -251,22 +248,30 @@ impl Scene4D {
             }    
         }
 
-        // 3d row: move upwards and spread out within the row
+        // 3d row: move upwards and spread out within the row 
+        // project to w=0 space in projection view
         let y_offset = 2. * x_offset;
         let mut delta_x = -3. * x_offset;
         for object_3d in self.objects_3d(){
             for atom_index in object_3d.range() {
                 new_positions[atom_index].x += delta_x;
                 new_positions[atom_index].y += y_offset;
+                if self.is_projection_view{
+                    new_positions[atom_index].w = 0.; // align all atoms to the same w level in projection view 
+                }
             }
             delta_x += 2. * x_offset;// next column
         }
 
         // 2d row: spread out within the row
+        // project to y=0 plane in projection view
         let mut delta_x = -3. * x_offset;
         for object_2d in self.objects_2d(){
             for atom_index in object_2d.range() {
                 new_positions[atom_index].x += delta_x;
+                if self.is_projection_view{
+                    new_positions[atom_index].y = 0.; // align all atoms to the same y level in projection view 
+                }
             }
             delta_x += 2. * x_offset;// next column
         }

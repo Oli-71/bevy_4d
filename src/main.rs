@@ -1,7 +1,8 @@
 use std::f32::consts::PI;
 
 use bevy::{camera::{ScalingMode, SubCameraView, Viewport},
-    color::palettes::tailwind::*, picking::pointer::PointerInteraction, prelude::*
+    color::palettes::tailwind::*, picking::pointer::PointerInteraction, prelude::*,
+    light::{NotShadowCaster, NotShadowReceiver},
 };
 
 mod scene4d;
@@ -222,9 +223,10 @@ fn setup_scene(
     // background panel
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(vec3(0.,0.,1.),vec2(size_of_panel, size_of_panel)))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(0,20,0,255))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(0,100,0,255))),
         Transform::from_translation(vec3(0., 0., - 5.0 * z_offset)),
         Pickable::IGNORE,
+        NotShadowReceiver,
         BackgroundPanel,
     ));
 
@@ -245,9 +247,9 @@ fn setup_scene(
             shadows_enabled: true,
             intensity: 50_000_000.*SCALE,
             range: 500.0*SCALE,
-            shadow_depth_bias: 0.2,
             ..default()
         },
+        NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
         Transform::from_xyz(8.0*SCALE, 0.0*SCALE, 8.0*SCALE),
     ));
 

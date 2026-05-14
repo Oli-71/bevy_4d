@@ -1,8 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{camera::{ScalingMode, SubCameraView, Viewport},
-    color::palettes::tailwind::*, picking::pointer::PointerInteraction, prelude::*,
-    light::{NotShadowCaster, NotShadowReceiver},
+use bevy::{camera::{self, ScalingMode, SubCameraView, Viewport}, color::palettes::tailwind::*, light::{NotShadowCaster, NotShadowReceiver}, picking::pointer::PointerInteraction, prelude::*
 };
 
 mod scene4d;
@@ -29,6 +27,7 @@ fn main() {
                 //draw_mesh_intersections,
                 transform_scene_4d,
                 monitor_scene_4d,
+                update_labels,
                 update_move_position_smooth,
             ),
         )
@@ -44,6 +43,11 @@ struct CoverPanel;
 
 #[derive(Component)]
 struct BackgroundPanel;
+
+#[derive(Component)]
+struct ExampleLabel {
+    entity: Entity,
+}
 
 #[derive(Component)]
 struct AngleMonitor;
@@ -63,6 +67,7 @@ fn setup_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     scene: ResMut<Scene>,
+    asset_server: Res<AssetServer>,
 ) {
     // Set up the materials.
     let white_matl = materials.add(Color::WHITE);
@@ -113,7 +118,7 @@ fn setup_scene(
         .observe(toggle_projection_on_press);
     
     // cube to rotate view
-    commands
+    let xxx = commands
         .spawn((
             Mesh3d(meshes.add(Cuboid::new(0.8*SCALE,0.8*SCALE,0.8*SCALE))),
             MeshMaterial3d(white_matl.clone()),
@@ -124,7 +129,8 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(rotate_global_view_on_drag);
+        .observe(rotate_global_view_on_drag)
+        .id();
 
     // slider to adjust speed of 3d rotation
     commands
@@ -288,6 +294,36 @@ fn setup_scene(
         },
     ));
     */
+
+    // labels
+    let text_style = TextFont {
+        font: asset_server.load("fonts/CenturyGothicPaneuropeanThin.ttf"),
+        ..default()
+    };
+
+    let label_text_style = (text_style.clone(), TextColor(Color::srgb_u8(100,200,200)));
+
+    let mut label = |entity: Entity, label: &str| {
+        commands.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                ..default()
+            },
+            ExampleLabel { entity },
+            children![(
+                Text::new(label),
+                label_text_style.clone(),
+                Node {
+                    position_type: PositionType::Absolute,
+                    bottom: Val::ZERO,
+                    ..default()
+                },
+                TextLayout::default().with_no_wrap(),
+            )],
+        ));
+    };
+
+    label(xxx, "_____Control View Point");
 }
 
 /// Returns an observer that updates the entity's material to the one specified.
@@ -354,6 +390,35 @@ fn update_move_position_smooth(
 
         let t = position.get_next_translation(trafo.translation,time.delta_secs());
         *trafo = trafo.looking_at(CAMERA_STANDARD_TARGET, Vec3::Y).with_translation(t);
+    }
+}
+
+fn update_labels(
+    labeled: Query<&GlobalTransform>,
+    mut labels: Query<(&mut Node, &ExampleLabel)>,
+    camera: Single<
+        (
+            Entity,
+            &mut Camera,
+            &mut Transform,
+            &GlobalTransform,
+        ),
+        With<Camera3d>,
+    >,
+) {
+    // update label positions
+    //let (entity, camera, mut camera_transform, camera_global_transform, hdr) = camera.into_inner();
+    let camera_global_transform = camera.3;
+
+    for (mut node, label) in &mut labels {
+        let world_position = labeled.get(label.entity).unwrap().translation() + Vec3::Y;
+
+        let viewport_position = camera.1
+            .world_to_viewport(camera_global_transform, world_position)
+            .unwrap();
+
+        node.top = px(viewport_position.y);
+        node.left = px(viewport_position.x);
     }
 }
 

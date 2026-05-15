@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::{
     camera::{self, ScalingMode, SubCameraView, Viewport},
-    color::palettes::tailwind::*,
+    color::{self, palettes::tailwind::*},
     light::{NotShadowCaster, NotShadowReceiver},
     picking::pointer::PointerInteraction,
     prelude::*,
@@ -85,30 +85,25 @@ fn setup_scene(
     let y_ctr_row1 = 9. * SCALE;
     let y_ctr_row2 = 8. * SCALE;
 
-    // gray control objects
-    // sphere to trigger 4d view
-    commands
-        .spawn((
-            Mesh3d(meshes.add(Sphere::new(size_of_controls))),
-            MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0., y_ctr_row1, 0.),
-            ControlShape,
-        ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(toggle_4d_on_press);
-
-    // Angle Monitor Cone
+    // Gray Control Objects
+    //
+    // Cone to trigger 4d view
+    // also suits as Angle Monitor
     let angle_monitor_entity = commands.spawn((
         Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
         MeshMaterial3d(white_matl.clone()),
-        Transform::from_xyz(0., y_ctr_row1, 0.),
+        Transform::from_xyz(0., y_ctr_row1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
+        ControlShape,
         AngleMonitor,
-    )).id();
+    ))
+    .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+    .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+    .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+    .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+    .observe(toggle_4d_on_press)
+    .id();
 
-    // sphere to trigger projection view
+    // Sphere to trigger projection view
     let projection_control_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
@@ -123,7 +118,7 @@ fn setup_scene(
         .observe(toggle_projection_on_press)
         .id();
 
-    // cube to rotate view
+    // Cube to rotate view
     let view_control_entity = commands
         .spawn((
             Mesh3d(meshes.add(Cuboid::new(0.8 * SCALE, 0.8 * SCALE, 0.8 * SCALE))),
@@ -138,7 +133,7 @@ fn setup_scene(
         .observe(rotate_global_view_on_drag)
         .id();
 
-    // slider to adjust speed of 3d rotation
+    // Slider to adjust speed of 3d rotation
     let slider_3d_rotation_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
@@ -217,7 +212,7 @@ fn setup_scene(
                     .subdivisions(10),
             ),
         ),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
         Transform::from_translation(vec3(
             0.,
             0. + offset_atom_thickness,
@@ -238,7 +233,7 @@ fn setup_scene(
                     .subdivisions(10),
             ),
         ),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
         Transform::from_translation(vec3(
             0.,
             0. - offset_atom_thickness,
@@ -256,7 +251,7 @@ fn setup_scene(
             vec3(0., 0., 1.),
             vec2(size_of_panel, y_size),
         ))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 100))),
         Transform::from_translation(vec3(
             0.,
             0. + y_size + offset_atom_thickness,
@@ -273,7 +268,7 @@ fn setup_scene(
             vec3(0., 0., 1.),
             vec2(size_of_panel, y_size),
         ))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 100))),
         Transform::from_translation(vec3(
             0.,
             0. - y_size - offset_atom_thickness,
@@ -284,23 +279,33 @@ fn setup_scene(
         CoverPanel,
     ));
 
+    // A helper closure to spawn a thick line between two points.
+    let mut spawn_thick_line = |start: Vec3, end: Vec3, thickness: f32| -> Entity {
+        let direction = end - start;
+        let length = direction.length();
+        
+        // Calculate the rotation needed to align the cylinder with the direction vector.
+        let rotation = Quat::from_rotation_arc(Vec3::Y, direction.normalize());
+
+        commands.spawn((
+            Mesh3d(meshes.add(Cylinder::new(thickness, length))),
+            MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 200))),
+            Transform::from_translation(start + direction / 2.0)
+                .with_rotation(rotation),
+        )).id()
+    };
+
     // Flatland Indicator Lines
     let flatland_top_line_entity = spawn_thick_line(
         vec3(- size_of_panel / 2., offset_atom_thickness, z_offset),
         vec3( size_of_panel / 2., offset_atom_thickness, z_offset),
         0.02 * SCALE,
-        &mut commands,
-        &mut meshes,
-        &mut materials,
     );
     
     let _flatland_bottom_line_entity = spawn_thick_line(
         vec3(- size_of_panel / 2., - offset_atom_thickness, z_offset),
         vec3( size_of_panel / 2., - offset_atom_thickness, z_offset),
         0.02 * SCALE,
-        &mut commands,
-        &mut meshes,
-        &mut materials,
     );
 
     // Background Panel
@@ -371,7 +376,7 @@ fn setup_scene(
     // A helper closure to add labels to the control objects.
     // We use a closure here to avoid repeating the same code for each label,
     // since they all have the same structure (a parent node with absolute positioning and a child text node with the label).
-    let mut add_label = |entity: Entity, label: &str, offset: f32| {
+    let mut spawn_label = |entity: Entity, label: &str, offset: f32| {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
@@ -391,11 +396,11 @@ fn setup_scene(
         ));
     };
 
-    add_label(angle_monitor_entity, "___High Dimension", 0.9);
-    add_label(projection_control_entity, "___Projection", 0.9);
-    add_label(view_control_entity, "_______View Point", -3.0);
-    add_label(slider_3d_rotation_entity, "___Rotation Speed", 0.9);
-    add_label(flatland_top_line_entity, "Flatland", 0.0);
+    spawn_label(angle_monitor_entity, "__Dimension", 0.9);
+    spawn_label(projection_control_entity, "__Projection", 0.9);
+    spawn_label(view_control_entity, "_______View Point", -3.0);
+    spawn_label(slider_3d_rotation_entity, "__Rotation Speed", 0.9);
+    spawn_label(flatland_top_line_entity, "Flatland", 0.0);
 
     // Instructions
     commands.spawn((
@@ -408,44 +413,6 @@ fn setup_scene(
         },
     ));
 }
-
-/// A helper function to spawn a thick line between two points using a cylinder mesh.
-fn spawn_thick_line(
-    start: Vec3,
-    end: Vec3,
-    thickness: f32,
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-) -> Entity {
-    let direction = end - start;
-    let length = direction.length();
-    
-    // Zylinder ausrichten: In Bevy ist der Zylinder standardmäßig Y-Up.
-    // Wir müssen ihn drehen, damit er zwischen Start und Ende passt.
-    let rotation = Quat::from_rotation_arc(Vec3::Y, direction.normalize());
-
-    commands.spawn((
-        Mesh3d(meshes.add(Cylinder::new(thickness, length))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 200))),
-        Transform::from_translation(start + direction / 2.0)
-            .with_rotation(rotation),
-    )).id()
-}
-
-/*
- // Background Panel
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(
-            vec3(0., 0., 1.),
-            vec2(size_of_panel, size_of_panel),
-        ))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(80, 80, 0, 255))),
-        Transform::from_translation(vec3(0., 0., -5.0 * z_offset)),
-        Pickable::IGNORE,
-        NotShadowReceiver,
-        BackgroundPanel,
-    )); */
 
 /// Returns an observer that updates the entity's material to the one specified.
 fn update_material_on<E: EntityEvent>(
@@ -557,7 +524,7 @@ fn monitor_scene_4d(
 
     // visualize 4D rotation
     for mut trafo in &mut trafos {
-        *trafo = Transform::from_rotation(Quat::from_rotation_z(
+        *trafo = Transform::from_rotation(Quat::from_rotation_x(
             PI / 2.0 + scene.scene_4d.get_angle_high_dimension(),
         ));
         trafo.translation = vec3(0., 9. * SCALE, 0.);

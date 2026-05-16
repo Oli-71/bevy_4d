@@ -1,12 +1,14 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::{self, ScalingMode, SubCameraView, Viewport},
-    color::{self, palettes::tailwind::*},
+    camera::SubCameraView,
+    color::palettes::tailwind::*,
     light::{NotShadowCaster, NotShadowReceiver},
     picking::pointer::PointerInteraction,
-    prelude::*,
+    prelude::*, render::render_asset::RenderAsset,
 };
+
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 
 mod scene4d;
 use scene4d::*;
@@ -50,6 +52,9 @@ struct CoverPanel;
 struct BackgroundPanel;
 
 #[derive(Component)]
+struct MainLight;
+
+#[derive(Component)]
 struct Label {
     entity: Entity,
     offset_y: f32, // an offset to position the label above the entity
@@ -74,6 +79,7 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     scene: ResMut<Scene>,
     asset_server: Res<AssetServer>,
+    mut images: ResMut<Assets<Image>>,
 ) {
     // Set up the materials.
     let white_matl = materials.add(Color::WHITE);
@@ -138,7 +144,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(0., y_ctr_row2, 0.),
+            Transform::from_xyz(-3. * SCALE, y_ctr_row2, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -156,25 +162,26 @@ fn setup_scene(
         MeshMaterial3d(white_matl.clone()),
     ));
 
-    // slider to adjust w height
+    // slider to adjust higher dimension height (w in Spaceland, y in Flatland)
     let left = -10. * SCALE;
-    commands
+    let slider_height_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(left, 5. * SCALE, 0.),
+            Transform::from_xyz(left, 2. * SCALE, 0.),
             ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(drag_to_adjust_w_height);
+        .observe(drag_to_adjust_higher_dimension_height)
+        .id();
 
     commands.spawn((
         Mesh3d(meshes.add(Segment3d::new(
+            vec3(left, -2. * SCALE, 0.),
             vec3(left, 2. * SCALE, 0.),
-            vec3(left, 8. * SCALE, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
     ));
@@ -203,6 +210,7 @@ fn setup_scene(
         scene.scene_4d.size_of_atom * 1.1 * SCALE * scene.scene_4d.number_of_atoms_per_side as f32;
 
     // top horizontal panel 
+    // (high alpha to mark the 2D slice when looking at it from the spaceland view)
     commands.spawn((
         Mesh3d(
             meshes.add(
@@ -212,7 +220,7 @@ fn setup_scene(
                     .subdivisions(10),
             ),
         ),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
         Transform::from_translation(vec3(
             0.,
             0. + offset_atom_thickness,
@@ -233,7 +241,7 @@ fn setup_scene(
                     .subdivisions(10),
             ),
         ),
-        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 50))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
         Transform::from_translation(vec3(
             0.,
             0. - offset_atom_thickness,
@@ -309,13 +317,29 @@ fn setup_scene(
     );
 
     // Background Panel
+    
+    /* // 1. Schachbrett-Textur erstellen (z.B. 2x2 oder 8x8)
+    let size = 8;
+    let mut image = create_checkerboard_image(size);
+    // WICHTIG: Damit die Linien scharf bleiben
+    //image.sampler = bevy::render::texture::ImageSampler::nearest();
+    let texture_handle = images.add(image);
+
+    // 2. Material mit der Textur erstellen
+    let material_handle = materials.add(StandardMaterial {
+        base_color_texture: Some(texture_handle),
+        // Optional: unlit: true, // Wenn keine Beleuchtung gewünscht ist
+        ..default()
+    }); */
+
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(
             vec3(0., 0., 1.),
-            vec2(size_of_panel, size_of_panel),
+            vec2(150., 95.),
         ))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(80, 80, 0, 255))),
-        Transform::from_translation(vec3(0., 0., -5.0 * z_offset)),
+        //MeshMaterial3d(material_handle),
+        MeshMaterial3d(materials.add(Color::srgba_u8(10, 10, 5, 255))),
+        Transform::from_translation(vec3(0., 0., -150.)),
         Pickable::IGNORE,
         NotShadowReceiver,
         BackgroundPanel,
@@ -331,6 +355,7 @@ fn setup_scene(
             ..default()
         },
         Transform::from_xyz(8.0 * SCALE, 16.0 * SCALE, 8.0 * SCALE),
+        MainLight,
     ));
 
     commands.spawn((
@@ -338,10 +363,24 @@ fn setup_scene(
             shadows_enabled: true,
             intensity: 50_000_000. * SCALE,
             range: 500.0 * SCALE,
+            shadow_depth_bias: 0.2,
+            ..default()
+        },
+        Transform::from_xyz(8.0 * SCALE, -16.0 * SCALE, 8.0 * SCALE),
+        MainLight,
+    ));
+
+    // for flatland
+    commands.spawn((
+        PointLight {//DirectionalLight
+            shadows_enabled: true,
+            intensity: 50_000_000. * SCALE,
+            range: 500.0 * SCALE,
             ..default()
         },
         NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
-        Transform::from_xyz(8.0 * SCALE, 0.0 * SCALE, 8.0 * SCALE),
+        //Transform::from_xyz(8.0 * SCALE, 0.0 * SCALE, 8.0 * SCALE),
+        Transform::from_xyz(0.0 * SCALE, 0.0 * SCALE, 16.0 * SCALE),
     ));
 
     // Camera
@@ -396,15 +435,16 @@ fn setup_scene(
         ));
     };
 
-    spawn_label(angle_monitor_entity, "__Dimension", 0.9);
+    spawn_label(angle_monitor_entity, "__:-)", 0.9);
     spawn_label(projection_control_entity, "__Projection", 0.9);
     spawn_label(view_control_entity, "_______View Point", -3.0);
     spawn_label(slider_3d_rotation_entity, "__Rotation Speed", 0.9);
+    spawn_label(slider_height_entity, "__Higher Dimension Height", 0.9);
     spawn_label(flatland_top_line_entity, "Flatland", 0.0);
 
     // Instructions
     commands.spawn((
-        Text::new("Spaceland (3D) and Flatland (2D)"),
+        Text::new("Visit Flatland and Spaceland!\n The :-) Cone moves your viewpoint into a higher dimension.\n But first try the other options and learn about the scenes."),
         Node {
             position_type: PositionType::Absolute,
             top: px(12),
@@ -510,6 +550,7 @@ fn update_labels(
 fn monitor_scene_4d(
     mut visibilities: Query<&mut Visibility, With<BackgroundPanel>>,
     mut trafos: Query<&mut Transform, With<AngleMonitor>>,
+    //mut trafos_background: Query<&mut Transform, With<BackgroundPanel>>,
     scene: Res<Scene>,
 ) {
     // show background if 4D rotation is Zero
@@ -522,13 +563,27 @@ fn monitor_scene_4d(
         };
     }
 
-    // visualize 4D rotation
+    //visualize 4D rotation by cone
     for mut trafo in &mut trafos {
-        *trafo = Transform::from_rotation(Quat::from_rotation_x(
-            PI / 2.0 + scene.scene_4d.get_angle_high_dimension(),
-        ));
-        trafo.translation = vec3(0., 9. * SCALE, 0.);
+       *trafo = Transform::from_rotation(Quat::from_rotation_x(
+           PI / 2.0 + scene.scene_4d.get_angle_high_dimension(),
+       ));
+       trafo.translation = vec3(0., 9. * SCALE, 0.);
     }
+/*
+    for mut trafo in &mut trafos_background {
+        //let pos = trafo.translation;
+        *trafo = Transform::from_rotation(Quat::from_rotation_x(
+            scene.scene_4d.get_angle_high_dimension() % PI,
+        ));
+    }
+   
+    for mut trafo_light in &mut trafosLight {
+        *trafo_light = Transform::from_rotation(Quat::from_rotation_x(
+            scene.scene_4d.get_angle_high_dimension() % (2.0 * PI),
+        ));
+        
+    }*/
 }
 
 /// An observer to rotate an entity when it is dragged
@@ -569,21 +624,26 @@ fn drag_to_adjust_speed(
     }
 }
 
-/// An observer to adjust the w height in the 4D scene.
-fn drag_to_adjust_w_height(
+/// An observer to adjust the higher dimension height.
+fn drag_to_adjust_higher_dimension_height(
     drag: On<Pointer<Drag>>,
     mut transforms: Query<&mut Transform>,
     mut scene: ResMut<Scene>,
 ) {
+    if scene.scene_4d.is_projection_view {
+        return; // In projection view, the higher dimension height has no effect, so we don't allow adjusting it.
+    }
+
     let mut transform = transforms.get_mut(drag.entity).unwrap();
 
     let sensitivity = 0.02;
-    let y = transform.translation.y - 5. - drag.delta.y * SCALE * sensitivity;
-    let bound = 3.0 * SCALE; // Set a y coordinate bound for how far the control can be dragged
+    let y = transform.translation.y - drag.delta.y * SCALE * sensitivity;
+    let bound = 2.0 * SCALE; // Set a y coordinate bound for how far the control can be dragged
     if (-bound..=bound).contains(&y) {
         transform.translation.y = y;
-
-        scene.scene_4d.adjust_w_height(-y / 2.);
+        // map y to -1..0
+        let height = (y - bound) / (2.0 * bound);
+        scene.scene_4d.adjust_higher_dimension_height(height);
     }
 }
 
@@ -608,4 +668,32 @@ fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time
 /// An observer to trigger toggle_projection when the ControlShape is pressed.
 fn toggle_projection_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>) {
     scene.scene_4d.toggle_projection_view();
+}
+
+fn create_checkerboard_image(size: u32) -> Image {
+    let mut pixels = vec![0u8; (size * size * 4) as usize];
+    for y in 0..size {
+        for x in 0..size {
+            let color = if (x + y) % 2 == 0 {
+                [255, 255, 255, 255] // Weiß
+            } else {
+                [0, 0, 0, 255] // Schwarz
+            };
+            let i = (y * size + x) as usize * 4;
+            pixels[i..i + 4].copy_from_slice(&color);
+        }
+    }
+
+    Image::new(
+        Extent3d {
+            width: size,
+            height: size,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        pixels,
+        TextureFormat::Rgba8UnormSrgb,
+        bevy::asset::RenderAssetUsages::default()//RenderAssetUsages::default(),
+        //RenderAssetUsages::default(),
+    )
 }

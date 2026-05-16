@@ -38,11 +38,11 @@ pub struct Scene4D {
     objects: Vec<Object4D>,
     objects_3d: Vec<usize>,
     objects_2d: Vec<usize>,
-    is_projection_view: bool,
-    is_high_dimension_view: bool,
+    pub is_projection_view: bool,
+    pub is_high_dimension_view: bool,
     start_time_high_dimension: f32,
     speed_3d_rotation: f32,
-    w_height: f32,
+    higher_dimension_height: f32,
     angle_high_dimension: f32,
 }
 
@@ -50,7 +50,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 16; // Total atoms will be number_per_side^4, 
                                          // so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
         
@@ -68,8 +68,8 @@ impl Scene4D {
             is_high_dimension_view: false,
             is_projection_view: false,
             start_time_high_dimension: 0.0,
-            speed_3d_rotation: 0.4,
-            w_height: 0.0,
+            speed_3d_rotation: 0.0,// default: no continuous rotation
+            higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
         };
 
@@ -129,10 +129,6 @@ impl Scene4D {
         self.is_projection_view = !self.is_projection_view;
     }
 
-    pub fn is_high_dimension_view(&self) -> bool {
-        self.is_high_dimension_view
-    }
-
     fn objects_2d(&self) -> impl Iterator<Item = &Object4D> {
         self.objects_2d.iter().map(move |&index| &self.objects[index])
     }
@@ -153,8 +149,8 @@ impl Scene4D {
         self.speed_3d_rotation = (speed).clamp(0.0, 1.0);
     }
 
-    pub fn adjust_w_height(&mut self, w_height: f32) {
-        self.w_height = w_height.clamp(-3.0, 3.0);
+    pub fn adjust_higher_dimension_height(&mut self, higher_dimension_height: f32) {
+        self.higher_dimension_height = higher_dimension_height.clamp(-1.0, 0.0);
     }
 
     pub fn get_angle_high_dimension(& self) -> f32 {
@@ -168,30 +164,14 @@ impl Scene4D {
         let angle = time; // Rotation angle for the continuous rotation and the higher-dimension rotation
         let continuous_rotation_matrix = Mat3::from_rotation_y(self.speed_3d_rotation * angle); // Rotate around the Z-axis
 
-        // local 3D-transformations for 3d objects
-        for object_3d in self.objects_3d() {
-            let drag_matrix_xy = object_3d.drag_rotation_xy(); 
-            for index in object_3d.range() {
+        // Apply local transformations for each object based on its drag state.
+        //  -For 3D objects, we apply a 3D rotation based on the drag.
+        //  -For 2D objects, we apply a 2D rotation based on the drag.
+        let mut apply_local_transform = |object: &Object4D, drag_matrix: Mat3| {
+            for index in object.range() {
                 let position = &self.atoms.positions[index];
-                let mut rotated_position = continuous_rotation_matrix * vec3(position.x, position.y, position.z);
-                rotated_position = drag_matrix_xy * rotated_position; // Apply dragging transformation
-
-                new_positions[index] = Vec4::new(
-                    rotated_position.x, 
-                    rotated_position.y,
-                    rotated_position.z,
-                    position.w + self.w_height, // Adjust the w coordinate based on the w_height control
-                );
-            }
-        }
-
-        // local 2D-transformations for 2d objects
-        for object_2d in self.objects_2d() {
-            let drag_matrix_x = object_2d.drag_rotation_x(); // Get the drag rotation matrix for the 2D object
-            for index in object_2d.range() {
-                let position = &self.atoms.positions[index];
-                let mut rotated_position = continuous_rotation_matrix * vec3(position.x, position.y, position.z);
-                rotated_position = drag_matrix_x * rotated_position; // Apply dragging transformation
+                let rotated_position =
+                    drag_matrix * (continuous_rotation_matrix * vec3(position.x, position.y, position.z));
 
                 new_positions[index] = Vec4::new(
                     rotated_position.x,
@@ -200,26 +180,36 @@ impl Scene4D {
                     position.w,
                 );
             }
+        };
+
+        // local 3D-transformations for 3d objects
+        for object_3d in self.objects_3d() {
+            apply_local_transform(object_3d, object_3d.drag_rotation_xy());
+        }
+
+        // local 2D-transformations for 2d objects
+        for object_2d in self.objects_2d() {
+            apply_local_transform(object_2d, object_2d.drag_rotation_x());
         }
 
         // Higher dimension transformation
         // applied on top of the local transformations above.
         // Atoms will move in and out of the visible flat-land and space-land.
-        if self.is_high_dimension_view() {
+        if self.is_high_dimension_view {
             self.angle_high_dimension = self.time_in_high_dimension_view(time) / 4.0;
             self.angle_high_dimension %= 2.0 * PI;// clap to [0..2pi]
 
             // a 3D rotation (y is changing)
             for object_2d in self.objects_2d() { 
                 for atom_index in object_2d.range() {
-                    new_positions[atom_index] = rotate_4d_xw(new_positions[atom_index], self.angle_high_dimension);
+                    rotate_4d_xw(&mut new_positions[atom_index], self.angle_high_dimension);
                 }
             }
 
             // a 4D rotation (w is changing)
             for object_3d in self.objects_3d() { 
                 for atom_index in object_3d.range() {
-                    new_positions[atom_index] = rotate_4d_xy(new_positions[atom_index], self.angle_high_dimension);
+                    rotate_4d_xy(&mut new_positions[atom_index], self.angle_high_dimension);
                 }
             }    
         }
@@ -227,6 +217,7 @@ impl Scene4D {
         // Placement of objects in the scene.
         // Projection to lower dimension. 
         let x_offset = 2.5; // Distance to move the objects apart
+        let hd_offset = 2.1 * self.higher_dimension_height;// Distance to move the objects in the higher dimension.
 
         // 3d row:
         // - move upwards
@@ -240,6 +231,8 @@ impl Scene4D {
                 new_positions[atom_index].y += y_offset;
                 if self.is_projection_view{
                     new_positions[atom_index].w = 0.; // move all atoms to the same w level in projection view 
+                } else {
+                    new_positions[atom_index].w += hd_offset;
                 }
             }
             delta_x += 2. * x_offset;// next column
@@ -254,11 +247,12 @@ impl Scene4D {
                 new_positions[atom_index].x += delta_x;
                 if self.is_projection_view{
                     new_positions[atom_index].y = 0.; // move all atoms to the same y level in projection view 
-                }
+                } else {
+                    new_positions[atom_index].y += hd_offset;
+                }   
             }
             delta_x += 2. * x_offset;// next column
         }
-
         new_positions
     }
 }
@@ -398,7 +392,6 @@ fn create_cube_4d_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
             }
         }
     }
-
     Atoms4D { positions, colors }
 }
 
@@ -505,7 +498,6 @@ fn create_cube_4d_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
             }
         }
     }
-
     Atoms4D { positions, colors }
 }
 
@@ -686,7 +678,6 @@ fn create_cube_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
                 colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple for y=high
         }
     }
-
     Atoms4D { positions, colors }
 }
 
@@ -719,7 +710,6 @@ fn create_square_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
         positions.push(Vec4::new(aa, 0.0, high, 0.0));
         colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
     }
-
     Atoms4D { positions, colors }
 }
 
@@ -778,79 +768,72 @@ fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
             positions.push(Vec4::new(high, high, aa, 0.0));
             colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan
     }
-
     Atoms4D { positions, colors }
 }
 
-// 4D rotation functions for different planes. Each function takes a point in 4D space and an angle, and returns the rotated point.
-fn rotate_4d_xy(point: Vec4, angle: f32) -> Vec4 {
+// 4D rotation functions for different planes.
+fn rotate_4d_xy(point: &mut Vec4, angle: f32) {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
-    Vec4::new(
-        point.x,
-        point.y,
-        point.z * cos_angle - point.w * sin_angle,
-        point.z * sin_angle + point.w * cos_angle,
-    )
+    let new_z = point.z * cos_angle - point.w * sin_angle;
+    let new_w = point.z * sin_angle + point.w * cos_angle;
+
+    point.z = new_z;
+    point.w = new_w;
 }
 
-fn rotate_4d_xz(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_xz(point: &mut Vec4, angle: f32) {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
-    Vec4::new(
-        point.x,
-        point.y * cos_angle - point.w * sin_angle,
-        point.z,
-        point.y * sin_angle + point.w * cos_angle,
-    )
+    let new_y = point.y * cos_angle - point.w * sin_angle;
+    let new_w = point.y * sin_angle + point.w * cos_angle;
+
+    point.y = new_y;
+    point.w = new_w;
 }
 
-fn rotate_4d_xw(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_xw(point: &mut Vec4, angle: f32) {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
-    Vec4::new(
-        point.x,
-        point.y * cos_angle - point.z * sin_angle,
-        point.y * sin_angle + point.z * cos_angle,
-        point.w,
-    )
+    let new_y = point.y * cos_angle - point.z * sin_angle;
+    let new_z = point.y * sin_angle + point.z * cos_angle;
+
+    point.y = new_y;
+    point.z = new_z;
 }
 
-fn rotate_4d_yz(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_yz(point: &mut Vec4, angle: f32) {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
-    Vec4::new(
-        point.x * cos_angle - point.w * sin_angle,
-        point.y,
-        point.z,
-        point.x * sin_angle + point.w * cos_angle,
-    )
+    let new_x = point.x * cos_angle - point.w * sin_angle;
+    let new_w = point.x * sin_angle + point.w * cos_angle;
+
+    point.x = new_x;
+    point.w = new_w;
 }
 
-fn rotate_4d_yw(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_yw(point: &mut Vec4, angle: f32) {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
-    Vec4::new(
-        point.x * cos_angle - point.z * sin_angle,
-        point.y,
-        point.x * sin_angle + point.z * cos_angle,
-        point.w,
-    )
+    let new_x = point.x * cos_angle - point.z * sin_angle;
+    let new_z = point.x * sin_angle + point.z * cos_angle;
+
+    point.x = new_x;
+    point.z = new_z;
 }
 
-fn rotate_4d_zw(point: Vec4, angle: f32) -> Vec4 {
+fn rotate_4d_zw(point: &mut Vec4, angle: f32) {
     let cos_angle = angle.cos();
     let sin_angle = angle.sin();
 
-    Vec4::new(
-        point.x * cos_angle - point.y * sin_angle,
-        point.x * sin_angle + point.y * cos_angle,
-        point.z,
-        point.w,
-    )
+    let new_x = point.x * cos_angle - point.y * sin_angle;
+    let new_y = point.x * sin_angle + point.y * cos_angle;
+
+    point.x = new_x;
+    point.y = new_y;
 }

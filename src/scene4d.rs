@@ -103,6 +103,12 @@ impl Scene4D {
         }
     }
 
+    pub fn drag_all_objects(&mut self, delta: Vec2) {
+        for object in &mut self.objects {
+            object.drag += delta * 0.02;
+        }
+    }
+
     fn add_object(&mut self, new_atoms: Atoms4D) -> usize {
         let index = self.objects.len();
         self.objects.push(Object4D {

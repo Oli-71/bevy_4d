@@ -124,8 +124,8 @@ fn setup_scene(
         .observe(toggle_projection_on_press)
         .id();
 
-    // Cube to rotate view
-    let view_control_entity = commands
+    // Cube to rotate all objects in the scene by dragging.
+    let drag_all_objects_entity = commands
         .spawn((
             Mesh3d(meshes.add(Cuboid::new(0.8 * SCALE, 0.8 * SCALE, 0.8 * SCALE))),
             MeshMaterial3d(white_matl.clone()),
@@ -136,7 +136,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(rotate_global_view_on_drag)
+        .observe(drag_all_objects)
         .id();
 
     // Slider to adjust speed of 3d rotation
@@ -437,7 +437,7 @@ fn setup_scene(
 
     spawn_label(angle_monitor_entity, "__Hyper", 0.9);
     spawn_label(projection_control_entity, "__Projection", 0.9);
-    spawn_label(view_control_entity, "_______View Point", -3.0);
+    spawn_label(drag_all_objects_entity, "_______drag all objects", -3.0);
     spawn_label(slider_3d_rotation_entity, "__Rotation Speed", 0.9);
     spawn_label(slider_height_entity, "__Higher Dimension Height", 0.9);
     spawn_label(flatland_top_line_entity, "Flatland", 0.0);
@@ -570,32 +570,27 @@ fn monitor_scene_4d(
        ));
        trafo.translation = vec3(0., 9. * SCALE, 0.);
     }
-/*
-    for mut trafo in &mut trafos_background {
-        //let pos = trafo.translation;
-        *trafo = Transform::from_rotation(Quat::from_rotation_x(
-            scene.scene_4d.get_angle_high_dimension() % PI,
-        ));
-    }
-   
-    for mut trafo_light in &mut trafosLight {
-        *trafo_light = Transform::from_rotation(Quat::from_rotation_x(
-            scene.scene_4d.get_angle_high_dimension() % (2.0 * PI),
-        ));
-        
-    }*/
 }
 
 /// An observer to rotate an entity when it is dragged
-fn rotate_global_view_on_drag(
+fn drag_all_objects(
     drag: On<Pointer<Drag>>,
     mut transforms: Query<&mut Transform, Without<Camera3d>>,
-    mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
+    mut scene: ResMut<Scene>,
 ) {
     let mut transform = transforms.get_mut(drag.entity).unwrap();
     transform.rotate_y(drag.delta.x * 0.01);
     transform.rotate_x(drag.delta.y * 0.01);
 
+    scene.scene_4d.drag_all_objects(drag.delta);
+}
+// switch global view
+/*
+fn switch_global_view(
+    drag: On<Pointer<Drag>>,
+    mut transforms: Query<&mut Transform, Without<Camera3d>>,
+    mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
+) {
     for mut camera in &mut camera3ds {
         if drag.delta.y > 0. {
             camera.set_target(CAMERA_SPACELAND_POSITION);
@@ -604,6 +599,7 @@ fn rotate_global_view_on_drag(
         }
     }
 }
+    */
 
 /// An observer to adjust the speed of 3D rotation in the 4D scene.
 fn drag_to_adjust_speed(

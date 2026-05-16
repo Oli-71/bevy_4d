@@ -50,7 +50,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
                                          // so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
         
@@ -367,28 +367,28 @@ fn create_cube_4d_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
                 let cc = c as f32 * spacing;
 
                 positions.push(Vec4::new(aa, bb, cc, low));
-                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
+                colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple
 
                 positions.push(Vec4::new(aa, bb, cc, high));
-                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=high
+                colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan
 
                 positions.push(Vec4::new(aa, bb, low, cc));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
+                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green
 
                 positions.push(Vec4::new(aa, bb, high, cc));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
+                colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue
 
                 positions.push(Vec4::new(aa, low, bb, cc));
-                colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue for y=low
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow
 
                 positions.push(Vec4::new(aa, high, bb, cc));
-                colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple for y=high
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white
 
                 positions.push(Vec4::new(low, aa, bb, cc));
-                colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white for x=low
+                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
 
                 positions.push(Vec4::new(high, aa, bb, cc));
-                colors.push(Color::from(Srgba::rgb_u8(0, 0, 0))); //black for x=high
+                colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
             }
         }
     }
@@ -472,28 +472,28 @@ fn create_cube_4d_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
                     let cc = c as f32 * spacing;
 
                     positions.push(Vec4::new(aa, bb, cc, low));
-                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
+                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple
 
                     positions.push(Vec4::new(aa, bb, cc, high));
-                    colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=high
+                    colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan
 
                     positions.push(Vec4::new(aa, bb, low, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
+                    colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green
 
                     positions.push(Vec4::new(aa, bb, high, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
+                    colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue
 
                     positions.push(Vec4::new(aa, low, bb, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue for y=low
+                    colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow
 
                     positions.push(Vec4::new(aa, high, bb, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple for y=high
+                    colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white
 
                     positions.push(Vec4::new(low, aa, bb, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white for x=low
+                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
 
                     positions.push(Vec4::new(high, aa, bb, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(0, 0, 0))); //black for x=high
+                    colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
                 }
             }
         }
@@ -660,22 +660,22 @@ fn create_cube_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
                 let bb = b as f32 * spacing;
 
                 positions.push(Vec4::new(aa, bb, low, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
+                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green
 
                 positions.push(Vec4::new(aa, bb, high, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=high
+                colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue
 
                 positions.push(Vec4::new(aa, low, bb, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow
 
                 positions.push(Vec4::new(aa, high, bb, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
+                colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white
 
                 positions.push(Vec4::new(low, aa, bb, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue for y=low
+                colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
 
                 positions.push(Vec4::new(high, aa, bb, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(255, 0, 255))); //purple for y=high
+                colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
         }
     }
     Atoms4D { positions, colors }
@@ -702,19 +702,60 @@ fn create_square_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
         colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
 
         positions.push(Vec4::new(high, 0.0, aa, 0.0));
-        colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow for w=high
+        colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange for w=high
 
         positions.push(Vec4::new(aa,0.0, low, 0.0));
         colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
 
         positions.push(Vec4::new(aa, 0.0, high, 0.0));
-        colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan for z=high
+        colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue for z=high
     }
     Atoms4D { positions, colors }
 }
 
 fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
-    let capacity = number_per_side * number_per_side * 12;
+    let mut positions = Vec::new();
+    let mut colors = Vec::new();
+
+    let end = (number_per_side / 2) as i32 - 1;
+    let start = -end;
+
+    let spacing = 1.1 * size_atom;
+
+    let low = (start - 1) as f32 * spacing; // Position for the "low" side of the cube (e.g., w = low)
+    let high = (end + 1) as f32 * spacing; // Position for the "high" side of the cube (e.g., w = high)
+
+    // Create atoms for the 6 faces of the 3D cube.
+    for a in start..=end {
+        for b in start..=end {
+            
+                if a==start || a==end || b==start || b==end { // Only create atoms for the edges of the 4D cube
+                    let aa = a as f32 * spacing;
+                    let bb = b as f32 * spacing;
+                    let cc = 0.0;
+
+                    positions.push(Vec4::new(aa, bb, low, cc));
+                    colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green
+
+                    positions.push(Vec4::new(aa, bb, high, cc));
+                    colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue
+
+                    positions.push(Vec4::new(aa, low, bb, cc));
+                    colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow
+
+                    positions.push(Vec4::new(aa, high, bb, cc));
+                    colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //white
+
+                    positions.push(Vec4::new(low, aa, bb, cc));
+                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
+
+                    positions.push(Vec4::new(high, aa, bb, cc));
+                    colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
+            }
+        }
+    }
+    Atoms4D { positions, colors }
+    /* let capacity = number_per_side * number_per_side * 12;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
@@ -768,7 +809,7 @@ fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
             positions.push(Vec4::new(high, high, aa, 0.0));
             colors.push(Color::from(Srgba::rgb_u8(0, 255, 255))); //cyan
     }
-    Atoms4D { positions, colors }
+    Atoms4D { positions, colors } */
 }
 
 // 4D rotation functions for different planes.

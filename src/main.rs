@@ -435,7 +435,7 @@ fn setup_scene(
         ));
     };
 
-    spawn_label(angle_monitor_entity, "__:-)", 0.9);
+    spawn_label(angle_monitor_entity, "__Hyper", 0.9);
     spawn_label(projection_control_entity, "__Projection", 0.9);
     spawn_label(view_control_entity, "_______View Point", -3.0);
     spawn_label(slider_3d_rotation_entity, "__Rotation Speed", 0.9);
@@ -444,7 +444,7 @@ fn setup_scene(
 
     // Instructions
     commands.spawn((
-        Text::new("Visit Flatland and Spaceland!\n The :-) Cone moves your viewpoint into a higher dimension.\n But first try the other options and learn about the scenes."),
+        Text::new("Visit Spaceland and Flatland (the horizontal gap below)!\n The Hyper Cone moves your point of view into a higher dimension.\n But first try the other options and learn about the scenes."),
         Node {
             position_type: PositionType::Absolute,
             top: px(12),

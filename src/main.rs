@@ -145,7 +145,7 @@ fn setup_scene(
     // Cube to rotate all objects in the scene by dragging.
     let drag_all_objects_entity = commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::new(0.8 * SCALE, 0.8 * SCALE, 0.8 * SCALE))),
+            Mesh3d(meshes.add(Cuboid::new(0.5 * SCALE, 0.5 * SCALE, 0.5 * SCALE))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, y_ctr_row1, 0.),
             ControlShape,
@@ -456,7 +456,7 @@ fn setup_scene(
     spawn_label(view_point_control_entity, "__View Point", 0.9);
     spawn_label(angle_monitor_entity, "__Hyper", 0.9);
     spawn_label(projection_control_entity, "__Projection", 0.9);
-    spawn_label(drag_all_objects_entity, "_______drag all objects", -3.0);
+    spawn_label(drag_all_objects_entity, "_____drag all objects", 0.9);
     spawn_label(slider_3d_rotation_entity, "__Rotation Speed", 0.9);
     spawn_label(slider_height_entity, "__Higher Dimension Height", 0.9);
     spawn_label(flatland_top_line_entity, "Flatland", 0.0);

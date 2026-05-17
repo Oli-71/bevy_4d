@@ -75,7 +75,7 @@ impl Scene4D {
 
         //add some objects to the scene.
         let heart_index = scene.add_object(create_heart_3d(size_of_atom, number_per_side * 2));
-        let cube3d_index = scene.add_object(create_cube_3d(size_of_atom, number_per_side));
+        let cube3d_index = scene.add_object(create_cube_surface(size_of_atom, number_per_side));
         let cube4d_index = scene.add_object(create_cube_4d_surface(size_of_atom, number_per_side));
         let cube4d_edges_index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
         let circle_index = scene.add_object(create_circle(size_of_atom, number_per_side));
@@ -268,7 +268,7 @@ impl Scene4D {
 ///
 /// Creates a 3D cube composed of atoms.
 /// `size` is the length of an edge of the cube, and `number_per_side` is how many smaller cubes there are along each edge..
-fn create_cube_3d(size_atom: f32, number_per_side: usize) -> Atoms4D {
+fn create_cube_surface_colorful(size_atom: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);

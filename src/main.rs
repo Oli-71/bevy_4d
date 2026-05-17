@@ -26,6 +26,7 @@ fn main() {
         .add_plugins((DefaultPlugins, MeshPickingPlugin))
         .insert_resource(Scene {
             scene_4d: Scene4D::new(),
+            viewpoint_is_spaceland: false,
         })
         .add_systems(Startup, setup_scene)
         .add_systems(
@@ -71,6 +72,7 @@ struct Atom {
 #[derive(Resource)]
 struct Scene {
     scene_4d: Scene4D,
+    viewpoint_is_spaceland: bool,
 }
 
 fn setup_scene(
@@ -92,7 +94,23 @@ fn setup_scene(
     let y_ctr_row2 = 8. * SCALE;
 
     // Gray Control Objects
-    //
+    //////////////////////////////
+    
+    // Sphere to trigger view point
+    let view_point_control_entity = commands
+        .spawn((
+            Mesh3d(meshes.add(Sphere::new(size_of_controls))),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(-3. * SCALE, y_ctr_row1, 0.),
+            ControlShape,
+        ))
+        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(toggle_view_point_on_press)
+        .id();
+
     // Cone to trigger 4d view
     // also suits as Angle Monitor
     let angle_monitor_entity = commands.spawn((
@@ -435,6 +453,7 @@ fn setup_scene(
         ));
     };
 
+    spawn_label(view_point_control_entity, "__View Point", 0.9);
     spawn_label(angle_monitor_entity, "__Hyper", 0.9);
     spawn_label(projection_control_entity, "__Projection", 0.9);
     spawn_label(drag_all_objects_entity, "_______drag all objects", -3.0);
@@ -444,10 +463,10 @@ fn setup_scene(
 
     // Instructions
     commands.spawn((
-        Text::new("Visit Spaceland and Flatland (the horizontal gap below)!\n The Hyper Cone moves your point of view into a higher dimension.\n But first try the other options and learn about the scenes."),
+        Text::new("Visit Spaceland (top) and Flatland (the bottom horizontal gap)!\n The Hyper Cone moves your point of view into a higher dimension.\n But first try the other options and learn about the scenes."),
         Node {
             position_type: PositionType::Absolute,
-            top: px(12),
+            bottom: px(12),
             left: px(12),
             ..default()
         },
@@ -584,22 +603,22 @@ fn drag_all_objects(
 
     scene.scene_4d.drag_all_objects(drag.delta);
 }
-// switch global view
-/*
-fn switch_global_view(
-    drag: On<Pointer<Drag>>,
-    mut transforms: Query<&mut Transform, Without<Camera3d>>,
+
+/// An observer to switch global view
+fn toggle_view_point_on_press(
+    _press: On<Pointer<Press>>,
+    mut scene: ResMut<Scene>,
     mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
 ) {
+    scene.viewpoint_is_spaceland = !scene.viewpoint_is_spaceland;
     for mut camera in &mut camera3ds {
-        if drag.delta.y > 0. {
+        if scene.viewpoint_is_spaceland {
             camera.set_target(CAMERA_SPACELAND_POSITION);
         } else {
             camera.set_target(CAMERA_FLATLAND_POSITION);
         }
     }
 }
-    */
 
 /// An observer to adjust the speed of 3D rotation in the 4D scene.
 fn drag_to_adjust_speed(

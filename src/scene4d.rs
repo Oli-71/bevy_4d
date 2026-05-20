@@ -32,12 +32,19 @@ impl Object4D {
 
 /// The 4D scene, which contains a list of atoms and a list of objects.
 pub struct Scene4D {
-    pub atoms: Atoms4D,
+    pub atoms: Atoms4D, // all atoms in the scene
+    
     pub size_of_atom: f32,
     pub number_of_atoms_per_side: usize,
-    objects: Vec<Object4D>,
+
+    objects: Vec<Object4D>, // all objects in the scene
+
+    // indices of objects in the scene, grouped by type for easier access.
     objects_3d: Vec<usize>,
     objects_2d: Vec<usize>,
+    objects_planar: Vec<usize>,
+    objects_4d: Vec<usize>,
+    
     pub is_projection_view: bool,
     pub is_high_dimension_view: bool,
     start_time_high_dimension: f32,
@@ -50,7 +57,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 16; // Total atoms will be number_per_side^4, 
                                          // so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
         
@@ -65,6 +72,8 @@ impl Scene4D {
             objects: Vec::new(),
             objects_3d: Vec::new(),
             objects_2d: Vec::new(),
+            objects_planar: Vec::new(),
+            objects_4d: Vec::new(),
             is_high_dimension_view: false,
             is_projection_view: false,
             start_time_high_dimension: 0.0,
@@ -85,6 +94,8 @@ impl Scene4D {
         
         scene.objects_3d = vec![heart_index, cube3d_index, cube4d_index, cube4d_edges_index];
         scene.objects_2d = vec![circle_index, square_index, cube_index, cube_edges_index];
+        scene.objects_planar = vec![circle_index, square_index];
+        scene.objects_4d = vec![cube4d_index, cube4d_edges_index];
 
         scene
     }
@@ -104,8 +115,9 @@ impl Scene4D {
     }
 
     pub fn drag_all_objects(&mut self, delta: Vec2) {
+        let current_drag = self.objects[0].drag; // take reference from first object. Todo: last rotated object
         for object in &mut self.objects {
-            object.drag += delta * 0.02;
+            object.drag = current_drag + delta * 0.02;
         }
     }
 
@@ -135,12 +147,34 @@ impl Scene4D {
         self.is_projection_view = !self.is_projection_view;
     }
 
+    pub fn reset_view(&mut self) {
+        self.is_projection_view = false;
+        self.is_high_dimension_view = false;
+        self.angle_high_dimension = 0.0;
+    }
+
     fn objects_2d(&self) -> impl Iterator<Item = &Object4D> {
         self.objects_2d.iter().map(move |&index| &self.objects[index])
     }
 
     fn objects_3d(&self) -> impl Iterator<Item = &Object4D> {
         self.objects_3d.iter().map(move |&index| &self.objects[index])
+    }
+
+    fn objects_planar(&self) -> impl Iterator<Item = &Object4D> {
+        self.objects_planar.iter().map(move |&index| &self.objects[index])
+    }
+
+    pub fn is_2d(&self, atom_index: usize) -> bool {
+        self.objects_2d.iter().any(|&index| self.objects[index].range().contains(&atom_index))
+    }
+
+    pub fn is_planar(&self, atom_index: usize) -> bool {
+        self.objects_planar.iter().any(|&index| self.objects[index].range().contains(&atom_index))
+    }
+
+    pub fn is_4d(&self, atom_index: usize) -> bool {
+        self.objects_4d.iter().any(|&index| self.objects[index].range().contains(&atom_index))
     }
 
     fn time_in_high_dimension_view(&self, current_time: f32) -> f32 {
@@ -259,6 +293,7 @@ impl Scene4D {
             }
             delta_x += 2. * x_offset;// next column
         }
+
         new_positions
     }
 }

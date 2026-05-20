@@ -1,11 +1,12 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::SubCameraView,
+    camera::{SubCameraView, visibility},
     color::palettes::tailwind::*,
     light::{NotShadowCaster, NotShadowReceiver},
     picking::pointer::PointerInteraction,
-    prelude::*, render::render_asset::RenderAsset,
+    prelude::*, 
+    //render::render_asset::RenderAsset,
 };
 
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
@@ -27,8 +28,12 @@ fn main() {
         .insert_resource(Scene {
             scene_4d: Scene4D::new(),
             viewpoint_is_spaceland: false,
+            state: StateScene::Planar,
         })
-        .add_systems(Startup, setup_scene)
+        .add_systems(
+            Startup, 
+            setup_scene
+        )
         .add_systems(
             Update,
             (
@@ -46,6 +51,8 @@ fn main() {
 #[derive(Component)]
 struct ControlShape;
 
+#[derive(Component)]
+struct AdvancedControlShape;
 #[derive(Component)]
 struct CoverPanel;
 
@@ -66,13 +73,25 @@ struct AngleMonitor;
 
 #[derive(Component)]
 struct Atom {
-    index: usize,
+    index: usize, // index in the Scene4D's atoms vector, to identify which atom this entity corresponds to
+    visible: bool,
+}
+
+#[derive(Component)]
+struct Instructions;
+
+enum StateScene {
+    Planar,
+    FlatlandComplete,
+    ThreeDimensional,
+    SpacelandComplete,
 }
 
 #[derive(Resource)]
 struct Scene {
     scene_4d: Scene4D,
     viewpoint_is_spaceland: bool,
+    state: StateScene,
 }
 
 fn setup_scene(
@@ -81,11 +100,11 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     scene: ResMut<Scene>,
     asset_server: Res<AssetServer>,
-    mut images: ResMut<Assets<Image>>,
+    //mut images: ResMut<Assets<Image>>,
 ) {
     // Set up the materials.
     let white_matl = materials.add(Color::WHITE);
-    let ground_matl = materials.add(Color::from(GRAY_300));
+    //let ground_matl = materials.add(Color::from(GRAY_300));
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
 
@@ -103,6 +122,8 @@ fn setup_scene(
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(-3. * SCALE, y_ctr_row1, 0.),
             ControlShape,
+            AdvancedControlShape,
+            Visibility::Hidden, 
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -134,6 +155,8 @@ fn setup_scene(
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(3. * SCALE, y_ctr_row1, 0.),
             ControlShape,
+            AdvancedControlShape,
+            Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -180,6 +203,21 @@ fn setup_scene(
         MeshMaterial3d(white_matl.clone()),
     ));
 
+    // Sphere to trigger "see more"
+    let show_more_control_entity = commands
+        .spawn((
+            Mesh3d(meshes.add(Sphere::new(size_of_controls))),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(6. * SCALE, y_ctr_row2, 0.),
+            ControlShape,
+        ))
+        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(show_more_on_press)
+        .id();
+
     // slider to adjust higher dimension height (w in Spaceland, y in Flatland)
     let left = -10. * SCALE;
     let slider_height_entity = commands
@@ -188,6 +226,8 @@ fn setup_scene(
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, 2. * SCALE, 0.),
             ControlShape,
+            AdvancedControlShape,
+            Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -202,20 +242,26 @@ fn setup_scene(
             vec3(left, 2. * SCALE, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
+        AdvancedControlShape,
+        Visibility::Hidden,
     ));
 
     // 4D Scene
-    for (index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
+    /////////////////////////
+    // We spawn an entity for each atom in the 4D scene, and use the Atom component to link them 
+    // to their corresponding atoms in the Scene4D. This way, we can easily update their positions and 
+    // visibilities based on the state of the Scene4D.
+    for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
             .spawn((
                 Mesh3d(meshes.add(Sphere::new(scene.scene_4d.size_of_atom * 0.8 * SCALE))),
-                MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[index])),
+                MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[atom_index])),
                 Transform::from_translation(vec3(
                     position.x * SCALE,
                     position.y * SCALE,
                     position.z * SCALE,
                 )),
-                Atom { index }, // to identify these entities
+                Atom { index: atom_index, visible: scene.scene_4d.is_planar(atom_index) },
             ))
             .observe(rotate_object_on_drag);
     }
@@ -433,13 +479,15 @@ fn setup_scene(
     // A helper closure to add labels to the control objects.
     // We use a closure here to avoid repeating the same code for each label,
     // since they all have the same structure (a parent node with absolute positioning and a child text node with the label).
-    let mut spawn_label = |entity: Entity, label: &str, offset: f32| {
+    let mut spawn_label = |entity: Entity, label: &str, offset: f32, visibility: Visibility| {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 ..default()
             },
             Label { entity, offset_y: offset },
+            AdvancedControlShape, // to show/hide labels together with advanced controls
+            visibility,
             children![(
                 Text::new(label),
                 label_text_style.clone(),
@@ -453,23 +501,27 @@ fn setup_scene(
         ));
     };
 
-    spawn_label(view_point_control_entity, "__View Point", 0.9);
-    spawn_label(angle_monitor_entity, "__Hyper", 0.9);
-    spawn_label(projection_control_entity, "__Projection", 0.9);
-    spawn_label(drag_all_objects_entity, "_____drag all objects", 0.9);
-    spawn_label(slider_3d_rotation_entity, "__Rotation Speed", 0.9);
-    spawn_label(slider_height_entity, "__Higher Dimension Height", 0.9);
-    spawn_label(flatland_top_line_entity, "Flatland", 0.0);
+    spawn_label(view_point_control_entity, "View Point", 0.9, Visibility::Hidden);
+    spawn_label(angle_monitor_entity, "Hyper", 0.9, Visibility::Visible);
+    spawn_label(projection_control_entity, "Projection", 0.9, Visibility::Hidden);
+    spawn_label(drag_all_objects_entity, "______synchronize objects", 0.9, Visibility::Visible);
+    spawn_label(slider_3d_rotation_entity, "Rotation Speed", 0.9, Visibility::Visible);
+    spawn_label(slider_height_entity, "Higher Dimension Height", 0.9, Visibility::Hidden);
+    spawn_label(flatland_top_line_entity, "Flatland", 0.0, Visibility::Visible);
+    spawn_label(show_more_control_entity, "Show more", 0.9, Visibility::Visible);
 
     // Instructions
     commands.spawn((
-        Text::new("Visit Spaceland (top) and Flatland (the bottom horizontal gap)!\n The Hyper Cone moves your point of view into a higher dimension.\n But first try the other options and learn about the scenes."),
+        Text::new("What would our three-dimensional world look like from a location in the fourth dimension? Let’s start with what inhabitants of a two-dimensional world see...
+Look into the flatland gap below. Rotate the objects... Then feel free to try all the options (above). The 'Hyper' cone moves your location slowly into the third dimension and back.
+If you feel familiar with the flatlander's understanding of dimension jump, click 'Show more.'"),
         Node {
             position_type: PositionType::Absolute,
-            bottom: px(12),
+            top: px(170),
             left: px(12),
             ..default()
         },
+        Instructions,
     ));
 }
 
@@ -510,11 +562,15 @@ fn transform_scene_4d(
 
     // update the transforms of the atom entities based on the rotated positions
     for (mut transform, mut visibility, atom_entity) in &mut query {
+        if !atom_entity.visible {
+            *visibility = Visibility::Hidden;
+            continue;
+        }
         let index = atom_entity.index;
         if let Some(position) = new_positions.get(index) {
-            transform.translation =
-                vec3(position.x * SCALE, position.y * SCALE, position.z * SCALE);
             *visibility = if scene.scene_4d.is_atom_visible(*position) {
+                transform.translation =
+                    vec3(position.x * SCALE, position.y * SCALE, position.z * SCALE);
                 Visibility::Visible
             } else {
                 Visibility::Hidden
@@ -609,6 +665,7 @@ fn toggle_view_point_on_press(
     _press: On<Pointer<Press>>,
     mut scene: ResMut<Scene>,
     mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
+    //mut text: Query<&mut Text, With<Instructions>>,
 ) {
     scene.viewpoint_is_spaceland = !scene.viewpoint_is_spaceland;
     for mut camera in &mut camera3ds {
@@ -617,6 +674,67 @@ fn toggle_view_point_on_press(
         } else {
             camera.set_target(CAMERA_FLATLAND_POSITION);
         }
+    }
+}
+
+/// An observer to switch to the next scene state.
+fn show_more_on_press(
+    _press: On<Pointer<Press>>,
+    mut text: Query<&mut Text, With<Instructions>>,
+    mut atoms: Query<&mut Atom>,
+    mut scene: ResMut<Scene>,
+    mut visibilities: Query<&mut Visibility, With<AdvancedControlShape>>,
+) {
+    scene.state = match scene.state {
+        StateScene::Planar => StateScene::FlatlandComplete,
+        StateScene::FlatlandComplete => StateScene::ThreeDimensional,
+        StateScene::ThreeDimensional => StateScene::SpacelandComplete,
+        StateScene::SpacelandComplete => StateScene::SpacelandComplete, // no further state
+    };
+
+    scene.scene_4d.reset_view();
+
+    match scene.state {
+        StateScene::Planar => {}, // initial state, nothing to do
+        StateScene::FlatlandComplete => {
+            // add projection
+            // add view point
+            // add height slider
+            for mut visibility in &mut visibilities {
+                *visibility = Visibility::Visible;
+            }
+
+            for mut text in &mut text {
+                text.0 = "Now we have also two three-dimensional cubes extending into our two-dimensional world.\nTry to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension it would be a challenge?!...\n\nBTW: There are a few more options now available. Try and combine them.\nTo experience the 3D-to-4D effect, click 'Show more'.".to_string();
+            }
+
+            for mut atom in &mut atoms {
+                if scene.scene_4d.is_2d(atom.index) {
+                    atom.visible = true;
+                }
+            }
+        },
+        StateScene::ThreeDimensional => {
+            for mut text in &mut text {
+                text.0 = "Study how 3D-Object behave if we go up to a fourth dimension view point (Press 'Hyper').\n'Show more' will add actual 4D objects to the scene. It becomes crazy ;-)".to_string();
+            }
+
+            for mut atom in &mut atoms {
+                if !scene.scene_4d.is_4d(atom.index) {
+                    atom.visible = true;
+                }
+            }
+        },
+        StateScene::SpacelandComplete => {
+            // hide show more button and instructions
+            for mut text in &mut text {
+                text.0 = "Take a few Minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. (A key is the 'Higher Dimension Height' slider...)".to_string();
+            }
+
+            for mut atom in &mut atoms {
+                atom.visible = true;
+            }
+        },
     }
 }
 

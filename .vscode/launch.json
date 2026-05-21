@@ -18,7 +18,7 @@
             "args": []
         },
         {
-            "name": "Launch executable 'bevy_4d' (release-fast)",
+            "name": "Release executable 'bevy_4d' (release-fast)",
             "type": "lldb",
             "request": "launch",
             "cargo": {

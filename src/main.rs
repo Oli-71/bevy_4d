@@ -1,15 +1,15 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::{SubCameraView, visibility},
+    camera::{SubCameraView},
     color::palettes::tailwind::*,
     light::{NotShadowCaster, NotShadowReceiver},
-    picking::pointer::PointerInteraction,
     prelude::*, 
-    //render::render_asset::RenderAsset,
+    sprite::{Anchor, Text2dShadow},
+    text::{FontSmoothing, LineBreak, TextBounds},
+    prelude::ImageFormat::Hdr,
+    camera::visibility::RenderLayers,
 };
-
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 
 mod scene4d;
 use scene4d::*;
@@ -20,6 +20,37 @@ const SCALE: f32 = 6.0; // global scaling to fit the standard screen
 const CAMERA_STANDARD_TARGET: Vec3 = vec3(0., 0., 0.);
 const CAMERA_SPACELAND_POSITION: Vec3 = vec3(0., 70., 140.);
 const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0., 0., 140.);
+
+const SLIDER_HEIGHT_CONTROL_OFFSET_Y: f32 = 5. * SCALE;
+
+const LABEL_VIEW_POINT: &str = "View Point";
+const LABEL_HYPER: &str = "Hyper";
+const LABEL_PROJECTION: &str = "Projection";
+const LABEL_SYNC_DRAG: &str = "______Synchronized Dragging";
+const LABEL_HORIZONTAL_ROTATION: &str = "Horizontal Rotation";
+const LABEL_HIGHER_DIMENSION_OFFSET: &str = "Higher Dimension Offset";
+const LABEL_FLATLAND: &str = "Flatland";
+const LABEL_SHOW_MORE: &str = "Show more";
+
+const INSTRUCTIONS_INITIAL: &str = r#"What would our three-dimensional world look like from a location in the fourth dimension? Let’s start with what inhabitants of a two-dimensional world see:
+Look into the flatland gap below. Flatlanders can only see what happens between the red lines. Rotate the objects... Then try the gray controls at the top.
+The 'Hyper' cone moves your location slowly into the third dimension and back. Wow, From 3D the Flatlanders can look into closed shapes!
+If you feel familiar with the Flatlander's understanding of dimension jump, click 'Show more'."#;
+
+const INSTRUCTIONS_FLATLAND_COMPLETE: &str = r#"Now we have also two 3D cubes extending into our two-dimensional world.
+Try to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension ('Hyper') it would be a challenge.
+
+BTW: There are a few more options available. Try them all.
+Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Horizontal Rotation' and 'View Point'. Now you will understand...
+When you are ready to experience the 3D-to-4D effect, click 'Show more'."#;
+
+const INSTRUCTIONS_THREE_DIMENSIONAL: &str = r#"Study how the two new 3D-Objects behave if we go up to a fourth dimension view point (Again: 'Hyper').
+Are there are similarities to flatlander's experiences?
+
+'Show more' will add 4D-cubes to the scene. It will become crazy ;-)"#;
+
+const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take a few minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider can be a key...
+Note that we can never see 4D objects completely. Imagine a human being seen from 4D. ‘Projection’ pushes the atoms from the higher dimensions into the visible range."#;
 
 fn main() {
     App::new()
@@ -46,10 +77,6 @@ fn main() {
         )
         .run();
 }
-
-/// A marker component for our shapes so we can query them separately from the ground plane.
-#[derive(Component)]
-struct ControlShape;
 
 #[derive(Component)]
 struct AdvancedControlShape;
@@ -121,7 +148,6 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(-3. * SCALE, y_ctr_row1, 0.),
-            ControlShape,
             AdvancedControlShape,
             Visibility::Hidden, 
         ))
@@ -138,7 +164,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
         MeshMaterial3d(white_matl.clone()),
         Transform::from_xyz(0., y_ctr_row1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
-        ControlShape,
+        AdvancedControlShape,
         AngleMonitor,
     ))
     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -154,7 +180,6 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(3. * SCALE, y_ctr_row1, 0.),
-            ControlShape,
             AdvancedControlShape,
             Visibility::Hidden,
         ))
@@ -171,7 +196,6 @@ fn setup_scene(
             Mesh3d(meshes.add(Cuboid::new(0.5 * SCALE, 0.5 * SCALE, 0.5 * SCALE))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, y_ctr_row1, 0.),
-            ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -186,7 +210,6 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(-3. * SCALE, y_ctr_row2, 0.),
-            ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -209,7 +232,6 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, y_ctr_row2, 0.),
-            ControlShape,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -224,8 +246,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(left, 2. * SCALE, 0.),
-            ControlShape,
+            Transform::from_xyz(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
             AdvancedControlShape,
             Visibility::Hidden,
         ))
@@ -238,8 +259,8 @@ fn setup_scene(
 
     commands.spawn((
         Mesh3d(meshes.add(Segment3d::new(
-            vec3(left, -2. * SCALE, 0.),
-            vec3(left, 2. * SCALE, 0.),
+            vec3(left, -2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
+            vec3(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
         AdvancedControlShape,
@@ -381,21 +402,6 @@ fn setup_scene(
     );
 
     // Background Panel
-    
-    /* // 1. Schachbrett-Textur erstellen (z.B. 2x2 oder 8x8)
-    let size = 8;
-    let mut image = create_checkerboard_image(size);
-    // WICHTIG: Damit die Linien scharf bleiben
-    //image.sampler = bevy::render::texture::ImageSampler::nearest();
-    let texture_handle = images.add(image);
-
-    // 2. Material mit der Textur erstellen
-    let material_handle = materials.add(StandardMaterial {
-        base_color_texture: Some(texture_handle),
-        // Optional: unlit: true, // Wenn keine Beleuchtung gewünscht ist
-        ..default()
-    }); */
-
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(
             vec3(0., 0., 1.),
@@ -501,26 +507,32 @@ fn setup_scene(
         ));
     };
 
-    spawn_label(view_point_control_entity, "View Point", 0.9, Visibility::Hidden);
-    spawn_label(angle_monitor_entity, "Hyper", 0.9, Visibility::Visible);
-    spawn_label(projection_control_entity, "Projection", 0.9, Visibility::Hidden);
-    spawn_label(drag_all_objects_entity, "______synchronize objects", 0.9, Visibility::Visible);
-    spawn_label(slider_3d_rotation_entity, "Rotation Speed", 0.9, Visibility::Visible);
-    spawn_label(slider_height_entity, "Higher Dimension Height", 0.9, Visibility::Hidden);
-    spawn_label(flatland_top_line_entity, "Flatland", 0.0, Visibility::Visible);
-    spawn_label(show_more_control_entity, "Show more", 0.9, Visibility::Visible);
+    spawn_label(view_point_control_entity, LABEL_VIEW_POINT, 0.9, Visibility::Hidden);
+    spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9, Visibility::Visible);
+    spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9, Visibility::Hidden);
+    spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9, Visibility::Visible);
+    spawn_label(slider_3d_rotation_entity, LABEL_HORIZONTAL_ROTATION, 0.9, Visibility::Visible);
+    spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden);
+    spawn_label(flatland_top_line_entity, LABEL_FLATLAND, 0.0, Visibility::Visible);
+    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible);
 
     // Instructions
     commands.spawn((
-        Text::new("What would our three-dimensional world look like from a location in the fourth dimension? Let’s start with what inhabitants of a two-dimensional world see...
-Look into the flatland gap below. Rotate the objects... Then feel free to try all the options (above). The 'Hyper' cone moves your location slowly into the third dimension and back.
-If you feel familiar with the flatlander's understanding of dimension jump, click 'Show more.'"),
+        Text::new(INSTRUCTIONS_INITIAL),
         Node {
             position_type: PositionType::Absolute,
-            top: px(170),
-            left: px(12),
+            top: percent(20.),
+            left: percent(10.),
+            right: percent(40.),
             ..default()
         },
+        TextFont {
+            font: asset_server.load("fonts/CenturyGothicPaneuropeanThin.ttf"),
+            font_size: 20.0,
+            ..default()
+        },
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        BackgroundColor(Color::srgba_u8(10, 10, 10, 50)),
         Instructions,
     ));
 }
@@ -536,18 +548,6 @@ fn update_material_on<E: EntityEvent>(
         if let Ok(mut material) = query.get_mut(event.event_target()) {
             material.0 = new_material.clone();
         }
-    }
-}
-
-/// A system that draws hit indicators for every pointer.
-fn draw_mesh_intersections(pointers: Query<&PointerInteraction>, mut gizmos: Gizmos) {
-    for (point, normal) in pointers
-        .iter()
-        .filter_map(|interaction| interaction.get_nearest_hit())
-        .filter_map(|(_entity, hit)| hit.position.zip(hit.normal))
-    {
-        gizmos.sphere(point, 0.05, RED_500);
-        gizmos.arrow(point, point + normal.normalize() * 0.5, PINK_100);
     }
 }
 
@@ -665,7 +665,6 @@ fn toggle_view_point_on_press(
     _press: On<Pointer<Press>>,
     mut scene: ResMut<Scene>,
     mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
-    //mut text: Query<&mut Text, With<Instructions>>,
 ) {
     scene.viewpoint_is_spaceland = !scene.viewpoint_is_spaceland;
     for mut camera in &mut camera3ds {
@@ -680,7 +679,7 @@ fn toggle_view_point_on_press(
 /// An observer to switch to the next scene state.
 fn show_more_on_press(
     _press: On<Pointer<Press>>,
-    mut text: Query<&mut Text, With<Instructions>>,
+    mut text: Query<(&mut Text, &mut Node), With<Instructions>>,
     mut atoms: Query<&mut Atom>,
     mut scene: ResMut<Scene>,
     mut visibilities: Query<&mut Visibility, With<AdvancedControlShape>>,
@@ -704,8 +703,12 @@ fn show_more_on_press(
                 *visibility = Visibility::Visible;
             }
 
-            for mut text in &mut text {
-                text.0 = "Now we have also two three-dimensional cubes extending into our two-dimensional world.\nTry to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension it would be a challenge?!...\n\nBTW: There are a few more options now available. Try and combine them.\nTo experience the 3D-to-4D effect, click 'Show more'.".to_string();
+            for (mut text, mut node) in &mut text {
+                text.0 = INSTRUCTIONS_FLATLAND_COMPLETE.to_string();
+                //middle right position
+                node.top = percent(22.);
+                node.left = percent(43.);
+                node.right = percent(5.);
             }
 
             for mut atom in &mut atoms {
@@ -715,8 +718,12 @@ fn show_more_on_press(
             }
         },
         StateScene::ThreeDimensional => {
-            for mut text in &mut text {
-                text.0 = "Study how 3D-Object behave if we go up to a fourth dimension view point (Press 'Hyper').\n'Show more' will add actual 4D objects to the scene. It becomes crazy ;-)".to_string();
+            for (mut text, mut node) in &mut text {
+                text.0 = INSTRUCTIONS_THREE_DIMENSIONAL.to_string();
+                //middle more right position
+                node.top = percent(22.);
+                node.left = percent(60.);
+                node.right = percent(5.);
             }
 
             for mut atom in &mut atoms {
@@ -727,8 +734,12 @@ fn show_more_on_press(
         },
         StateScene::SpacelandComplete => {
             // hide show more button and instructions
-            for mut text in &mut text {
-                text.0 = "Take a few Minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. (A key is the 'Higher Dimension Height' slider...)".to_string();
+            for (mut text, mut node) in &mut text {
+                text.0 = INSTRUCTIONS_SPACELAND_COMPLETE.to_string();
+                //left bottom position
+                node.top = percent(80.);
+                node.left = percent(3.);
+                node.right = percent(46.);
             }
 
             for mut atom in &mut atoms {
@@ -770,10 +781,10 @@ fn drag_to_adjust_higher_dimension_height(
     let mut transform = transforms.get_mut(drag.entity).unwrap();
 
     let sensitivity = 0.02;
-    let y = transform.translation.y - drag.delta.y * SCALE * sensitivity;
+    let y = transform.translation.y - drag.delta.y * SCALE * sensitivity - SLIDER_HEIGHT_CONTROL_OFFSET_Y;
     let bound = 2.0 * SCALE; // Set a y coordinate bound for how far the control can be dragged
     if (-bound..=bound).contains(&y) {
-        transform.translation.y = y;
+        transform.translation.y = y + SLIDER_HEIGHT_CONTROL_OFFSET_Y;
         // map y to -1..0
         let height = (y - bound) / (2.0 * bound);
         scene.scene_4d.adjust_higher_dimension_height(height);
@@ -801,32 +812,4 @@ fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time
 /// An observer to trigger toggle_projection when the ControlShape is pressed.
 fn toggle_projection_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>) {
     scene.scene_4d.toggle_projection_view();
-}
-
-fn create_checkerboard_image(size: u32) -> Image {
-    let mut pixels = vec![0u8; (size * size * 4) as usize];
-    for y in 0..size {
-        for x in 0..size {
-            let color = if (x + y) % 2 == 0 {
-                [255, 255, 255, 255] // Weiß
-            } else {
-                [0, 0, 0, 255] // Schwarz
-            };
-            let i = (y * size + x) as usize * 4;
-            pixels[i..i + 4].copy_from_slice(&color);
-        }
-    }
-
-    Image::new(
-        Extent3d {
-            width: size,
-            height: size,
-            depth_or_array_layers: 1,
-        },
-        TextureDimension::D2,
-        pixels,
-        TextureFormat::Rgba8UnormSrgb,
-        bevy::asset::RenderAssetUsages::default()//RenderAssetUsages::default(),
-        //RenderAssetUsages::default(),
-    )
 }

@@ -57,7 +57,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
                                          // so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
         
@@ -204,7 +204,7 @@ impl Scene4D {
         let angle = time; // Rotation angle for the continuous rotation and the higher-dimension rotation
         let continuous_rotation_matrix = Mat3::from_rotation_y(self.speed_3d_rotation * angle); // Rotate around the Z-axis
 
-        // Apply local transformations for each object based on its drag state.
+        // Closure to apply local transformations for each object based on its drag state.
         //  -For 3D objects, we apply a 3D rotation based on the drag.
         //  -For 2D objects, we apply a 2D rotation based on the drag.
         let mut apply_local_transform = |object: &Object4D, drag_matrix: Mat3| {
@@ -232,6 +232,29 @@ impl Scene4D {
             apply_local_transform(object_2d, object_2d.drag_rotation_x());
         }
 
+        // Placement of objects in the scenes (2D/3D) 
+        let x_offset = 2.5; // Distance to move the objects apart
+
+        // 3d row:
+        // - spread out within the row 
+        let mut delta_x = -3. * x_offset;
+        for object_3d in self.objects_3d(){
+            for atom_index in object_3d.range() {
+                new_positions[atom_index].x += delta_x;
+            }
+            delta_x += 2. * x_offset;// next column
+        }
+
+        // 2d row: 
+        // - spread out within the row
+        let mut delta_x = -3. * x_offset;
+        for object_2d in self.objects_2d(){
+            for atom_index in object_2d.range() {
+                new_positions[atom_index].x += delta_x;
+            }
+            delta_x += 2. * x_offset;// next column
+        }
+
         // Higher dimension transformation
         // applied on top of the local transformations above.
         // Atoms will move in and out of the visible flat-land and space-land.
@@ -254,20 +277,15 @@ impl Scene4D {
             }    
         }
 
-        // Placement of objects in the scene.
+        // Placement of objects in the complete scene.
         // Projection to lower dimension. 
-        let x_offset = 2.5; // Distance to move the objects apart
         let hd_offset = 2.1 * self.higher_dimension_height;// Distance to move the objects in the higher dimension.
 
         // 3d row:
-        // - move upwards
-        // - spread out within the row 
         // - project to w=0 space in projection view
         let y_offset = 2. * x_offset;
-        let mut delta_x = -3. * x_offset;
         for object_3d in self.objects_3d(){
             for atom_index in object_3d.range() {
-                new_positions[atom_index].x += delta_x;
                 new_positions[atom_index].y += y_offset;
                 if self.is_projection_view{
                     new_positions[atom_index].w = 0.; // move all atoms to the same w level in projection view 
@@ -275,23 +293,18 @@ impl Scene4D {
                     new_positions[atom_index].w += hd_offset;
                 }
             }
-            delta_x += 2. * x_offset;// next column
         }
 
-        // 2d row: 
-        // - spread out within the row
+        // 2d row:
         // - project to y=0 plane in projection view
-        let mut delta_x = -3. * x_offset;
         for object_2d in self.objects_2d(){
             for atom_index in object_2d.range() {
-                new_positions[atom_index].x += delta_x;
                 if self.is_projection_view{
                     new_positions[atom_index].y = 0.; // move all atoms to the same y level in projection view 
                 } else {
                     new_positions[atom_index].y += hd_offset;
                 }   
             }
-            delta_x += 2. * x_offset;// next column
         }
 
         new_positions

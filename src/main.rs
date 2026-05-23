@@ -11,6 +11,7 @@ use bevy::{
     camera::visibility::RenderLayers,
 };
 
+mod atoms;
 mod scene4d;
 use scene4d::*;
 mod smooth;

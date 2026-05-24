@@ -536,6 +536,11 @@ fn setup_scene(
         BackgroundColor(Color::srgba_u8(10, 10, 10, 50)),
         Instructions,
     ));
+
+    spawn_tripod(commands, meshes, materials,
+        vec3(0.,0.,0.), 
+        SCALE
+    );
 }
 
 /// Returns an observer that updates the entity's material to the one specified.
@@ -813,4 +818,81 @@ fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time
 /// An observer to trigger toggle_projection when the ControlShape is pressed.
 fn toggle_projection_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>) {
     scene.scene_4d.toggle_projection_view();
+}
+
+fn spawn_tripod (
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    position: Vec3,
+    scale: f32
+) {
+    let length = 1.0;
+    let radius = 0.05 * length;
+    // Parent Entity (Holds position/transform)
+    commands.spawn((
+        Name::new("Tripod"),
+        Transform::from_scale(vec3(scale,scale,scale)).with_translation(position),
+        Visibility::default(), // Erforderlich, damit Kinder sichtbar sind
+    ))
+    .with_children(|parent| {
+        //Center gray
+        parent.spawn((
+            Mesh3d(meshes.add(Sphere::new(2.*radius))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::gray(0.1)))),
+        ));
+
+        //y-Axis green
+        parent.spawn((
+            Mesh3d(meshes.add(Cylinder::new(radius, length))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::GREEN))),
+            Transform::from_translation(vec3(0.0, 0.5*length, 0.0)),
+            //Visibility::Hidden, // Dieses Kind ist unsichtbar
+        ));
+        parent.spawn((
+            Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::GREEN))),
+            Transform::from_translation(vec3(0.0, length, 0.0)),
+        ));
+
+        //z-Axis blue
+        parent.spawn((
+            Mesh3d(meshes.add(Cylinder::new(radius, length))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
+            Transform::from_rotation(Quat::from_rotation_x(PI/2.)).with_translation(vec3(0.0, 0.0, 0.5*length)),
+        ));
+        parent.spawn((
+            Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
+            Transform::from_rotation(Quat::from_rotation_x(PI/2.)).with_translation(vec3(0.0, 0.0, length)),
+        ));
+
+        //x-Axis red
+        parent.spawn((
+            Mesh3d(meshes.add(Cylinder::new(radius, length))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
+            Transform::from_rotation(Quat::from_rotation_z(PI/2.)).with_translation(vec3(0.5*length, 0.0, 0.0)),
+        ));
+        parent.spawn((
+            Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
+            Transform::from_rotation(Quat::from_rotation_z(PI/-2.)).with_translation(vec3(length, 0.0, 0.0)),
+        ));
+
+        //w-Axis yellow
+        let mut trafo = Transform::from_translation(vec3(0.,0.5*length,0.));
+        trafo = Transform::from_rotation(Quat::from_euler(EulerRot::ZXY,PI/4.,PI/4.,0.)).mul_transform(trafo);
+        parent.spawn((
+            Mesh3d(meshes.add(Cylinder::new(radius, length))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::rgba_u8(255, 255, 0, 160)))),//yellow
+            trafo,
+        ));
+        let mut trafo = Transform::from_translation(vec3(0.,length,0.));
+        trafo = Transform::from_rotation(Quat::from_euler(EulerRot::ZXY,PI/4.,PI/4.,0.)).mul_transform(trafo);
+        parent.spawn((
+            Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::rgba_u8(255, 255, 0, 160)))),//yellow
+            trafo,
+        ));
+    });
 }

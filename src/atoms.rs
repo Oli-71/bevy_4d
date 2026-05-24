@@ -506,3 +506,116 @@ pub(crate) fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms
     }
     Atoms4D { positions, colors }
 }
+
+pub(crate) fn create_head(size_atom: f32) -> Atoms4D {
+    let number_per_side = 16;
+    let capacity = number_per_side * number_per_side * number_per_side;
+    let mut positions = Vec::with_capacity(capacity);
+    let mut colors = Vec::with_capacity(capacity);
+
+    let spacing = 1.1 * size_atom;
+
+    let start = -(number_per_side as i32 / 2);
+    let end = start + number_per_side as i32 - 1;
+
+    for z in start..=end {
+        for y in start..=end {
+            for x in start..=end {
+                let px = x as f32 * spacing;
+                let py = y as f32 * spacing;
+                let pz = z as f32 * spacing;
+
+                let head = (px / (7.2 * spacing)).powi(2)
+                    + (py / (8.0 * spacing)).powi(2)
+                    + (pz / (5.8 * spacing)).powi(2) <= 1.0;
+
+                if !head {
+                    continue;
+                }
+
+                let brain = (px / (4.0 * spacing)).powi(2)
+                    + ((py - 2.0 * spacing) / (4.5 * spacing)).powi(2)
+                    + (pz / (3.5 * spacing)).powi(2) <= 1.0;
+
+                let nose = pz > 2.0 * spacing
+                    && py > 0.5 * spacing
+                    && px.abs() < 3.5 * spacing
+                    && (px / (3.0 * spacing)).powi(2)
+                        + ((py - 1.5 * spacing) / (2.5 * spacing)).powi(2)
+                        + ((pz - 4.0 * spacing) / (2.0 * spacing)).powi(2)
+                        <= 1.0;
+
+                let left_eye = (px + 3.0 * spacing).abs() < 1.2 * spacing
+                    && (py - 2.0 * spacing).abs() < 1.0 * spacing
+                    && (pz - 4.0 * spacing).abs() < 1.0 * spacing;
+                let right_eye = (px - 3.0 * spacing).abs() < 1.2 * spacing
+                    && (py - 2.0 * spacing).abs() < 1.0 * spacing
+                    && (pz - 4.0 * spacing).abs() < 1.0 * spacing;
+
+                let mouth = py < -1.5 * spacing
+                    && py > -3.5 * spacing
+                    && pz > 3.0 * spacing
+                    && px.abs() < 3.5 * spacing
+                    && (pz - 3.5 * spacing).abs() < 1.5 * spacing;
+
+                let surface = (px / (7.2 * spacing)).powi(2)
+                    + (py / (8.0 * spacing)).powi(2)
+                    + (pz / (5.8 * spacing)).powi(2) > 0.72;
+
+                let color = if left_eye || right_eye {
+                    Color::from(Srgba::rgb_u8(20, 20, 20))
+                } else if mouth {
+                    Color::from(Srgba::rgb_u8(170, 40, 40))
+                } else if nose {
+                    Color::from(Srgba::rgb_u8(220, 160, 120))
+                } else if brain {
+                    Color::from(Srgba::rgb_u8(200, 200, 210))
+                } else if surface {
+                    Color::from(Srgba::rgb_u8(240, 190, 160))
+                } else {
+                    Color::from(Srgba::rgb_u8(190, 80, 80))
+                };
+
+                positions.push(Vec4::new(px, py, pz, 0.0));
+                colors.push(color);
+            }
+        }
+    }
+
+    Atoms4D { positions, colors }
+}
+
+pub(crate) fn create_head2(size_atom: f32) -> Atoms4D {
+    let file_contents = include_str!("head_voxels.txt");
+    let lines = file_contents
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect::<Vec<_>>();
+
+    let spacing = 1.1 * size_atom;
+    let mut positions = Vec::with_capacity(lines.len());
+    let mut colors = Vec::with_capacity(lines.len());
+
+    for line in lines {
+        let parts = line.split_whitespace().collect::<Vec<_>>();
+        if let [x, y, z, r, g, b] = parts.as_slice() {
+            let x: i32 = x.parse().unwrap();
+            let y: i32 = y.parse().unwrap();
+            let z: i32 = z.parse().unwrap();
+            let r: u8 = r.parse().unwrap();
+            let g: u8 = g.parse().unwrap();
+            let b: u8 = b.parse().unwrap();
+
+            positions.push(Vec4::new(
+                x as f32 * spacing,
+                y as f32 * spacing,
+                z as f32 * spacing,
+                0.0,
+            ));
+            colors.push(Color::from(Srgba::rgb_u8(r, g, b)));
+        }
+    }
+
+    Atoms4D { positions, colors }
+}

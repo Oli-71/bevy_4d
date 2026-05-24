@@ -81,6 +81,7 @@ impl Scene4D {
 
         //add some objects to the scene.
         let heart_index = scene.add_object(create_heart_3d(size_of_atom, number_per_side * 2));
+        //let heart_index = scene.add_object(create_head2(size_of_atom));
         let cube3d_index = scene.add_object(create_cube_surface(size_of_atom, number_per_side));
         let cube4d_index = scene.add_object(create_cube_4d_surface(size_of_atom, number_per_side));
         let cube4d_edges_index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));

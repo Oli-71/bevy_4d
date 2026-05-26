@@ -7,13 +7,17 @@ pub struct Atoms4D {
     pub colors: Vec<Color>,
 }
 
+
+fn orange() -> Srgba {
+    Srgba::rgb_u8(255, 140, 26)
+}
 // Helper functions to create different 3D and 4D objects as sequences of atoms.
 // Objects are centered around the origin.
 
 /// Creates a 3D cube composed of atoms.
 /// `size` is the length of an edge of the cube, and `number_per_side` is how many smaller cubes there are along each edge.
 pub(crate) fn create_cube_surface_colorful(size_atom: f32, number_per_side: usize) -> Atoms4D {
-    let capacity = number_per_side * number_per_side * number_per_side;
+    let capacity = number_per_side * number_per_side * 6 * 2;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
@@ -138,7 +142,7 @@ pub(crate) fn create_cube_4d_surface(size_atom: f32, number_per_side: usize) -> 
                 colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
 
                 positions.push(Vec4::new(high, aa, bb, cc));
-                colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
+                colors.push(Color::from(orange())); //orange
             }
         }
     }
@@ -243,7 +247,7 @@ pub(crate) fn create_cube_4d_edges(size_atom: f32, number_per_side: usize) -> At
                     colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
 
                     positions.push(Vec4::new(high, aa, bb, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
+                    colors.push(Color::from(orange())); //orange
                 }
             }
         }
@@ -256,10 +260,12 @@ pub(crate) fn create_heart_3d(size_atom: f32, number_per_side: usize) -> Atoms4D
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
-    let end = (number_per_side / 2) as i32;
+    let actual_number_per_side = number_per_side * 2;
+
+    let end = (actual_number_per_side / 2) as i32;
     let start = -end;
     let spacing = 1.1 * size_atom;
-    let scale = 4.0 / (spacing * number_per_side as f32); // Scale the heart to fit within the cube
+    let scale = 4.0 / (spacing * actual_number_per_side as f32); // Scale the heart to fit within the cube
 
     for x in start..=end {
         for y in start..=end {
@@ -425,7 +431,7 @@ pub(crate) fn create_cube_surface(size_atom: f32, number_per_side: usize) -> Ato
                 colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
 
                 positions.push(Vec4::new(high, aa, bb, 0.0));
-                colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
+                colors.push(Color::from(orange())); //orange
         }
     }
     Atoms4D { positions, colors }
@@ -452,7 +458,7 @@ pub(crate) fn create_square_surface(size_atom: f32, number_per_side: usize) -> A
         colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red for w=low
 
         positions.push(Vec4::new(high, 0.0, aa, 0.0));
-        colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange for w=high
+        colors.push(Color::from(orange())); //orange for w=high
 
         positions.push(Vec4::new(aa,0.0, low, 0.0));
         colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green for z=low
@@ -500,10 +506,35 @@ pub(crate) fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms
                     colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
 
                     positions.push(Vec4::new(high, aa, bb, cc));
-                    colors.push(Color::from(Srgba::rgb_u8(255, 165, 0))); //orange
+                    colors.push(Color::from(orange())); //orange
             }
         }
     }
+    Atoms4D { positions, colors }
+}
+
+pub(crate) fn create_tripod_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
+    let mut positions = Vec::new();
+    let mut colors = Vec::new();
+
+    let spacing = 1.1 * size_atom;
+
+    // origin
+    positions.push(Vec4::new(0., 0., 0., 0.));
+    colors.push(Color::from(Srgba::rgb_u8(255, 255, 255))); //gray
+
+    for a in 1..=number_per_side {
+        let aa = a as f32 * spacing;
+        positions.push(Vec4::new(aa, 0., 0., 0.));
+        colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
+        positions.push(Vec4::new(0., aa, 0., 0.));
+        colors.push(Color::from(Srgba::rgb_u8(0, 255, 0))); //green
+        positions.push(Vec4::new(0., 0., aa, 0.));
+        colors.push(Color::from(Srgba::rgb_u8(0, 0, 255))); //blue
+        positions.push(Vec4::new(0., 0., 0., aa));
+        colors.push(Color::from(Srgba::rgb_u8(255, 255, 0))); //yellow
+    }
+
     Atoms4D { positions, colors }
 }
 
@@ -585,8 +616,9 @@ pub(crate) fn create_head(size_atom: f32) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_head2(size_atom: f32) -> Atoms4D {
-    let file_contents = include_str!("head_voxels.txt");
+pub(crate) fn create_atoms_from_file (size_atom: f32, name: String) -> Atoms4D {
+    let file_contents = std::fs::read_to_string(&name)
+        .expect("Could not read file");
     let lines = file_contents
         .lines()
         .map(str::trim)

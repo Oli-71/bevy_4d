@@ -15,6 +15,9 @@
                     "--bin=bevy_4d"
                 ]
             },
+            "env": {
+                "RUST_BACKTRACE": "1"
+            },
             "args": []
         },
         {
@@ -28,6 +31,9 @@
                     "--bin=bevy_4d"
                 ]
             },
+            "env": {
+                "RUST_BACKTRACE": "1"
+            },
             "args": []
         },
         {
@@ -39,6 +45,9 @@
                     "test",
                     "--bin=bevy_4d"
                 ]
+            },
+            "env": {
+                "RUST_BACKTRACE": "1"
             }
         }
     ]

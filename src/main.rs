@@ -4,11 +4,7 @@ use bevy::{
     camera::{SubCameraView},
     color::palettes::tailwind::*,
     light::{NotShadowCaster, NotShadowReceiver},
-    prelude::*, 
-    sprite::{Anchor, Text2dShadow},
-    text::{FontSmoothing, LineBreak, TextBounds},
-    prelude::ImageFormat::Hdr,
-    camera::visibility::RenderLayers,
+    prelude::*,
 };
 
 mod atoms;
@@ -50,8 +46,11 @@ Are there are similarities to flatlander's experiences?
 
 'Show more' will add 4D-cubes to the scene. It will become crazy ;-)"#;
 
-const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take a few minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider can be a key...
-Note that we can never see 4D objects completely. Imagine a human being seen from 4D. ‘Projection’ pushes the atoms from the higher dimensions into the visible range."#;
+const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take a few minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider and 'Synchronized Dragging' can help...
+‘Projection’ pushes the atoms from the higher dimensions into the visible range. But note that actually we can never see 4D objects completely.  
+...Imagine a human being seen from 4D."#;
+
+const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations."#;
 
 fn main() {
     App::new()
@@ -69,7 +68,6 @@ fn main() {
         .add_systems(
             Update,
             (
-                //draw_mesh_intersections,
                 transform_scene_4d,
                 monitor_scene_4d,
                 update_labels,
@@ -108,11 +106,13 @@ struct Atom {
 #[derive(Component)]
 struct Instructions;
 
+#[derive(PartialEq)]
 enum StateScene {
     Planar,
     FlatlandComplete,
     ThreeDimensional,
     SpacelandComplete,
+    SpacelandOnly,
 }
 
 #[derive(Resource)]
@@ -158,6 +158,12 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(toggle_view_point_on_press)
         .id();
+
+    //debug
+    spawn_tripod(&mut commands, &mut meshes, &mut materials,
+        vec3(-5. * SCALE, y_ctr_row2, 0.), 
+        SCALE
+    );
 
     // Cone to trigger 4d view
     // also suits as Angle Monitor
@@ -268,25 +274,8 @@ fn setup_scene(
         Visibility::Hidden,
     ));
 
-    // 4D Scene
-    /////////////////////////
-    // We spawn an entity for each atom in the 4D scene, and use the Atom component to link them 
-    // to their corresponding atoms in the Scene4D. This way, we can easily update their positions and 
-    // visibilities based on the state of the Scene4D.
-    for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
-        commands
-            .spawn((
-                Mesh3d(meshes.add(Sphere::new(scene.scene_4d.size_of_atom * 0.8 * SCALE))),
-                MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[atom_index])),
-                Transform::from_translation(vec3(
-                    position.x * SCALE,
-                    position.y * SCALE,
-                    position.z * SCALE,
-                )),
-                Atom { index: atom_index, visible: scene.scene_4d.is_planar(atom_index) },
-            ))
-            .observe(rotate_object_on_drag);
-    }
+    // 4D-Scene: Flatland and Spaceland
+    spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
 
     // Cover Panel to hide invisible 3D-Space for flatland
     let size_of_panel = 30. * SCALE;
@@ -536,11 +525,6 @@ fn setup_scene(
         BackgroundColor(Color::srgba_u8(10, 10, 10, 50)),
         Instructions,
     ));
-
-    spawn_tripod(commands, meshes, materials,
-        vec3(0.,0.,0.), 
-        SCALE
-    );
 }
 
 /// Returns an observer that updates the entity's material to the one specified.
@@ -631,7 +615,6 @@ fn update_labels(
 fn monitor_scene_4d(
     mut visibilities: Query<&mut Visibility, With<BackgroundPanel>>,
     mut trafos: Query<&mut Transform, With<AngleMonitor>>,
-    //mut trafos_background: Query<&mut Transform, With<BackgroundPanel>>,
     scene: Res<Scene>,
 ) {
     // show background if 4D rotation is Zero
@@ -686,15 +669,19 @@ fn toggle_view_point_on_press(
 fn show_more_on_press(
     _press: On<Pointer<Press>>,
     mut text: Query<(&mut Text, &mut Node), With<Instructions>>,
-    mut atoms: Query<&mut Atom>,
+    mut atoms: Query<(Entity, &mut Atom)>,
     mut scene: ResMut<Scene>,
     mut visibilities: Query<&mut Visibility, With<AdvancedControlShape>>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     scene.state = match scene.state {
         StateScene::Planar => StateScene::FlatlandComplete,
         StateScene::FlatlandComplete => StateScene::ThreeDimensional,
         StateScene::ThreeDimensional => StateScene::SpacelandComplete,
-        StateScene::SpacelandComplete => StateScene::SpacelandComplete, // no further state
+        StateScene::SpacelandComplete => StateScene::SpacelandOnly,
+        StateScene::SpacelandOnly => StateScene::SpacelandOnly, // no further state
     };
 
     scene.scene_4d.reset_view();
@@ -717,7 +704,7 @@ fn show_more_on_press(
                 node.right = percent(5.);
             }
 
-            for mut atom in &mut atoms {
+            for (entity, mut atom) in &mut atoms {
                 if scene.scene_4d.is_2d(atom.index) {
                     atom.visible = true;
                 }
@@ -732,14 +719,13 @@ fn show_more_on_press(
                 node.right = percent(5.);
             }
 
-            for mut atom in &mut atoms {
+            for (entity, mut atom) in &mut atoms {
                 if !scene.scene_4d.is_4d(atom.index) {
                     atom.visible = true;
                 }
             }
         },
         StateScene::SpacelandComplete => {
-            // hide show more button and instructions
             for (mut text, mut node) in &mut text {
                 text.0 = INSTRUCTIONS_SPACELAND_COMPLETE.to_string();
                 //left bottom position
@@ -748,9 +734,28 @@ fn show_more_on_press(
                 node.right = percent(46.);
             }
 
-            for mut atom in &mut atoms {
+            for (entity, mut atom) in &mut atoms {
                 atom.visible = true;
             }
+        },
+        StateScene::SpacelandOnly => {
+            // hide show more button and instructions
+            for (mut text, mut node) in &mut text {
+                text.0 = INSTRUCTIONS_SPACELAND_ONLY.to_string();
+                //left bottom position
+                node.top = percent(80.);
+                node.left = percent(3.);
+                node.right = percent(46.);
+            }
+
+            //remove all atoms
+            for (entity, atom) in atoms {
+                commands.entity(entity).despawn();
+            }
+
+            scene.scene_4d = Scene4D::new_complex_scene();
+
+            spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
         },
     }
 }
@@ -820,10 +825,46 @@ fn toggle_projection_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scen
     scene.scene_4d.toggle_projection_view();
 }
 
+fn spawn_scene (
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    scene: & ResMut<Scene>,
+) {
+    // 4D Scene
+    /////////////////////////
+    // We spawn an entity for each atom in the 4D scene, and use the Atom component to link them 
+    // to their corresponding atoms in the Scene4D. This way, we can easily update their positions and 
+    // visibilities based on the state of the Scene4D.
+    let sphere_shape = scene.scene_4d.is_2row_structure;
+    let radius = scene.scene_4d.size_of_atom * 0.8 * SCALE;
+    // Create a single Handle<Mesh> so both branches have the same type
+    let atom_mesh_handle = if sphere_shape {
+        meshes.add(Sphere::new(radius))
+    } else {
+        meshes.add(Cuboid::new(2.0 * radius, 2.0 * radius, 2.0 * radius))
+        //meshes.add(Sphere::new(radius))
+    };
+    for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
+        commands
+            .spawn((
+                Mesh3d(atom_mesh_handle.clone()),
+                MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[atom_index])),
+                Transform::from_translation(vec3(
+                    position.x * SCALE,
+                    position.y * SCALE,
+                    position.z * SCALE,
+                )),
+                Atom { index: atom_index, visible: scene.state == StateScene::SpacelandOnly || scene.scene_4d.is_planar(atom_index) },
+            ))
+            .observe(rotate_object_on_drag);
+    }
+}
+
 fn spawn_tripod (
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
     position: Vec3,
     scale: f32
 ) {

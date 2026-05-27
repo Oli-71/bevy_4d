@@ -14,6 +14,9 @@ mod smooth;
 
 const SCALE: f32 = 6.0; // global scaling to fit the standard screen
 
+const Y_CTR_ROW1: f32 = 9. * SCALE;
+const Y_CTR_ROW2: f32 = 8. * SCALE;
+
 const CAMERA_STANDARD_TARGET: Vec3 = vec3(0., 0., 0.);
 const CAMERA_SPACELAND_POSITION: Vec3 = vec3(0., 70., 140.);
 const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0., 0., 140.);
@@ -24,7 +27,7 @@ const LABEL_VIEW_POINT: &str = "View Point";
 const LABEL_HYPER: &str = "Hyper";
 const LABEL_PROJECTION: &str = "Projection";
 const LABEL_SYNC_DRAG: &str = "______Synchronized Dragging";
-const LABEL_HORIZONTAL_ROTATION: &str = "Horizontal Rotation";
+const LABEL_CONTINUOUS_ROTATION: &str = "Continuous Rotation";
 const LABEL_HIGHER_DIMENSION_OFFSET: &str = "Higher Dimension Offset";
 const LABEL_FLATLAND: &str = "Flatland";
 const LABEL_SHOW_MORE: &str = "Show more";
@@ -38,7 +41,7 @@ const INSTRUCTIONS_FLATLAND_COMPLETE: &str = r#"Now we have also two 3D cubes ex
 Try to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension ('Hyper') it would be a challenge.
 
 BTW: There are a few more options available. Try them all.
-Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Horizontal Rotation' and 'View Point'. Now you will understand...
+Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Continuous Rotation' and 'View Point'. Now you will understand...
 When you are ready to experience the 3D-to-4D effect, click 'Show more'."#;
 
 const INSTRUCTIONS_THREE_DIMENSIONAL: &str = r#"Study how the two new 3D-Objects behave if we go up to a fourth dimension view point (Again: 'Hyper').
@@ -79,14 +82,12 @@ fn main() {
 
 #[derive(Component)]
 struct AdvancedControlShape;
+
 #[derive(Component)]
-struct CoverPanel;
+struct FlatlandDeco;
 
 #[derive(Component)]
 struct BackgroundPanel;
-
-#[derive(Component)]
-struct MainLight;
 
 #[derive(Component)]
 struct Label {
@@ -115,6 +116,11 @@ enum StateScene {
     SpacelandOnly,
 }
 
+#[derive(Component)]
+struct Tripod {
+    rotation: Rotation,
+}
+
 #[derive(Resource)]
 struct Scene {
     scene_4d: Scene4D,
@@ -128,17 +134,13 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     scene: ResMut<Scene>,
     asset_server: Res<AssetServer>,
-    //mut images: ResMut<Assets<Image>>,
 ) {
     // Set up the materials.
     let white_matl = materials.add(Color::WHITE);
-    //let ground_matl = materials.add(Color::from(GRAY_300));
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
 
     let size_of_controls = 0.2 * SCALE;
-    let y_ctr_row1 = 9. * SCALE;
-    let y_ctr_row2 = 8. * SCALE;
 
     // Gray Control Objects
     //////////////////////////////
@@ -148,7 +150,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(-3. * SCALE, y_ctr_row1, 0.),
+            Transform::from_xyz(-3. * SCALE, Y_CTR_ROW1, 0.),
             AdvancedControlShape,
             Visibility::Hidden, 
         ))
@@ -159,18 +161,12 @@ fn setup_scene(
         .observe(toggle_view_point_on_press)
         .id();
 
-    //debug
-    spawn_tripod(&mut commands, &mut meshes, &mut materials,
-        vec3(-5. * SCALE, y_ctr_row2, 0.), 
-        SCALE
-    );
-
     // Cone to trigger 4d view
     // also suits as Angle Monitor
     let angle_monitor_entity = commands.spawn((
         Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
         MeshMaterial3d(white_matl.clone()),
-        Transform::from_xyz(0., y_ctr_row1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
+        Transform::from_xyz(0., Y_CTR_ROW1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
         AdvancedControlShape,
         AngleMonitor,
     ))
@@ -186,7 +182,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(3. * SCALE, y_ctr_row1, 0.),
+            Transform::from_xyz(3. * SCALE, Y_CTR_ROW1, 0.),
             AdvancedControlShape,
             Visibility::Hidden,
         ))
@@ -202,7 +198,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Cuboid::new(0.5 * SCALE, 0.5 * SCALE, 0.5 * SCALE))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(6. * SCALE, y_ctr_row1, 0.),
+            Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -211,12 +207,12 @@ fn setup_scene(
         .observe(drag_all_objects)
         .id();
 
-    // Slider to adjust speed of 3d rotation
+    // Slider to adjust speed of continuous rotation
     let slider_3d_rotation_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(-3. * SCALE, y_ctr_row2, 0.),
+            Transform::from_xyz(-3. * SCALE, Y_CTR_ROW2, 0.),
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -227,8 +223,8 @@ fn setup_scene(
 
     commands.spawn((
         Mesh3d(meshes.add(Segment3d::new(
-            vec3(-3. * SCALE, y_ctr_row2, 0.),
-            vec3(3. * SCALE, y_ctr_row2, 0.),
+            vec3(-3. * SCALE, Y_CTR_ROW2, 0.),
+            vec3(3. * SCALE, Y_CTR_ROW2, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
     ));
@@ -238,7 +234,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(6. * SCALE, y_ctr_row2, 0.),
+            Transform::from_xyz(6. * SCALE, Y_CTR_ROW2, 0.),
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -302,8 +298,8 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
+        FlatlandDeco,
         NotShadowReceiver,
-        CoverPanel,
     ));
 
     // bottom horizontal panel
@@ -324,10 +320,10 @@ fn setup_scene(
         )),
         Pickable::IGNORE,
         NotShadowReceiver,
-        CoverPanel,
     ));
 
     let y_size = z_offset / 2.9;
+    
     // vertical top panel
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(
@@ -341,8 +337,8 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
+        FlatlandDeco,
         NotShadowReceiver,
-        CoverPanel,
     ));
 
     // vertical bottom panel
@@ -358,8 +354,8 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
+        FlatlandDeco,
         NotShadowReceiver,
-        CoverPanel,
     ));
 
     // A helper closure to spawn a thick line between two points.
@@ -375,6 +371,7 @@ fn setup_scene(
             MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 200))),
             Transform::from_translation(start + direction / 2.0)
                 .with_rotation(rotation),
+            FlatlandDeco,
         )).id()
     };
 
@@ -397,7 +394,6 @@ fn setup_scene(
             vec3(0., 0., 1.),
             vec2(150., 95.),
         ))),
-        //MeshMaterial3d(material_handle),
         MeshMaterial3d(materials.add(Color::srgba_u8(10, 10, 5, 255))),
         Transform::from_translation(vec3(0., 0., -150.)),
         Pickable::IGNORE,
@@ -415,7 +411,6 @@ fn setup_scene(
             ..default()
         },
         Transform::from_xyz(8.0 * SCALE, 16.0 * SCALE, 8.0 * SCALE),
-        MainLight,
     ));
 
     commands.spawn((
@@ -427,7 +422,6 @@ fn setup_scene(
             ..default()
         },
         Transform::from_xyz(8.0 * SCALE, -16.0 * SCALE, 8.0 * SCALE),
-        MainLight,
     ));
 
     // for flatland
@@ -441,6 +435,7 @@ fn setup_scene(
         NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
         //Transform::from_xyz(8.0 * SCALE, 0.0 * SCALE, 8.0 * SCALE),
         Transform::from_xyz(0.0 * SCALE, 0.0 * SCALE, 16.0 * SCALE),
+        FlatlandDeco,
     ));
 
     // Camera
@@ -501,7 +496,7 @@ fn setup_scene(
     spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9, Visibility::Visible);
     spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9, Visibility::Hidden);
     spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9, Visibility::Visible);
-    spawn_label(slider_3d_rotation_entity, LABEL_HORIZONTAL_ROTATION, 0.9, Visibility::Visible);
+    spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9, Visibility::Visible);
     spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden);
     spawn_label(flatland_top_line_entity, LABEL_FLATLAND, 0.0, Visibility::Visible);
     spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible);
@@ -671,7 +666,8 @@ fn show_more_on_press(
     mut text: Query<(&mut Text, &mut Node), With<Instructions>>,
     mut atoms: Query<(Entity, &mut Atom)>,
     mut scene: ResMut<Scene>,
-    mut visibilities: Query<&mut Visibility, With<AdvancedControlShape>>,
+    mut vis_advanced_control: Query<&mut Visibility, (With<AdvancedControlShape>, Without<FlatlandDeco>)>,
+    mut vis_flatland: Query<&mut Visibility, (With<FlatlandDeco>, Without<AdvancedControlShape>)>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -692,7 +688,7 @@ fn show_more_on_press(
             // add projection
             // add view point
             // add height slider
-            for mut visibility in &mut visibilities {
+            for mut visibility in &mut vis_advanced_control {
                 *visibility = Visibility::Visible;
             }
 
@@ -753,9 +749,15 @@ fn show_more_on_press(
                 commands.entity(entity).despawn();
             }
 
+            for mut visibility in &mut vis_flatland {
+                *visibility = Visibility::Hidden;
+            }
+
             scene.scene_4d = Scene4D::new_complex_scene();
 
             spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
+
+            spawn_tripods(&mut commands, &mut meshes, &mut materials);
         },
     }
 }
@@ -813,6 +815,15 @@ fn rotate_object_on_drag(
     scene.scene_4d.drag_object_from_atom(atom.index, drag.delta);
 }
 
+fn toggle_rotation_on_press(
+    press: On<Pointer<Press>>,
+    mut tripods: Query<&mut Tripod>,
+    mut scene: ResMut<Scene>,
+) {
+    let tripod = tripods.get_mut(press.entity).unwrap();
+    scene.scene_4d.rotation = tripod.rotation.clone();
+}
+
 /// An observer to trigger toggle_4d when the ControlShape is pressed.
 fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time: Res<Time>) {
     scene
@@ -861,62 +872,129 @@ fn spawn_scene (
     }
 }
 
+fn spawn_tripods(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+){
+    let size = 0.5 * SCALE;
+    spawn_tripod(commands,meshes,materials,Rotation::Xy,vec3(-9. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xz,vec3(-8. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xw,vec3(-7. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Yz,vec3(-9. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Yw,vec3(-8. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Zw,vec3(-7. * SCALE, Y_CTR_ROW2, 0.),size);
+}
+
 fn spawn_tripod (
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    rotation: Rotation,
     position: Vec3,
     scale: f32
 ) {
     let length = 1.0;
     let radius = 0.05 * length;
+
+    // set colors depending rotation 
+    let gray = Color::from(Srgba::gray(0.1));
+    let gray_transparent = Color::from(Srgba::rgba_u8(25, 25, 25, 160));
+    let yellow_transparent = Color::from(Srgba::rgba_u8(255, 255, 0, 160));
+    let (x_color, y_color, z_color, w_color) = match rotation {
+        Rotation::Xy => (
+            Color::from(Srgba::RED),
+            Color::from(Srgba::GREEN),
+            gray,
+            gray_transparent,
+        ),
+        Rotation::Xz => (
+            Color::from(Srgba::RED),
+            gray,
+            Color::from(Srgba::BLUE),
+            gray_transparent,
+        ),
+        Rotation::Xw => (
+            Color::from(Srgba::RED),
+            gray,
+            gray,
+            yellow_transparent,
+        ),
+        Rotation::Yz => (
+            gray,
+            Color::from(Srgba::GREEN),
+            Color::from(Srgba::BLUE),
+            gray_transparent,
+        ),
+        Rotation::Yw => (
+            gray,
+            Color::from(Srgba::GREEN),
+            gray,
+            yellow_transparent,
+        ),
+        Rotation::Zw => (
+            gray,
+            gray,
+            Color::from(Srgba::BLUE),
+            yellow_transparent,
+        ),
+    };
+
+    // Set up the materials.
+    let white_matl = materials.add(Color::WHITE);
+    let hover_matl = materials.add(Color::from(CYAN_300));
+    let pressed_matl = materials.add(Color::from(YELLOW_300));
+
     // Parent Entity (Holds position/transform)
     commands.spawn((
         Name::new("Tripod"),
         Transform::from_scale(vec3(scale,scale,scale)).with_translation(position),
-        Visibility::default(), // Erforderlich, damit Kinder sichtbar sind
-    ))
+        Visibility::default(),
+        Tripod {rotation},
+    )).observe(toggle_rotation_on_press)
     .with_children(|parent| {
         //Center gray
         parent.spawn((
-            Mesh3d(meshes.add(Sphere::new(2.*radius))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::gray(0.1)))),
-        ));
+            Mesh3d(meshes.add(Sphere::new(5.*radius))),
+            MeshMaterial3d(white_matl.clone()),
+        )).observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()));
 
         //y-Axis green
         parent.spawn((
             Mesh3d(meshes.add(Cylinder::new(radius, length))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::GREEN))),
+            MeshMaterial3d(materials.add(y_color)),
             Transform::from_translation(vec3(0.0, 0.5*length, 0.0)),
-            //Visibility::Hidden, // Dieses Kind ist unsichtbar
         ));
         parent.spawn((
             Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::GREEN))),
+            MeshMaterial3d(materials.add(y_color)),
             Transform::from_translation(vec3(0.0, length, 0.0)),
         ));
 
         //z-Axis blue
         parent.spawn((
             Mesh3d(meshes.add(Cylinder::new(radius, length))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
+            MeshMaterial3d(materials.add(z_color)),
             Transform::from_rotation(Quat::from_rotation_x(PI/2.)).with_translation(vec3(0.0, 0.0, 0.5*length)),
         ));
         parent.spawn((
             Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::BLUE))),
+            MeshMaterial3d(materials.add(z_color)),
             Transform::from_rotation(Quat::from_rotation_x(PI/2.)).with_translation(vec3(0.0, 0.0, length)),
         ));
 
         //x-Axis red
         parent.spawn((
             Mesh3d(meshes.add(Cylinder::new(radius, length))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
+            MeshMaterial3d(materials.add(x_color)),
             Transform::from_rotation(Quat::from_rotation_z(PI/2.)).with_translation(vec3(0.5*length, 0.0, 0.0)),
         ));
         parent.spawn((
             Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
+            MeshMaterial3d(materials.add(x_color)),
             Transform::from_rotation(Quat::from_rotation_z(PI/-2.)).with_translation(vec3(length, 0.0, 0.0)),
         ));
 
@@ -925,14 +1003,14 @@ fn spawn_tripod (
         trafo = Transform::from_rotation(Quat::from_euler(EulerRot::ZXY,PI/4.,PI/4.,0.)).mul_transform(trafo);
         parent.spawn((
             Mesh3d(meshes.add(Cylinder::new(radius, length))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::rgba_u8(255, 255, 0, 160)))),//yellow
+            MeshMaterial3d(materials.add(w_color)),//yellow
             trafo,
         ));
         let mut trafo = Transform::from_translation(vec3(0.,length,0.));
         trafo = Transform::from_rotation(Quat::from_euler(EulerRot::ZXY,PI/4.,PI/4.,0.)).mul_transform(trafo);
         parent.spawn((
             Mesh3d(meshes.add(Cone::new(2.*radius, 3.*radius))),
-            MeshMaterial3d(materials.add(Color::from(Srgba::rgba_u8(255, 255, 0, 160)))),//yellow
+            MeshMaterial3d(materials.add(w_color)),//yellow
             trafo,
         ));
     });

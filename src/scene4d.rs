@@ -7,6 +7,15 @@ use std::f32::consts::PI;
 /// Sequence of atoms, represented by equal numbered positions and colors.
 // `Atoms4D` and helper `create_*` functions moved to `src/atoms.rs`.
 
+#[derive(PartialEq, Clone)]
+pub enum Rotation {
+    Xy,
+    Xz,
+    Xw,
+    Yz,
+    Yw,
+    Zw,
+}
 /// An object in the 4D scene, which consists of a sequence of atoms.
 /// The `start_index` and `number_of_atoms` fields specify which atoms belong to this object.
 struct Object4D {
@@ -49,6 +58,8 @@ pub struct Scene4D {
     speed_3d_rotation: f32,
     higher_dimension_height: f32,
     angle_high_dimension: f32,
+
+    pub rotation: Rotation,
 }
 
 impl Scene4D {
@@ -79,6 +90,7 @@ impl Scene4D {
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
+            rotation: Rotation::Xy,
         };
 
         //add some objects to the scene.
@@ -131,14 +143,16 @@ impl Scene4D {
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
+            rotation: Rotation::Xy,
         };
 
         //add some objects to the scene.
-        let heart_index =
-            //scene.add_object(create_cube_surface_colorful(size_of_atom, number_per_side));
-            scene.add_object(create_heart_3d(size_of_atom, number_per_side));
+        //scene.add_object(create_cube_surface_colorful(size_of_atom, number_per_side));
+        //let heart_index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
+        //let tripod_index = scene.add_object(create_tripod_4d(size_of_atom, number_per_side));
+        let cube4d_index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
 
-        scene.objects_spaceland = vec![heart_index];
+        scene.objects_spaceland = vec![/*heart_index, tripod_index,*/ cube4d_index];
 
         scene
     }
@@ -324,10 +338,14 @@ impl Scene4D {
             // a 4D rotation (w is changing)
             for object_3d in self.objects_spaceland() {
                 for atom_index in object_3d.range() {
-                    rotate_4d_xy(&mut new_positions[atom_index], self.angle_high_dimension);
-                    //rotate_4d_zw(&mut new_positions[atom_index], self.angle_high_dimension);
-                    //rotate_4d_yw(&mut new_positions[atom_index], self.angle_high_dimension);
-                    //rotate_4d_yz(&mut new_positions[atom_index], self.angle_high_dimension);
+                    match self.rotation {
+                        Rotation::Xy => rotate_4d_xy(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation::Xz => rotate_4d_xz(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation::Xw => rotate_4d_xw(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation::Yz => rotate_4d_yz(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation::Yw => rotate_4d_yw(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation::Zw => rotate_4d_zw(&mut new_positions[atom_index], self.angle_high_dimension),
+                    }
                 }
             }
         }

@@ -207,6 +207,7 @@ impl Scene4D {
         self.is_projection_view = false;
         self.is_high_dimension_view = false;
         self.angle_high_dimension = 0.0;
+        self.higher_dimension_height = 0.0;
     }
 
     fn objects_flatland(&self) -> impl Iterator<Item = &Object4D> {

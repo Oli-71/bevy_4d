@@ -1,11 +1,13 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::{SubCameraView},
+    camera::{SubCameraView, visibility::VisibilitySystems::VisibilityPropagate},
     color::palettes::tailwind::*,
     light::{NotShadowCaster, NotShadowReceiver},
     prelude::*,
 };
+
+use bevy::prelude::Srgba;
 
 mod atoms;
 mod scene4d;
@@ -26,7 +28,7 @@ const SLIDER_HEIGHT_CONTROL_OFFSET_Y: f32 = 5. * SCALE;
 const LABEL_VIEW_POINT: &str = "View Point";
 const LABEL_HYPER: &str = "Hyper";
 const LABEL_PROJECTION: &str = "Projection";
-const LABEL_SYNC_DRAG: &str = "______Synchronized Dragging";
+const LABEL_SYNC_DRAG: &str = "___Synchronized Dragging";
 const LABEL_CONTINUOUS_ROTATION: &str = "Continuous Rotation";
 const LABEL_HIGHER_DIMENSION_OFFSET: &str = "Higher Dimension Offset";
 const LABEL_FLATLAND: &str = "Flatland";
@@ -80,8 +82,17 @@ fn main() {
         .run();
 }
 
+#[derive(PartialEq)]
+enum OnOffMarker {
+    Non,
+    Projection,
+}
+
 #[derive(Component)]
-struct AdvancedControlShape;
+struct Control {
+    advanced: bool,
+    on_off_marker: OnOffMarker,
+}
 
 #[derive(Component)]
 struct FlatlandDeco;
@@ -140,6 +151,8 @@ fn setup_scene(
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
 
+    let on_off_mat =materials.add(Color::srgba_u8(0, 255, 0, 200));
+
     let size_of_controls = 0.2 * SCALE;
 
     // Gray Control Objects
@@ -151,7 +164,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(-3. * SCALE, Y_CTR_ROW1, 0.),
-            AdvancedControlShape,
+            Control { advanced: true, on_off_marker: OnOffMarker::Non},
             Visibility::Hidden, 
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -167,7 +180,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
         MeshMaterial3d(white_matl.clone()),
         Transform::from_xyz(0., Y_CTR_ROW1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
-        AdvancedControlShape,
+        Control { advanced: true, on_off_marker: OnOffMarker::Non},
         AngleMonitor,
     ))
     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -183,7 +196,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(3. * SCALE, Y_CTR_ROW1, 0.),
-            AdvancedControlShape,
+            Control { advanced: true, on_off_marker: OnOffMarker::Non},
             Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -192,6 +205,15 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(toggle_projection_on_press)
         .id();
+
+    commands.spawn((
+        Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
+        MeshMaterial3d(on_off_mat.clone()),
+        Transform::from_xyz(3. * SCALE, Y_CTR_ROW1, 0.),
+        Control { advanced: true, on_off_marker: OnOffMarker::Projection },
+        Visibility::Hidden,
+        Pickable::IGNORE,
+    ));
 
     // Cube to rotate all objects in the scene by dragging.
     let drag_all_objects_entity = commands
@@ -250,7 +272,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
-            AdvancedControlShape,
+            Control { advanced: true, on_off_marker: OnOffMarker::Non},
             Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -266,7 +288,7 @@ fn setup_scene(
             vec3(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
-        AdvancedControlShape,
+        Control { advanced: true, on_off_marker: OnOffMarker::Non},
         Visibility::Hidden,
     ));
 
@@ -319,6 +341,7 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
+        FlatlandDeco,
         NotShadowReceiver,
     ));
 
@@ -376,7 +399,7 @@ fn setup_scene(
     };
 
     // Flatland Indicator Lines
-    let flatland_top_line_entity = spawn_thick_line(
+    let _flatland_top_line_entity = spawn_thick_line(
         vec3(- size_of_panel / 2., offset_atom_thickness, z_offset),
         vec3( size_of_panel / 2., offset_atom_thickness, z_offset),
         0.02 * SCALE,
@@ -424,7 +447,7 @@ fn setup_scene(
         Transform::from_xyz(8.0 * SCALE, -16.0 * SCALE, 8.0 * SCALE),
     ));
 
-    // for flatland
+    // Light for flatland
     commands.spawn((
         PointLight {//DirectionalLight
             shadows_enabled: true,
@@ -477,7 +500,7 @@ fn setup_scene(
                 ..default()
             },
             Label { entity, offset_y: offset },
-            AdvancedControlShape, // to show/hide labels together with advanced controls
+            Control { advanced: true, on_off_marker: OnOffMarker::Non}, // to show labels together with advanced controls
             visibility,
             children![(
                 Text::new(label),
@@ -498,7 +521,7 @@ fn setup_scene(
     spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9, Visibility::Visible);
     spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9, Visibility::Visible);
     spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden);
-    spawn_label(flatland_top_line_entity, LABEL_FLATLAND, 0.0, Visibility::Visible);
+    //spawn_label(flatland_top_line_entity, LABEL_FLATLAND, 0.0, Visibility::Visible);
     spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible);
 
     // Instructions
@@ -666,8 +689,8 @@ fn show_more_on_press(
     mut text: Query<(&mut Text, &mut Node), With<Instructions>>,
     mut atoms: Query<(Entity, &mut Atom)>,
     mut scene: ResMut<Scene>,
-    mut vis_advanced_control: Query<&mut Visibility, (With<AdvancedControlShape>, Without<FlatlandDeco>)>,
-    mut vis_flatland: Query<&mut Visibility, (With<FlatlandDeco>, Without<AdvancedControlShape>)>,
+    mut vis_control: Query<(&mut Visibility, &Control), Without<FlatlandDeco>>,
+    mut vis_flatland: Query<&mut Visibility, With<FlatlandDeco>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -680,7 +703,14 @@ fn show_more_on_press(
         StateScene::SpacelandOnly => StateScene::SpacelandOnly, // no further state
     };
 
+    // good settings to start exploring a new state
     scene.scene_4d.reset_view();
+    // hide all on/off marker
+    for (mut visibility, control) in &mut vis_control {
+        if control.on_off_marker != OnOffMarker::Non {
+            *visibility = Visibility::Hidden;
+        }
+    }
 
     match scene.state {
         StateScene::Planar => {}, // initial state, nothing to do
@@ -688,8 +718,10 @@ fn show_more_on_press(
             // add projection
             // add view point
             // add height slider
-            for mut visibility in &mut vis_advanced_control {
-                *visibility = Visibility::Visible;
+            for (mut visibility, control) in &mut vis_control {
+                if control.advanced && control.on_off_marker == OnOffMarker::Non {
+                    *visibility = Visibility::Visible;
+                }
             }
 
             for (mut text, mut node) in &mut text {
@@ -700,7 +732,7 @@ fn show_more_on_press(
                 node.right = percent(5.);
             }
 
-            for (entity, mut atom) in &mut atoms {
+            for (_entity, mut atom) in &mut atoms {
                 if scene.scene_4d.is_2d(atom.index) {
                     atom.visible = true;
                 }
@@ -715,7 +747,7 @@ fn show_more_on_press(
                 node.right = percent(5.);
             }
 
-            for (entity, mut atom) in &mut atoms {
+            for (_entity, mut atom) in &mut atoms {
                 if !scene.scene_4d.is_4d(atom.index) {
                     atom.visible = true;
                 }
@@ -730,12 +762,12 @@ fn show_more_on_press(
                 node.right = percent(46.);
             }
 
-            for (entity, mut atom) in &mut atoms {
+            for (_entity, mut atom) in &mut atoms {
                 atom.visible = true;
             }
         },
         StateScene::SpacelandOnly => {
-            // hide show more button and instructions
+            // instructions
             for (mut text, mut node) in &mut text {
                 text.0 = INSTRUCTIONS_SPACELAND_ONLY.to_string();
                 //left bottom position
@@ -745,18 +777,22 @@ fn show_more_on_press(
             }
 
             //remove all atoms
-            for (entity, atom) in atoms {
+            for (entity, _atom) in atoms {
                 commands.entity(entity).despawn();
             }
 
+            // hide flatlands panels etc.
             for mut visibility in &mut vis_flatland {
                 *visibility = Visibility::Hidden;
             }
 
+            // create a new Scene4d
             scene.scene_4d = Scene4D::new_complex_scene();
 
+            // create the new atoms from new scene4d
             spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
 
+            // tripods for control of Hyper rotation
             spawn_tripods(&mut commands, &mut meshes, &mut materials);
         },
     }
@@ -832,8 +868,16 @@ fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time
 }
 
 /// An observer to trigger toggle_projection when the ControlShape is pressed.
-fn toggle_projection_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>) {
+fn toggle_projection_on_press(_press: On<Pointer<Press>>, 
+    mut scene: ResMut<Scene>, 
+    on_off: Query<(&mut Visibility, &mut Control)>
+) {
     scene.scene_4d.toggle_projection_view();
+    for (mut vis, control) in on_off {
+        if control.on_off_marker == OnOffMarker::Projection {
+            *vis = if scene.scene_4d.is_projection_view {Visibility::Visible} else {Visibility::Hidden}; 
+        }
+    }
 }
 
 fn spawn_scene (
@@ -872,18 +916,19 @@ fn spawn_scene (
     }
 }
 
+// spawn tripods to control Hyper rotation
 fn spawn_tripods(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ){
     let size = 0.5 * SCALE;
-    spawn_tripod(commands,meshes,materials,Rotation::Xy,vec3(-9. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Xz,vec3(-8. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Xw,vec3(-7. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Yz,vec3(-9. * SCALE, Y_CTR_ROW2, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Yw,vec3(-8. * SCALE, Y_CTR_ROW2, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Zw,vec3(-7. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xy,vec3(-7. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xz,vec3(-6. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xw,vec3(-5. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Yz,vec3(-7. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Yw,vec3(-6. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Zw,vec3(-5. * SCALE, Y_CTR_ROW2, 0.),size);
 }
 
 fn spawn_tripod (
@@ -940,7 +985,7 @@ fn spawn_tripod (
         ),
     };
 
-    // Set up the materials.
+    // Set up the hover materials.
     let white_matl = materials.add(Color::WHITE);
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));

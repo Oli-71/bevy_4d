@@ -39,7 +39,7 @@ Look into the flatland gap below. Flatlanders can only see what happens between 
 The 'Hyper' cone moves your location slowly into the third dimension and back. Wow, From 3D the Flatlanders can look into closed shapes!
 If you feel familiar with the Flatlander's understanding of dimension jump, click 'Show more'."#;
 
-const INSTRUCTIONS_FLATLAND_COMPLETE: &str = r#"Now we have also two 3D cubes extending into our two-dimensional world.
+const INSTRUCTIONS_FLATLAND_COMPLETE: &str = r#"Now we have also two 3D cubes extending into our 2D world.
 Try to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension ('Hyper') it would be a challenge.
 
 BTW: There are a few more options available. Try them all.
@@ -86,12 +86,13 @@ fn main() {
 enum OnOffMarker {
     Non,
     Projection,
+    ViewPoint,
 }
 
 #[derive(Component)]
 struct Control {
-    advanced: bool,
-    on_off_marker: OnOffMarker,
+    advanced: bool, // only visible in advanced states
+    on_off_marker: OnOffMarker, // is it an on/off marker; if this is the case: which one?
 }
 
 #[derive(Component)]
@@ -151,7 +152,7 @@ fn setup_scene(
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
 
-    let on_off_mat =materials.add(Color::srgba_u8(0, 255, 0, 200));
+    let activated_matl =materials.add(Color::linear_rgb(0.2, 0.4, 0.2));
 
     let size_of_controls = 0.2 * SCALE;
 
@@ -173,6 +174,15 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
         .observe(toggle_view_point_on_press)
         .id();
+    
+    commands.spawn((
+        Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
+        MeshMaterial3d(activated_matl.clone()),
+        Transform::from_xyz(-3. * SCALE, Y_CTR_ROW1, 0.),
+        Control { advanced: true, on_off_marker: OnOffMarker::ViewPoint },
+        Visibility::Hidden,
+        Pickable::IGNORE,
+    ));
 
     // Cone to trigger 4d view
     // also suits as Angle Monitor
@@ -208,7 +218,7 @@ fn setup_scene(
 
     commands.spawn((
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
-        MeshMaterial3d(on_off_mat.clone()),
+        MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(3. * SCALE, Y_CTR_ROW1, 0.),
         Control { advanced: true, on_off_marker: OnOffMarker::Projection },
         Visibility::Hidden,
@@ -365,15 +375,16 @@ fn setup_scene(
     ));
 
     // vertical bottom panel
+    let y_size_of_bottom_panel = y_size*2.;
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(
             vec3(0., 0., 1.),
-            vec2(size_of_panel, y_size),
+            vec2(size_of_panel, y_size_of_bottom_panel),
         ))),
         MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 100))),
         Transform::from_translation(vec3(
             0.,
-            0. - y_size - offset_atom_thickness,
+            0. - y_size_of_bottom_panel - offset_atom_thickness,
             z_offset,
         )),
         Pickable::IGNORE,
@@ -382,7 +393,7 @@ fn setup_scene(
     ));
 
     // A helper closure to spawn a thick line between two points.
-    let mut spawn_thick_line = |start: Vec3, end: Vec3, thickness: f32| -> Entity {
+    let mut spawn_thick_red_line = |start: Vec3, end: Vec3, thickness: f32| -> Entity {
         let direction = end - start;
         let length = direction.length();
         
@@ -399,25 +410,25 @@ fn setup_scene(
     };
 
     // Flatland Indicator Lines
-    let _flatland_top_line_entity = spawn_thick_line(
+    let _flatland_top_line_entity = spawn_thick_red_line(
         vec3(- size_of_panel / 2., offset_atom_thickness, z_offset),
         vec3( size_of_panel / 2., offset_atom_thickness, z_offset),
         0.02 * SCALE,
     );
     
-    let _flatland_bottom_line_entity = spawn_thick_line(
+    let _flatland_bottom_line_entity = spawn_thick_red_line(
         vec3(- size_of_panel / 2., - offset_atom_thickness, z_offset),
         vec3( size_of_panel / 2., - offset_atom_thickness, z_offset),
         0.02 * SCALE,
     );
 
-    // Background Panel
+    // Background Panel - indicates that your viewpoint is in 3D-space (no hyper)
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(
             vec3(0., 0., 1.),
             vec2(150., 95.),
         ))),
-        MeshMaterial3d(materials.add(Color::srgba_u8(10, 10, 5, 255))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(30, 30, 5, 255))),
         Transform::from_translation(vec3(0., 0., -150.)),
         Pickable::IGNORE,
         NotShadowReceiver,
@@ -672,13 +683,35 @@ fn toggle_view_point_on_press(
     _press: On<Pointer<Press>>,
     mut scene: ResMut<Scene>,
     mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
+    on_off: Query<(&mut Visibility, &mut Control)>
 ) {
     scene.viewpoint_is_spaceland = !scene.viewpoint_is_spaceland;
+
+    for (mut vis, control) in on_off {
+        if control.on_off_marker == OnOffMarker::ViewPoint {
+            *vis = if scene.viewpoint_is_spaceland {Visibility::Visible} else {Visibility::Hidden}; 
+        }
+    }
+
     for mut camera in &mut camera3ds {
         if scene.viewpoint_is_spaceland {
             camera.set_target(CAMERA_SPACELAND_POSITION);
         } else {
             camera.set_target(CAMERA_FLATLAND_POSITION);
+        }
+    }
+}
+
+/// An observer to trigger toggle_projection when the ControlShape is pressed.
+fn toggle_projection_on_press(_press: On<Pointer<Press>>, 
+    mut scene: ResMut<Scene>, 
+    on_off: Query<(&mut Visibility, &mut Control)>
+) {
+    scene.scene_4d.toggle_projection_view();
+
+    for (mut vis, control) in on_off {
+        if control.on_off_marker == OnOffMarker::Projection {
+            *vis = if scene.scene_4d.is_projection_view {Visibility::Visible} else {Visibility::Hidden}; 
         }
     }
 }
@@ -694,6 +727,7 @@ fn show_more_on_press(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
 ) {
     scene.state = match scene.state {
         StateScene::Planar => StateScene::FlatlandComplete,
@@ -710,6 +744,10 @@ fn show_more_on_press(
         if control.on_off_marker != OnOffMarker::Non {
             *visibility = Visibility::Hidden;
         }
+    }
+    scene.viewpoint_is_spaceland = false;
+    for mut camera in &mut camera3ds {
+        camera.set_target(CAMERA_FLATLAND_POSITION);
     }
 
     match scene.state {
@@ -865,19 +903,6 @@ fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time
     scene
         .scene_4d
         .toggle_high_dimension_view(time.elapsed_secs());
-}
-
-/// An observer to trigger toggle_projection when the ControlShape is pressed.
-fn toggle_projection_on_press(_press: On<Pointer<Press>>, 
-    mut scene: ResMut<Scene>, 
-    on_off: Query<(&mut Visibility, &mut Control)>
-) {
-    scene.scene_4d.toggle_projection_view();
-    for (mut vis, control) in on_off {
-        if control.on_off_marker == OnOffMarker::Projection {
-            *vis = if scene.scene_4d.is_projection_view {Visibility::Visible} else {Visibility::Hidden}; 
-        }
-    }
 }
 
 fn spawn_scene (

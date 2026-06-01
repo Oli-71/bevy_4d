@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::{SubCameraView, visibility::VisibilitySystems::VisibilityPropagate},
+    camera::{SubCameraView},
     color::palettes::tailwind::*,
     light::{NotShadowCaster, NotShadowReceiver},
     prelude::*,
@@ -87,16 +87,16 @@ enum OnOffMarker {
     Non,
     Projection,
     ViewPoint,
+    Rotation,
 }
 
 #[derive(Component)]
 struct Control {
     advanced: bool, // only visible in advanced states
+    flatland_deco: bool,
     on_off_marker: OnOffMarker, // is it an on/off marker; if this is the case: which one?
+    rotation_type: Rotation,
 }
-
-#[derive(Component)]
-struct FlatlandDeco;
 
 #[derive(Component)]
 struct BackgroundPanel;
@@ -165,7 +165,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(-3. * SCALE, Y_CTR_ROW1, 0.),
-            Control { advanced: true, on_off_marker: OnOffMarker::Non},
+            Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Hidden, 
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -179,7 +179,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(-3. * SCALE, Y_CTR_ROW1, 0.),
-        Control { advanced: true, on_off_marker: OnOffMarker::ViewPoint },
+        Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::ViewPoint, rotation_type: Rotation::Yw },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -190,7 +190,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
         MeshMaterial3d(white_matl.clone()),
         Transform::from_xyz(0., Y_CTR_ROW1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
-        Control { advanced: true, on_off_marker: OnOffMarker::Non},
+        Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         AngleMonitor,
     ))
     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -206,7 +206,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(3. * SCALE, Y_CTR_ROW1, 0.),
-            Control { advanced: true, on_off_marker: OnOffMarker::Non},
+            Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -220,7 +220,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(3. * SCALE, Y_CTR_ROW1, 0.),
-        Control { advanced: true, on_off_marker: OnOffMarker::Projection },
+        Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Projection, rotation_type: Rotation::Yw },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -282,7 +282,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
-            Control { advanced: true, on_off_marker: OnOffMarker::Non},
+            Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -298,7 +298,7 @@ fn setup_scene(
             vec3(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
-        Control { advanced: true, on_off_marker: OnOffMarker::Non},
+        Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         Visibility::Hidden,
     ));
 
@@ -330,7 +330,7 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
-        FlatlandDeco,
+        Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -351,7 +351,7 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
-        FlatlandDeco,
+        Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -370,7 +370,7 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
-        FlatlandDeco,
+        Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -388,7 +388,7 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
-        FlatlandDeco,
+        Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -405,7 +405,7 @@ fn setup_scene(
             MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 200))),
             Transform::from_translation(start + direction / 2.0)
                 .with_rotation(rotation),
-            FlatlandDeco,
+            Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         )).id()
     };
 
@@ -421,6 +421,13 @@ fn setup_scene(
         vec3( size_of_panel / 2., - offset_atom_thickness, z_offset),
         0.02 * SCALE,
     );
+
+    let flatland_bottom =commands.spawn((
+            Mesh3d(meshes.add(Sphere::new(1.))),
+            MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
+            Transform::from_translation(vec3(-9.5 * SCALE, - offset_atom_thickness, z_offset)),
+            Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        )).id();
 
     // Background Panel - indicates that your viewpoint is in 3D-space (no hyper)
     commands.spawn((
@@ -469,7 +476,7 @@ fn setup_scene(
         NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
         //Transform::from_xyz(8.0 * SCALE, 0.0 * SCALE, 8.0 * SCALE),
         Transform::from_xyz(0.0 * SCALE, 0.0 * SCALE, 16.0 * SCALE),
-        FlatlandDeco,
+        Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
     ));
 
     // Camera
@@ -504,14 +511,14 @@ fn setup_scene(
     // A helper closure to add labels to the control objects.
     // We use a closure here to avoid repeating the same code for each label,
     // since they all have the same structure (a parent node with absolute positioning and a child text node with the label).
-    let mut spawn_label = |entity: Entity, label: &str, offset: f32, visibility: Visibility| {
+    let mut spawn_label = |entity: Entity, label: &str, offset: f32, visibility: Visibility, flatland_deco: bool| {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 ..default()
             },
             Label { entity, offset_y: offset },
-            Control { advanced: true, on_off_marker: OnOffMarker::Non}, // to show labels together with advanced controls
+            Control { advanced: true, flatland_deco, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw}, // to show labels together with advanced controls
             visibility,
             children![(
                 Text::new(label),
@@ -526,14 +533,14 @@ fn setup_scene(
         ));
     };
 
-    spawn_label(view_point_control_entity, LABEL_VIEW_POINT, 0.9, Visibility::Hidden);
-    spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9, Visibility::Visible);
-    spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9, Visibility::Hidden);
-    spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9, Visibility::Visible);
-    spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9, Visibility::Visible);
-    spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden);
-    //spawn_label(flatland_top_line_entity, LABEL_FLATLAND, 0.0, Visibility::Visible);
-    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible);
+    spawn_label(view_point_control_entity, LABEL_VIEW_POINT, 0.9, Visibility::Hidden,false);
+    spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9, Visibility::Visible,false);
+    spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9, Visibility::Hidden,false);
+    spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9, Visibility::Visible,false);
+    spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9, Visibility::Visible,false);
+    spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden,false);
+    spawn_label(flatland_bottom, LABEL_FLATLAND, 0.0, Visibility::Visible,true);
+    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible,false);
 
     // Instructions
     commands.spawn((
@@ -722,8 +729,7 @@ fn show_more_on_press(
     mut text: Query<(&mut Text, &mut Node), With<Instructions>>,
     mut atoms: Query<(Entity, &mut Atom)>,
     mut scene: ResMut<Scene>,
-    mut vis_control: Query<(&mut Visibility, &Control), Without<FlatlandDeco>>,
-    mut vis_flatland: Query<&mut Visibility, With<FlatlandDeco>>,
+    mut vis_control: Query<(&mut Visibility, &Control)>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -820,8 +826,10 @@ fn show_more_on_press(
             }
 
             // hide flatlands panels etc.
-            for mut visibility in &mut vis_flatland {
-                *visibility = Visibility::Hidden;
+            for (mut visibility, control) in &mut vis_control {
+                if control.flatland_deco {
+                    *visibility = Visibility::Hidden;
+                }
             }
 
             // create a new Scene4d
@@ -893,9 +901,16 @@ fn toggle_rotation_on_press(
     press: On<Pointer<Press>>,
     mut tripods: Query<&mut Tripod>,
     mut scene: ResMut<Scene>,
+    on_off: Query<(&mut Visibility, &Control)>
 ) {
     let tripod = tripods.get_mut(press.entity).unwrap();
-    scene.scene_4d.rotation = tripod.rotation.clone();
+    scene.scene_4d.rotation = tripod.rotation;
+
+    for (mut vis,control) in on_off {
+        if control.on_off_marker == OnOffMarker::Rotation {
+            *vis = if control.rotation_type == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
+        }
+    }
 }
 
 /// An observer to trigger toggle_4d when the ControlShape is pressed.
@@ -1014,6 +1029,9 @@ fn spawn_tripod (
     let white_matl = materials.add(Color::WHITE);
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
+    let activated_matl =materials.add(Color::linear_rgb(0.2, 0.4, 0.2));
+
+    let size_of_controls = 0.2 * SCALE;
 
     // Parent Entity (Holds position/transform)
     commands.spawn((
@@ -1025,12 +1043,21 @@ fn spawn_tripod (
     .with_children(|parent| {
         //Center gray
         parent.spawn((
-            Mesh3d(meshes.add(Sphere::new(5.*radius))),
+            Mesh3d(meshes.add(Sphere::new(5. * radius))),
             MeshMaterial3d(white_matl.clone()),
         )).observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()));
+
+        // On/Off marker
+        parent.spawn((
+            Mesh3d(meshes.add(Sphere::new(5.1 * radius))),
+            MeshMaterial3d(activated_matl.clone()),
+            Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Rotation, rotation_type: rotation },
+            Visibility::Hidden,
+            Pickable::IGNORE,
+        ));
 
         //y-Axis green
         parent.spawn((

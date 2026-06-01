@@ -631,21 +631,23 @@ pub(crate) fn create_atoms_from_file (size_atom: f32, name: String) -> Atoms4D {
 
     for line in lines {
         let parts = line.split_whitespace().collect::<Vec<_>>();
-        if let [x, y, z, r, g, b] = parts.as_slice() {
+        if let [x, y, z, r, g, b, a] = parts.as_slice() {
             let x: i32 = x.parse().unwrap();
             let y: i32 = y.parse().unwrap();
             let z: i32 = z.parse().unwrap();
             let r: u8 = r.parse().unwrap();
             let g: u8 = g.parse().unwrap();
             let b: u8 = b.parse().unwrap();
+            let a: u8 = a.parse().unwrap();
+            
 
             positions.push(Vec4::new(
-                x as f32 * spacing,
-                y as f32 * spacing,
-                z as f32 * spacing,
+                (x-70) as f32 * spacing,
+                (y-25) as f32 * spacing,
+                (z-10) as f32 * spacing,
                 0.0,
             ));
-            colors.push(Color::from(Srgba::rgb_u8(r, g, b)));
+            colors.push(Color::from(Srgba::rgba_u8(r, g, b, a)));
         }
     }
 

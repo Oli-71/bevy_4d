@@ -7,7 +7,7 @@ use std::f32::consts::PI;
 /// Sequence of atoms, represented by equal numbered positions and colors.
 // `Atoms4D` and helper `create_*` functions moved to `src/atoms.rs`.
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum Rotation {
     Xy,
     Xz,
@@ -148,11 +148,11 @@ impl Scene4D {
 
         //add some objects to the scene.
         //scene.add_object(create_cube_surface_colorful(size_of_atom, number_per_side));
-        //let heart_index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
-        //let tripod_index = scene.add_object(create_tripod_4d(size_of_atom, number_per_side));
-        let cube4d_index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
-
-        scene.objects_spaceland = vec![/*heart_index, tripod_index,*/ cube4d_index];
+        let index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
+        //let index = scene.add_object(create_tripod_4d(size_of_atom, number_per_side));
+        //let index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
+        //let index = scene.add_object(create_atoms_from_file(size_of_atom, "C:/Dev/bevy/bevy_4d/src/fish.txt".to_string()));
+        scene.objects_spaceland = vec![index];
 
         scene
     }

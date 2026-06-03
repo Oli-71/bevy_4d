@@ -90,7 +90,7 @@ impl Scene4D {
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
-            rotation: Rotation::Xy,
+            rotation: Rotation::Xz,
         };
 
         //add some objects to the scene.
@@ -143,7 +143,7 @@ impl Scene4D {
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
-            rotation: Rotation::Xy,
+            rotation: Rotation::Xz,
         };
 
         //add some objects to the scene.
@@ -188,6 +188,11 @@ impl Scene4D {
         self.atoms.positions.extend(new_atoms.positions);
         self.atoms.colors.extend(new_atoms.colors);
         index
+    }
+
+    pub fn force_high_dimension_view(&mut self, current_time: f32) {
+        self.is_high_dimension_view = true;
+        self.start_time_high_dimension = current_time;
     }
 
     pub fn toggle_high_dimension_view(&mut self, current_time: f32) {

@@ -1,10 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::{SubCameraView},
-    color::palettes::tailwind::*,
-    light::{NotShadowCaster, NotShadowReceiver},
-    prelude::*,
+    camera::SubCameraView, color::palettes::tailwind::*, light::{NotShadowCaster, NotShadowReceiver}, prelude::*
 };
 
 use bevy::prelude::Srgba;
@@ -26,36 +23,67 @@ const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0., 0., 140.);
 const SLIDER_HEIGHT_CONTROL_OFFSET_Y: f32 = 5. * SCALE;
 
 const LABEL_VIEW_POINT: &str = "View Point";
+const LABEL_VIEW_POINT_GERMAN: &str = "Standpunkt";
 const LABEL_HYPER: &str = "Hyper";
+const LABEL_HYPER_GERMAN: &str = "Hyper";
 const LABEL_PROJECTION: &str = "Projection";
+const LABEL_PROJECTION_GERMAN: &str = "Projektion";
 const LABEL_SYNC_DRAG: &str = "___Synchronized Dragging";
+const LABEL_SYNC_DRAG_GERMAN: &str = "___Synchrones Drehen";
 const LABEL_CONTINUOUS_ROTATION: &str = "Continuous Rotation";
+const LABEL_CONTINUOUS_ROTATION_GERMAN: &str = "Kontinuierliche Rotation";
 const LABEL_HIGHER_DIMENSION_OFFSET: &str = "Higher Dimension Offset";
+const LABEL_HIGHER_DIMENSION_OFFSET_GERMAN: &str = "Offset der höheren Dimension";
 const LABEL_FLATLAND: &str = "Flatland";
+const LABEL_FLATLAND_GERMAN: &str = "Flachland";
 const LABEL_SHOW_MORE: &str = "Show more";
+const LABEL_SHOW_MORE_GERMAN: &str = "Mehr anzeigen";
+const LABEL_LANGUAGE: &str = "Deutsch/English";
+const LABEL_LANGUAGE_GERMAN: &str = "English/Deutsch";
 
 const INSTRUCTIONS_INITIAL: &str = r#"What would our three-dimensional world look like from a location in the fourth dimension? Let’s start with what inhabitants of a two-dimensional world see:
 Look into the flatland gap below. Flatlanders can only see what happens between the red lines. Rotate the objects... Then try the gray controls at the top.
 The 'Hyper' cone moves your location slowly into the third dimension and back. Wow, From 3D the Flatlanders can look into closed shapes!
 If you feel familiar with the Flatlander's understanding of dimension jump, click 'Show more'."#;
 
+const INSTRUCTIONS_INITIAL_GERMAN: &str = r#"Wie würde unsere dreidimensionale Welt von einem Ort in der vierten Dimension aussehen? Beginnen wir damit, was die Bewohner einer zweidimensionalen Welt sehen:
+Schauen Sie in die Flachland-Spalte unten. Flachländer können nur sehen, was zwischen den roten Linien passiert. Drehen Sie die Objekte... Dann probieren Sie die grauen Steuerelemente oben aus.
+Der 'Hyper'-Kegel bewegt Ihren Standort langsam in die dritte Dimension und zurück. Wow, von 3D aus können die Flachländer in geschlossene Formen schauen!
+Wenn Sie sich mit dem Verständnis der Dimensionssprünge der Flachländer vertraut fühlen, klicken Sie auf 'Mehr anzeigen'."#;
+
 const INSTRUCTIONS_FLATLAND_COMPLETE: &str = r#"Now we have also two 3D cubes extending into our 2D world.
 Try to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension ('Hyper') it would be a challenge.
-
 BTW: There are a few more options available. Try them all.
 Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Continuous Rotation' and 'View Point'. Now you will understand...
 When you are ready to experience the 3D-to-4D effect, click 'Show more'."#;
+
+const INSTRUCTIONS_FLATLAND_COMPLETE_GERMAN: &str = r#"Nun haben wir zwei 3D-Würfel, die in unsere 2D-Welt hineinragen.
+Versuchen Sie sich vorzustellen, wie schwierig es für die Bewohner von Flachland ist, deren Struktur zu erfassen. Selbst wenn sie in die dritte Dimension springen könnten ('Hyper'), wäre es eine Herausforderung.
+Übrigens: Es gibt nun noch ein paar weitere Einstellmöglichkeiten. Probieren Sie sie alle aus.
+Überrascht, was passiert, wenn Sie 'Projektion' und 'Hyper' kombinieren? Fügen Sie etwas 'Kontinuierliche Rotation' und 'Standpunkt' hinzu... Jetzt werden Sie es verstehen.
+Wenn Sie bereit sind, den 3D-zu-4D-Effekt zu erleben, klicken Sie auf 'Mehr anzeigen'."#;
 
 const INSTRUCTIONS_THREE_DIMENSIONAL: &str = r#"Study how the two new 3D-Objects behave if we go up to a fourth dimension view point (Again: 'Hyper').
 Are there are similarities to flatlander's experiences?
 
 'Show more' will add 4D-cubes to the scene. It will become crazy ;-)"#;
 
+const INSTRUCTIONS_THREE_DIMENSIONAL_GERMAN: &str = r#"Untersuchen Sie, wie sich die beiden neuen 3D-Objekte verhalten, wenn wir zu einem vierdimensionalen Standpunkt wechseln (nochmals: 'Hyper').
+Gibt es Ähnlichkeiten zu den Erfahrungen der Flachländer?
+
+'Mehr anzeigen' fügt der Szene 4D-Würfel hinzu. Es wird verrückt ;-)"#;
+
 const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take a few minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider and 'Synchronized Dragging' can help...
-‘Projection’ pushes the atoms from the higher dimensions into the visible range. But note that actually we can never see 4D objects completely.  
+‘Projection’ pushes the atoms from the higher dimensions into the visible range. Note that actually we can never see 4D objects completely.  
 ...Imagine a human being seen from 4D."#;
 
+const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich einige Minuten Zeit, um die Erfahrungen der Flachländer und Raumländer mit einer zusätzlichen Dimension zu vergleichen. Der 'Higher Dimension Offset' Slider und 'Synchronized Dragging' können helfen...
+‘Projektion’ schiebt die Atome aus den höheren Dimensionen in den sichtbaren Bereich. Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können.  
+...Stellen Sie sich vor, wie ein Mensch aus der 4D-Perspektive gesehen werden würde."#;
+
 const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations."#;
+
+const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie alle Transformationen aus."#;
 
 fn main() {
     App::new()
@@ -65,6 +93,7 @@ fn main() {
             scene_4d: Scene4D::new(),
             viewpoint_is_spaceland: false,
             state: StateScene::Planar,
+            language: Language::English,
         })
         .add_systems(
             Startup, 
@@ -108,6 +137,11 @@ struct Label {
 }
 
 #[derive(Component)]
+struct LabelId {
+    id: String,
+}
+
+#[derive(Component)]
 struct AngleMonitor;
 
 #[derive(Component)]
@@ -119,6 +153,8 @@ struct Atom {
 #[derive(Component)]
 struct Instructions;
 
+// Content will be incrementally added to the scene, 
+// so we have different states of the scene to keep track of which content is currently shown.
 #[derive(PartialEq)]
 enum StateScene {
     Planar,
@@ -128,18 +164,66 @@ enum StateScene {
     SpacelandOnly,
 }
 
+#[derive(PartialEq)]
+enum Language {
+    English,
+    German,
+}
+
 #[derive(Component)]
 struct Tripod {
     rotation: Rotation,
 }
 
+// The main resource that holds the 4D scene and the current state of the application.
 #[derive(Resource)]
 struct Scene {
     scene_4d: Scene4D,
     viewpoint_is_spaceland: bool,
     state: StateScene,
+    language: Language,
 }
 
+impl Scene {
+    fn instructions_localized(&self) -> &str {
+        match self.language {
+            Language::English => match self.state {
+                StateScene::Planar => INSTRUCTIONS_INITIAL,
+                StateScene::FlatlandComplete => INSTRUCTIONS_FLATLAND_COMPLETE,
+                StateScene::ThreeDimensional => INSTRUCTIONS_THREE_DIMENSIONAL,
+                StateScene::SpacelandComplete => INSTRUCTIONS_SPACELAND_COMPLETE,
+                StateScene::SpacelandOnly => INSTRUCTIONS_SPACELAND_ONLY,
+            },
+            Language::German => match self.state {
+                StateScene::Planar => INSTRUCTIONS_INITIAL_GERMAN,
+                StateScene::FlatlandComplete => INSTRUCTIONS_FLATLAND_COMPLETE_GERMAN,
+                StateScene::ThreeDimensional => INSTRUCTIONS_THREE_DIMENSIONAL_GERMAN,
+                StateScene::SpacelandComplete => INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN,
+                StateScene::SpacelandOnly => INSTRUCTIONS_SPACELAND_ONLY_GERMAN,
+            }
+        }
+    }
+
+    fn label_localized<'a>(&self, label_name: &'a str) -> &'a str {
+        match self.language { 
+            Language::English => label_name,
+            Language::German => match label_name {
+                LABEL_VIEW_POINT => LABEL_VIEW_POINT_GERMAN,
+                LABEL_HYPER => LABEL_HYPER_GERMAN,
+                LABEL_PROJECTION => LABEL_PROJECTION_GERMAN,
+                LABEL_SYNC_DRAG => LABEL_SYNC_DRAG_GERMAN,
+                LABEL_CONTINUOUS_ROTATION => LABEL_CONTINUOUS_ROTATION_GERMAN,
+                LABEL_HIGHER_DIMENSION_OFFSET => LABEL_HIGHER_DIMENSION_OFFSET_GERMAN,
+                LABEL_SHOW_MORE => LABEL_SHOW_MORE_GERMAN,
+                LABEL_FLATLAND => LABEL_FLATLAND_GERMAN,
+                LABEL_LANGUAGE => LABEL_LANGUAGE_GERMAN,
+                _ => "german localisation missing",
+            }
+        }
+    }
+}
+
+// A system to set up the initial scene, including the 3D objects, controls, camera, and instructions.
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -151,20 +235,35 @@ fn setup_scene(
     let white_matl = materials.add(Color::WHITE);
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
-
-    let activated_matl =materials.add(Color::linear_rgb(0.2, 0.4, 0.2));
+    let activated_matl =materials.add(Color::linear_rgb(0.8, 0.2, 0.8));
 
     let size_of_controls = 0.2 * SCALE;
 
     // Gray Control Objects
     //////////////////////////////
+    let left = -10. * SCALE;
+    // Sphere to switch language (english/german)
+    let language_control_entity = commands
+        .spawn((
+            Mesh3d(meshes.add(Sphere::new(size_of_controls))),
+            MeshMaterial3d(white_matl.clone()),
+            Transform::from_xyz(left, Y_CTR_ROW1, 0.),
+            Control { advanced: false, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Visibility::Visible, 
+        ))
+        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
+        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
+        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
+        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(toggle_language_on_press)
+        .id();
     
     // Sphere to trigger view point
     let view_point_control_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
-            Transform::from_xyz(-3. * SCALE, Y_CTR_ROW1, 0.),
+            Transform::from_xyz(0. * SCALE, Y_CTR_ROW1, 0.),
             Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Hidden, 
         ))
@@ -178,7 +277,7 @@ fn setup_scene(
     commands.spawn((
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
-        Transform::from_xyz(-3. * SCALE, Y_CTR_ROW1, 0.),
+        Transform::from_xyz(0. * SCALE, Y_CTR_ROW1, 0.),
         Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::ViewPoint, rotation_type: Rotation::Yw },
         Visibility::Hidden,
         Pickable::IGNORE,
@@ -276,7 +375,6 @@ fn setup_scene(
         .id();
 
     // slider to adjust higher dimension height (w in Spaceland, y in Flatland)
-    let left = -10. * SCALE;
     let slider_height_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
@@ -529,6 +627,7 @@ fn setup_scene(
                     ..default()
                 },
                 TextLayout::default().with_no_wrap(),
+                LabelId { id: label.to_string() },
             )],
         ));
     };
@@ -541,6 +640,7 @@ fn setup_scene(
     spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden,false);
     spawn_label(flatland_bottom, LABEL_FLATLAND, 0.0, Visibility::Visible,true);
     spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible,false);
+    spawn_label(language_control_entity, LABEL_LANGUAGE, 0.9, Visibility::Visible,false);
 
     // Instructions
     commands.spawn((
@@ -668,7 +768,7 @@ fn monitor_scene_4d(
        *trafo = Transform::from_rotation(Quat::from_rotation_x(
            PI / 2.0 + scene.scene_4d.get_angle_high_dimension(),
        ));
-       trafo.translation = vec3(0., 9. * SCALE, 0.);
+       trafo.translation = vec3(-3. * SCALE, 9. * SCALE, 0.);
     }
 }
 
@@ -683,6 +783,25 @@ fn drag_all_objects(
     transform.rotate_x(drag.delta.y * 0.01);
 
     scene.scene_4d.drag_all_objects(drag.delta);
+}
+
+fn toggle_language_on_press(_press: On<Pointer<Press>>,
+    mut scene: ResMut<Scene>,
+    mut instruction_texts: Query<&mut Text, (With<Instructions>, Without<Label>)>,
+    mut label_texts: Query<(&mut Text, &LabelId), Without<Instructions>>,
+) {
+    scene.language = match scene.language {
+        Language::English => Language::German,
+        Language::German => Language::English,
+    };
+    // switch between english and german instructions
+    for mut instruction_text in &mut instruction_texts {
+        instruction_text.0 = scene.instructions_localized().to_string();
+    }
+    // switch between english and german label texts
+    for (mut label_text, label_id) in &mut label_texts {
+        label_text.0 = scene.label_localized(&label_id.id).to_string();
+    }
 }
 
 /// An observer to switch global view
@@ -756,12 +875,12 @@ fn show_more_on_press(
         camera.set_target(CAMERA_FLATLAND_POSITION);
     }
 
+    let instructions_string = scene.instructions_localized();
+
     match scene.state {
         StateScene::Planar => {}, // initial state, nothing to do
         StateScene::FlatlandComplete => {
-            // add projection
-            // add view point
-            // add height slider
+            // add advanced controls
             for (mut visibility, control) in &mut vis_control {
                 if control.advanced && control.on_off_marker == OnOffMarker::Non {
                     *visibility = Visibility::Visible;
@@ -769,7 +888,7 @@ fn show_more_on_press(
             }
 
             for (mut text, mut node) in &mut text {
-                text.0 = INSTRUCTIONS_FLATLAND_COMPLETE.to_string();
+                text.0 = instructions_string.to_string();
                 //middle right position
                 node.top = percent(22.);
                 node.left = percent(43.);
@@ -784,7 +903,7 @@ fn show_more_on_press(
         },
         StateScene::ThreeDimensional => {
             for (mut text, mut node) in &mut text {
-                text.0 = INSTRUCTIONS_THREE_DIMENSIONAL.to_string();
+                text.0 = instructions_string.to_string();
                 //middle more right position
                 node.top = percent(22.);
                 node.left = percent(60.);
@@ -799,7 +918,7 @@ fn show_more_on_press(
         },
         StateScene::SpacelandComplete => {
             for (mut text, mut node) in &mut text {
-                text.0 = INSTRUCTIONS_SPACELAND_COMPLETE.to_string();
+                text.0 = instructions_string.to_string();
                 //left bottom position
                 node.top = percent(80.);
                 node.left = percent(3.);
@@ -813,7 +932,7 @@ fn show_more_on_press(
         StateScene::SpacelandOnly => {
             // instructions
             for (mut text, mut node) in &mut text {
-                text.0 = INSTRUCTIONS_SPACELAND_ONLY.to_string();
+                text.0 = instructions_string.to_string();
                 //left bottom position
                 node.top = percent(80.);
                 node.left = percent(3.);
@@ -839,7 +958,7 @@ fn show_more_on_press(
             spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
 
             // tripods for control of Hyper rotation
-            spawn_tripods(&mut commands, &mut meshes, &mut materials);
+            spawn_tripods(&mut commands, &mut meshes, &mut materials, scene.scene_4d.rotation);
         },
     }
 }
@@ -901,16 +1020,23 @@ fn toggle_rotation_on_press(
     press: On<Pointer<Press>>,
     mut tripods: Query<&mut Tripod>,
     mut scene: ResMut<Scene>,
-    on_off: Query<(&mut Visibility, &Control)>
+    on_off: Query<(&mut Visibility, &Control)>,
+    time: Res<Time>,
 ) {
     let tripod = tripods.get_mut(press.entity).unwrap();
     scene.scene_4d.rotation = tripod.rotation;
 
+    // show active rotation by on/off marker visibility
     for (mut vis,control) in on_off {
         if control.on_off_marker == OnOffMarker::Rotation {
             *vis = if control.rotation_type == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
         }
     }
+
+    // start hyper jump
+    scene
+        .scene_4d
+        .force_high_dimension_view(time.elapsed_secs());
 }
 
 /// An observer to trigger toggle_4d when the ControlShape is pressed.
@@ -938,7 +1064,6 @@ fn spawn_scene (
         meshes.add(Sphere::new(radius))
     } else {
         meshes.add(Cuboid::new(2.0 * radius, 2.0 * radius, 2.0 * radius))
-        //meshes.add(Sphere::new(radius))
     };
     for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
@@ -961,14 +1086,15 @@ fn spawn_tripods(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    active_rotation: Rotation,
 ){
     let size = 0.5 * SCALE;
-    spawn_tripod(commands,meshes,materials,Rotation::Xy,vec3(-7. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Xz,vec3(-6. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Xw,vec3(-5. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Yz,vec3(-7. * SCALE, Y_CTR_ROW2, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Yw,vec3(-6. * SCALE, Y_CTR_ROW2, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Zw,vec3(-5. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xy,active_rotation,vec3(-7. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xz,active_rotation,vec3(-6. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Xw,active_rotation,vec3(-5. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Yz,active_rotation,vec3(-7. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Yw,active_rotation,vec3(-6. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation::Zw,active_rotation,vec3(-5. * SCALE, Y_CTR_ROW2, 0.),size);
 }
 
 fn spawn_tripod (
@@ -976,6 +1102,7 @@ fn spawn_tripod (
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
     rotation: Rotation,
+    activate_rotation: Rotation,
     position: Vec3,
     scale: f32
 ) {
@@ -1029,9 +1156,7 @@ fn spawn_tripod (
     let white_matl = materials.add(Color::WHITE);
     let hover_matl = materials.add(Color::from(CYAN_300));
     let pressed_matl = materials.add(Color::from(YELLOW_300));
-    let activated_matl =materials.add(Color::linear_rgb(0.2, 0.4, 0.2));
-
-    let size_of_controls = 0.2 * SCALE;
+    let activated_matl =materials.add(Color::linear_rgb(0.8, 0.2, 0.8));
 
     // Parent Entity (Holds position/transform)
     commands.spawn((
@@ -1041,6 +1166,7 @@ fn spawn_tripod (
         Tripod {rotation},
     )).observe(toggle_rotation_on_press)
     .with_children(|parent| {
+
         //Center gray
         parent.spawn((
             Mesh3d(meshes.add(Sphere::new(5. * radius))),
@@ -1052,10 +1178,10 @@ fn spawn_tripod (
 
         // On/Off marker
         parent.spawn((
-            Mesh3d(meshes.add(Sphere::new(5.1 * radius))),
+            Mesh3d(meshes.add(Sphere::new(5.2 * radius))),
             MeshMaterial3d(activated_matl.clone()),
             Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Rotation, rotation_type: rotation },
-            Visibility::Hidden,
+            if activate_rotation == rotation {Visibility::Visible} else {Visibility::Hidden},
             Pickable::IGNORE,
         ));
 

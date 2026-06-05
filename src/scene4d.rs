@@ -45,7 +45,7 @@ pub struct Scene4D {
 
     objects: Vec<Object4D>, // all objects in the scene
 
-    pub is_2row_structure: bool,
+    pub is_2row_structured_scene: bool,
     // indices of objects in the scene, grouped by type for easier access.
     objects_spaceland: Vec<usize>,
     objects_flatland: Vec<usize>,
@@ -54,6 +54,7 @@ pub struct Scene4D {
 
     pub is_projection_view: bool,
     pub is_high_dimension_view: bool,
+    pub is_synchronized_drag: bool,
     start_time_high_dimension: f32,
     speed_3d_rotation: f32,
     higher_dimension_height: f32,
@@ -66,7 +67,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 8; //16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
         // so be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
 
@@ -79,13 +80,14 @@ impl Scene4D {
             size_of_atom,
             number_of_atoms_per_side: number_per_side,
             objects: Vec::new(),
-            is_2row_structure: true,
+            is_2row_structured_scene: true,
             objects_spaceland: Vec::new(),
             objects_flatland: Vec::new(),
             objects_planar: Vec::new(),
             objects_4d: Vec::new(),
             is_high_dimension_view: false,
             is_projection_view: false,
+            is_synchronized_drag: false,
             start_time_high_dimension: 0.0,
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
@@ -95,15 +97,10 @@ impl Scene4D {
 
         //add some objects to the scene.
         let heart_index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
-        //let heart_index = scene.add_object(create_atoms_from_file(size_of_atom,"C:/Dev/bevy/bevy_4d/src/fruits.txt".to_string()));
-
         let cube3d_index = scene.add_object(create_cube_surface(size_of_atom, number_per_side));
         let cube4d_index = scene.add_object(create_cube_4d_surface(size_of_atom, number_per_side));
-
-        //let cube4d_edges_index = scene.add_object(create_tripod_4d(size_of_atom, number_per_side));
         let cube4d_edges_index =
-            scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
-
+            scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side, false));
         let circle_index = scene.add_object(create_circle(size_of_atom, number_per_side));
         let square_index = scene.add_object(create_square_surface(size_of_atom, number_per_side));
         let cube_index = scene.add_object(create_cube_surface(size_of_atom, number_per_side));
@@ -119,7 +116,7 @@ impl Scene4D {
 
     // complexer Spaceland to have more fun
     pub fn new_complex_scene() -> Self {
-        let size = 5.;
+        let size = 10.;
         let number_per_side = 50; // be careful with this number to avoid performance issues.
         let size_of_atom = size / number_per_side as f32;
 
@@ -132,13 +129,14 @@ impl Scene4D {
             size_of_atom,
             number_of_atoms_per_side: number_per_side,
             objects: Vec::new(),
-            is_2row_structure: false,
+            is_2row_structured_scene: false,
             objects_spaceland: Vec::new(),
             objects_flatland: Vec::new(),
             objects_planar: Vec::new(),
             objects_4d: Vec::new(),
             is_high_dimension_view: false,
             is_projection_view: false,
+            is_synchronized_drag: true,
             start_time_high_dimension: 0.0,
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
@@ -148,11 +146,13 @@ impl Scene4D {
 
         //add some objects to the scene.
         //scene.add_object(create_cube_surface_colorful(size_of_atom, number_per_side));
-        let index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
+        //let index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
+        let index_aquarium = scene.add_object(create_aquarium(size_of_atom, number_per_side));
+        let index_cube_4d = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side/3, true));
         //let index = scene.add_object(create_tripod_4d(size_of_atom, number_per_side));
         //let index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
         //let index = scene.add_object(create_atoms_from_file(size_of_atom, "C:/Dev/bevy/bevy_4d/src/fish.txt".to_string()));
-        scene.objects_spaceland = vec![index];
+        scene.objects_spaceland = vec![index_aquarium, index_cube_4d];
 
         scene
     }
@@ -163,20 +163,28 @@ impl Scene4D {
     }
 
     pub fn drag_object_from_atom(&mut self, atom_index: usize, delta: Vec2) {
+        let mut current_drag = Vec2::ZERO;
         for object in &mut self.objects {
             if object.range().contains(&atom_index) {
+                if self.is_synchronized_drag {
+                    let current_drag = object.drag; // take reference from the first dragged object. Todo: last rotated object
+                    for object in &mut self.objects {
+                        object.drag = current_drag + delta * 0.02;
+                    }
+                    break;
+                }
                 object.drag += delta * 0.02;
                 break;
             }
         }
     }
 
-    pub fn drag_all_objects(&mut self, delta: Vec2) {
-        let current_drag = self.objects[0].drag; // take reference from first object. Todo: last rotated object
-        for object in &mut self.objects {
-            object.drag = current_drag + delta * 0.02;
-        }
-    }
+    // pub fn toggle_drag_all_objects(&mut self, delta: Vec2) {
+    //     let current_drag = self.objects[0].drag; // take reference from first object. Todo: last rotated object
+    //     for object in &mut self.objects {
+    //         object.drag = current_drag + delta * 0.02;
+    //     }
+    // }
 
     fn add_object(&mut self, new_atoms: Atoms4D) -> usize {
         let index = self.objects.len();
@@ -211,6 +219,7 @@ impl Scene4D {
     pub fn reset_view(&mut self) {
         self.is_projection_view = false;
         self.is_high_dimension_view = false;
+        self.is_synchronized_drag = false;
         self.angle_high_dimension = 0.0;
         self.higher_dimension_height = 0.0;
     }
@@ -279,17 +288,28 @@ impl Scene4D {
     pub fn transform_scene(&mut self, time: f32) -> Vec<Vec4> {
         let mut new_positions = self.atoms.positions.clone();
 
+        // Positioning of objects in the complex scene
+        if !self.is_2row_structured_scene{
+            // move the second object in spaceland (cube_4d) to the right in complex scene
+            for index_atom in self.objects[self.objects_spaceland[1]].range() { 
+                new_positions[index_atom].x += 2.0;
+                new_positions[index_atom].y -= 0.1;
+            }
+        }
+
         let angle = time; // Rotation angle for the continuous rotation and the higher-dimension rotation
         let continuous_rotation_matrix = Mat3::from_rotation_y(self.speed_3d_rotation * angle); // Rotate around the Z-axis
 
-        // Closure to apply local transformations for each object based on its drag state.
+        // Closure to apply local rotations (drag and continuous rotation) for each object based on its drag state.
         //  -For 3D objects, we apply a 3D rotation based on the drag.
         //  -For 2D objects, we apply a 2D rotation based on the drag.
-        let mut apply_local_transform = |objects: &Object4D, drag_matrix: Mat3| {
+        let mut apply_local_rotation = |objects: &Object4D, drag_matrix: Mat3| {
             for index in objects.range() {
-                let position = &self.atoms.positions[index];
-                let rotated_position = drag_matrix
-                    * (continuous_rotation_matrix * vec3(position.x, position.y, position.z));
+                let position = new_positions[index];
+                let rotated_position = 
+                    drag_matrix
+                    * (continuous_rotation_matrix 
+                    * vec3(position.x, position.y, position.z));
 
                 new_positions[index] = Vec4::new(
                     rotated_position.x,
@@ -302,25 +322,25 @@ impl Scene4D {
 
         // local 3D-transformations for 3d objects
         for object_3d in self.objects_spaceland() {
-            apply_local_transform(object_3d, object_3d.drag_rotation_xy());
+            apply_local_rotation(object_3d, object_3d.drag_rotation_xy());
         }
 
         // local 2D-transformations for 2d objects
         for object_2d in self.objects_flatland() {
-            apply_local_transform(object_2d, object_2d.drag_rotation_x());
+            apply_local_rotation(object_2d, object_2d.drag_rotation_x());
         }
 
-        let x_offset = 2.5; // Distance to move the objects apart
-        if self.is_2row_structure {
+        let dist_between_columns = 2.5; // Distance to move the objects apart
+        if self.is_2row_structured_scene {
             // Placement of objects in the scenes (2D/3D)-> constructing two rows (both still on x-axis)
             let mut spread_on_x_axis = |objects: &[usize]| {
-                let mut delta_x = -3. * x_offset;
+                let mut delta_x = -3. * dist_between_columns;
                 for &obj_index in objects {
                     let object = &self.objects[obj_index];
                     for atom_index in object.range() {
                         new_positions[atom_index].x += delta_x;
                     }
-                    delta_x += 2. * x_offset; // next column
+                    delta_x += 2. * dist_between_columns; // next column
                 }
             };
             spread_on_x_axis(&self.objects_flatland);
@@ -361,10 +381,10 @@ impl Scene4D {
         let hd_offset = 2.1 * self.higher_dimension_height; // Distance to move the objects in the higher dimension.
         // Spaceland row:
         // - project to w=0 space in projection view
-        let y_offset = 2. * x_offset;
+        let dist_between_rows = if self.is_2row_structured_scene { 2. * dist_between_columns } else { 1. * dist_between_columns }; // Distance to move the 3D objects up on the Y-axis to separate from 2D objects in 2-row structure
         for object_3d in self.objects_spaceland() {
             for atom_index in object_3d.range() {
-                new_positions[atom_index].y += y_offset; // separate rows
+                new_positions[atom_index].y += dist_between_rows; // separate rows
                 if self.is_projection_view {
                     new_positions[atom_index].w = 0.; // move all atoms to the same w level in projection view 
                 } else {

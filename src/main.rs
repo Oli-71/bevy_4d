@@ -13,7 +13,7 @@ mod smooth;
 
 const SCALE: f32 = 6.0; // global scaling to fit the standard screen
 
-const Y_CTR_ROW1: f32 = 9. * SCALE;
+const Y_CTR_ROW1: f32 = 9. * SCALE; // y-value for the first row of controls; the second row is below with a small gap
 const Y_CTR_ROW2: f32 = 8. * SCALE;
 
 const CAMERA_STANDARD_TARGET: Vec3 = vec3(0., 0., 0.);
@@ -42,12 +42,12 @@ const LABEL_LANGUAGE: &str = "Deutsch/English";
 const LABEL_LANGUAGE_GERMAN: &str = "English/Deutsch";
 
 const INSTRUCTIONS_INITIAL: &str = r#"What would our three-dimensional world look like from a location in the fourth dimension? Let’s start with what inhabitants of a two-dimensional world see:
-Look into the flatland gap below. Flatlanders can only see what happens between the red lines. Rotate the objects... Then try the gray controls at the top.
+Look into the flatland gap below. Flatlanders can only see what happens between the red lines. Rotate the objects... If you understand what they represent, try the gray controls at the top.
 The 'Hyper' cone moves your location slowly into the third dimension and back. Wow, From 3D the Flatlanders can look into closed shapes!
 If you feel familiar with the Flatlander's understanding of dimension jump, click 'Show more'."#;
 
 const INSTRUCTIONS_INITIAL_GERMAN: &str = r#"Wie würde unsere dreidimensionale Welt von einem Ort in der vierten Dimension aussehen? Beginnen wir damit, was die Bewohner einer zweidimensionalen Welt sehen:
-Schauen Sie in die Flachland-Spalte unten. Flachländer können nur sehen, was zwischen den roten Linien passiert. Drehen Sie die Objekte... Dann probieren Sie die grauen Steuerelemente oben aus.
+Schauen Sie in die Flachland-Spalte unten. Flachländer können nur sehen, was zwischen den roten Linien passiert. Drehen Sie die Objekte... Wenn Sie verstanden haben, was sie darstellen, probieren Sie alle grauen Steuerelemente oben aus.
 Der 'Hyper'-Kegel bewegt Ihren Standort langsam in die dritte Dimension und zurück. Wow, von 3D aus können die Flachländer in geschlossene Formen schauen!
 Wenn Sie sich mit dem Verständnis der Dimensionssprünge der Flachländer vertraut fühlen, klicken Sie auf 'Mehr anzeigen'."#;
 
@@ -66,24 +66,32 @@ Wenn Sie bereit sind, den 3D-zu-4D-Effekt zu erleben, klicken Sie auf 'Mehr anze
 const INSTRUCTIONS_THREE_DIMENSIONAL: &str = r#"Study how the two new 3D-Objects behave if we go up to a fourth dimension view point (Again: 'Hyper').
 Are there are similarities to flatlander's experiences?
 
-'Show more' will add 4D-cubes to the scene. It will become crazy ;-)"#;
+'Show more' will add two different 4D-cubes to the scene. It will become crazy ;-)"#;
 
 const INSTRUCTIONS_THREE_DIMENSIONAL_GERMAN: &str = r#"Untersuchen Sie, wie sich die beiden neuen 3D-Objekte verhalten, wenn wir zu einem vierdimensionalen Standpunkt wechseln (nochmals: 'Hyper').
 Gibt es Ähnlichkeiten zu den Erfahrungen der Flachländer?
 
-'Mehr anzeigen' fügt der Szene 4D-Würfel hinzu. Es wird verrückt ;-)"#;
+'Mehr anzeigen' fügt der Szene zwei unterschiedliche 4D-Würfel hinzu. Es wird verrückt ;-)"#;
 
 const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take a few minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider and 'Synchronized Dragging' can help...
 ‘Projection’ pushes the atoms from the higher dimensions into the visible range. Note that actually we can never see 4D objects completely.  
-...Imagine a human being seen from 4D."#;
+...Imagine a human being seen from 4D. 'Show more' will display a complex scene, the construction of which now takes a bit longer..."#;
 
 const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich einige Minuten Zeit, um die Erfahrungen der Flachländer und Raumländer mit einer zusätzlichen Dimension zu vergleichen. Der 'Higher Dimension Offset' Slider und 'Synchronized Dragging' können helfen...
 ‘Projektion’ schiebt die Atome aus den höheren Dimensionen in den sichtbaren Bereich. Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können.  
-...Stellen Sie sich vor, wie ein Mensch aus der 4D-Perspektive gesehen werden würde."#;
+...Stellen Sie sich vor, wie ein Mensch aus der 4D-Perspektive gesehen werden würde. 'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
 
-const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations."#;
+const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try carefully all Transformations.
+Can you figure out what is visible? It's not quite so simple!
 
-const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie alle Transformationen aus."#;
+The end of the demo is reached.
+Thank you for your attention!"#;
+
+const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie in Ruhe alle Transformationen aus.
+Können Sie herausfinden, was zu sehen ist? Es ist nicht ganz einfach!
+
+Das Ende der Demo ist erreicht.
+Vielen Dank für Ihre Aufmerksamkeit!"#;
 
 fn main() {
     App::new()
@@ -111,39 +119,48 @@ fn main() {
         .run();
 }
 
+// Marker component to identify which entities are controls, so we can show/hide them together based on the state of the scene.
 #[derive(PartialEq)]
 enum OnOffMarker {
     Non,
     Projection,
     ViewPoint,
     Rotation,
+    SynchronizedDrag,
 }
 
+// We use the Control component for all control objects, to easily show/hide them together based on the state of the scene.
 #[derive(Component)]
 struct Control {
     advanced: bool, // only visible in advanced states
     flatland_deco: bool,
     on_off_marker: OnOffMarker, // is it an on/off marker; if this is the case: which one?
-    rotation_type: Rotation,
+    rotation_type: Rotation,// if it is a rotation control, which rotation does it trigger?
 }
 
 #[derive(Component)]
 struct BackgroundPanel;
 
+// We use the Label component for all labels, to easily show/hide them together based on the state of the scene and to position them above their corresponding entities.
 #[derive(Component)]
 struct Label {
     entity: Entity,
     offset_y: f32, // an offset to position the label above the entity
 }
 
+// We use the LabelId component to identify which label is which, so we can update their text when the language changes.
 #[derive(Component)]
 struct LabelId {
     id: String,
 }
 
+// We use the AngleMonitor component to identify the cone that serves as an angle monitor, 
+// so we can rotate it based on the current rotation angle in the 4D scene.
 #[derive(Component)]
 struct AngleMonitor;
 
+// We use the Atom component for the entities that represent the atoms in the 4D scene, 
+// to keep track of which atom they correspond to and whether they are currently visible in principle depending on the states.
 #[derive(Component)]
 struct Atom {
     index: usize, // index in the Scene4D's atoms vector, to identify which atom this entity corresponds to
@@ -324,19 +341,30 @@ fn setup_scene(
         Pickable::IGNORE,
     ));
 
-    // Cube to rotate all objects in the scene by dragging.
+    // Sphere to rotate all objects synchronized in the scene by dragging.
     let drag_all_objects_entity = commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::new(0.5 * SCALE, 0.5 * SCALE, 0.5 * SCALE))),
+            Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
+            Control { advanced: false, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Visibility::Visible,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(drag_all_objects)
+        .observe(drag_all_objects_on_press)
         .id();
+    
+    commands.spawn((
+        Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
+        MeshMaterial3d(activated_matl.clone()),
+        Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
+        Control { advanced: false, flatland_deco: false, on_off_marker: OnOffMarker::SynchronizedDrag, rotation_type: Rotation::Yw },
+        Visibility::Hidden,
+        Pickable::IGNORE,
+    ));
 
     // Slider to adjust speed of continuous rotation
     let slider_3d_rotation_entity = commands
@@ -688,13 +716,12 @@ fn transform_scene_4d(
 
     // update the transforms of the atom entities based on the rotated positions
     for (mut transform, mut visibility, atom_entity) in &mut query {
-        if !atom_entity.visible {
+        if !atom_entity.visible { // hide the atom is not visible based on the current state
             *visibility = Visibility::Hidden;
             continue;
         }
-        let index = atom_entity.index;
-        if let Some(position) = new_positions.get(index) {
-            *visibility = if scene.scene_4d.is_atom_visible(*position) {
+        if let Some(position) = new_positions.get(atom_entity.index) {
+            *visibility = if scene.scene_4d.is_atom_visible(*position) {// w component is close to zero 
                 transform.translation =
                     vec3(position.x * SCALE, position.y * SCALE, position.z * SCALE);
                 Visibility::Visible
@@ -718,10 +745,10 @@ fn update_move_position_smooth(
             continue;
         }
 
-        let t = position.get_next_translation(trafo.translation, time.delta_secs());
+        let translation = position.get_next_translation(trafo.translation, time.delta_secs());
         *trafo = trafo
             .looking_at(CAMERA_STANDARD_TARGET, Vec3::Y)
-            .with_translation(t);
+            .with_translation(translation);
     }
 }
 
@@ -772,17 +799,19 @@ fn monitor_scene_4d(
     }
 }
 
-/// An observer to rotate an entity when it is dragged
-fn drag_all_objects(
-    drag: On<Pointer<Drag>>,
-    mut transforms: Query<&mut Transform, Without<Camera3d>>,
+/// An observer to trigger synchronized dragging of all objects.
+fn drag_all_objects_on_press(
+    _press: On<Pointer<Press>>,
     mut scene: ResMut<Scene>,
+    on_off: Query<(&mut Visibility, &mut Control)>,
 ) {
-    let mut transform = transforms.get_mut(drag.entity).unwrap();
-    transform.rotate_y(drag.delta.x * 0.01);
-    transform.rotate_x(drag.delta.y * 0.01);
+    scene.scene_4d.is_synchronized_drag = !scene.scene_4d.is_synchronized_drag;
 
-    scene.scene_4d.drag_all_objects(drag.delta);
+    for (mut vis, control) in on_off {
+        if control.on_off_marker == OnOffMarker::SynchronizedDrag {
+            *vis = if scene.scene_4d.is_synchronized_drag {Visibility::Visible} else {Visibility::Hidden}; 
+        }
+    }
 }
 
 fn toggle_language_on_press(_press: On<Pointer<Press>>,
@@ -870,6 +899,7 @@ fn show_more_on_press(
             *visibility = Visibility::Hidden;
         }
     }
+    // reset to flatland view point
     scene.viewpoint_is_spaceland = false;
     for mut camera in &mut camera3ds {
         camera.set_target(CAMERA_FLATLAND_POSITION);
@@ -922,14 +952,14 @@ fn show_more_on_press(
                 //left bottom position
                 node.top = percent(80.);
                 node.left = percent(3.);
-                node.right = percent(46.);
+                node.right = percent(50.);
             }
 
             for (_entity, mut atom) in &mut atoms {
                 atom.visible = true;
             }
         },
-        StateScene::SpacelandOnly => {
+        StateScene::SpacelandOnly => {// complex scene
             // instructions
             for (mut text, mut node) in &mut text {
                 text.0 = instructions_string.to_string();
@@ -959,6 +989,26 @@ fn show_more_on_press(
 
             // tripods for control of Hyper rotation
             spawn_tripods(&mut commands, &mut meshes, &mut materials, scene.scene_4d.rotation);
+
+            // Light
+            commands.spawn((
+                PointLight {
+                    shadows_enabled: true,
+                    intensity: 50_000_000. * SCALE,
+                    range: 500.0 * SCALE,
+                    shadow_depth_bias: 0.2,
+                    ..default()
+                },
+                Transform::from_xyz(8.0 * SCALE, 2.0 * SCALE, 8.0 * SCALE),
+            ));
+
+            // synchronized dragging is standard in complex scene
+            scene.scene_4d.is_synchronized_drag = true;  
+            for (mut visibility, control) in &mut vis_control {
+                if control.on_off_marker == OnOffMarker::SynchronizedDrag {
+                    *visibility = Visibility::Visible;
+                }
+            }
         },
     }
 }
@@ -1016,6 +1066,7 @@ fn rotate_object_on_drag(
     scene.scene_4d.drag_object_from_atom(atom.index, drag.delta);
 }
 
+/// An observer to toggle_rotation when the tripod is pressed.
 fn toggle_rotation_on_press(
     press: On<Pointer<Press>>,
     mut tripods: Query<&mut Tripod>,
@@ -1046,6 +1097,8 @@ fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time
         .toggle_high_dimension_view(time.elapsed_secs());
 }
 
+/// A helper function to spawn the 3D scene based on the current state of the Scene4D. 
+/// We call this both at startup and when resetting the scene.
 fn spawn_scene (
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -1057,13 +1110,15 @@ fn spawn_scene (
     // We spawn an entity for each atom in the 4D scene, and use the Atom component to link them 
     // to their corresponding atoms in the Scene4D. This way, we can easily update their positions and 
     // visibilities based on the state of the Scene4D.
-    let sphere_shape = scene.scene_4d.is_2row_structure;
+    let sphere_shape = scene.scene_4d.is_2row_structured_scene;
     let radius = scene.scene_4d.size_of_atom * 0.8 * SCALE;
     // Create a single Handle<Mesh> so both branches have the same type
     let atom_mesh_handle = if sphere_shape {
         meshes.add(Sphere::new(radius))
     } else {
-        meshes.add(Cuboid::new(2.0 * radius, 2.0 * radius, 2.0 * radius))
+        //let factor = 1.6;
+        //meshes.add(Cuboid::new(factor * radius, factor * radius, factor * radius))
+        meshes.add(Sphere::new(radius))
     };
     for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
@@ -1081,7 +1136,7 @@ fn spawn_scene (
     }
 }
 
-// spawn tripods to control Hyper rotation
+/// A helper to spawn tripods to control Hyper rotation
 fn spawn_tripods(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,

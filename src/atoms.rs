@@ -1,6 +1,9 @@
 use bevy::color::palettes::css::GOLD;
 use bevy::prelude::*;
 
+use bevy::prelude::ops::sin;
+use bevy::prelude::ops::cos;
+
 /// Sequence of atoms, represented by equal numbered positions and colors.
 pub struct Atoms4D {
     pub positions: Vec<Vec4>,
@@ -194,7 +197,7 @@ pub(crate) fn create_cube_4d_corners(size_atom: f32, number_per_side: usize) -> 
 }
 
 // thick edges with multiple colors to visualize the 3d cubes ("faces") too. 
-pub(crate) fn create_cube_4d_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_cube_4d_edges(size_atom: f32, number_per_side: usize, displaced: bool) -> Atoms4D {
     let mut positions = Vec::new();
     let mut colors = Vec::new();
 
@@ -248,6 +251,52 @@ pub(crate) fn create_cube_4d_edges(size_atom: f32, number_per_side: usize) -> At
 
                     positions.push(Vec4::new(high, aa, bb, cc));
                     colors.push(Color::from(orange())); //orange
+                }
+            }
+        }
+    }
+    if displaced {
+        // Displace to make one cube - face visible in standard 3D.
+        for pos in &mut positions {
+            pos.w += spacing * (number_per_side as f32) * 0.5; // Displace along the w-axis
+        }
+
+        // One solid 3D cube 
+        for a in start+1..=end-1 {
+            for b in start+1..=end-1 {
+                for c in start+1..=end-1 {
+                    let aa = a as f32 * spacing;
+                    let bb = b as f32 * spacing;
+                    let cc = c as f32 * spacing;
+                    let inner_pos = Vec4::new(aa, bb, cc, spacing);
+                    positions.push(inner_pos);
+                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
+                }
+            }
+        }
+        // One solid 3D cube 
+        for a in start+1..=end-1 {
+            for b in start+1..=end-1 {
+                for c in start+1..=end-1 {
+                    let aa = a as f32 * spacing;
+                    let bb = b as f32 * spacing;
+                    let cc = c as f32 * spacing;
+                    let inner_pos = Vec4::new(aa, bb, cc, 3.0*spacing);
+                    positions.push(inner_pos);
+                    colors.push(Color::from(Srgba::rgb_u8(150, 0, 0))); //red
+                }
+            }
+        }
+        // One solid 3D cube 
+        for a in start+1..=end-1 {
+            for b in start+1..=end-1 {
+                for c in start+1..=end-1 {
+                    let aa = a as f32 * spacing;
+                    let bb = b as f32 * spacing;
+                    let cc = c as f32 * spacing;
+                    let inner_pos = Vec4::new(aa, bb, cc, 5.0*spacing);
+                    positions.push(inner_pos);
+                    colors.push(Color::from(Srgba::rgb_u8(50, 0, 0))); //red
                 }
             }
         }
@@ -651,5 +700,51 @@ pub(crate) fn create_atoms_from_file (size_atom: f32, name: String) -> Atoms4D {
         }
     }
 
+    Atoms4D { positions, colors }
+}
+
+pub(crate) fn create_aquarium(size_atom: f32, number_per_side: usize) -> Atoms4D {
+    let capacity = number_per_side * number_per_side * 6;
+    let mut positions = Vec::with_capacity(capacity);
+    let mut colors = Vec::with_capacity(capacity);
+
+    let end = (number_per_side / 2) as i32;
+    let start = -end;
+    let spacing = 1.1 * size_atom;
+    let radius = (number_per_side as f32 / 2.0) * size_atom;
+    let y_start = start + number_per_side as i32 / 5; 
+    let y_end = end - number_per_side as i32 / 5;
+    for x in start..=end {
+        for y in y_start..=y_end {
+            for z in start..=end {
+                let pos = Vec4::new(
+                    x as f32 * spacing,
+                    y as f32 * spacing,
+                    z as f32 * spacing,
+                    0.0,
+                );
+                let l = pos.length();
+                if l <= radius {// only create atoms within a certain radius to form a sphere
+                    if l >= radius * 0.95 { // surface of the sphere to create a hollow aquarium
+                        positions.push(pos);
+                        colors.push(Color::from(Srgba::rgba_u8(200,200,255, 10))); // light blue with low alpha for glass walls
+                    }
+
+                    let wave = (sin((x as f32 + 5.) * 0.1) * cos(z as f32 * 0.2) * 2.) as i32; // Add some waves to the water surface
+                    if y >= y_end - number_per_side as i32 / 20 + wave 
+                        && y<y_end - number_per_side as i32 / 30 + wave { // Create a "water surface"
+                        positions.push(pos);
+                        colors.push(Color::from(Srgba::rgba_u8(0, 100, 255, 25))); // darker blue
+                    }
+
+                    let wave = (sin((x as f32 + 4.) * 0.1) * cos(z as f32 * 0.2) * 2.) as i32; // Add some waves to the floor surface
+                    if y < y_start + number_per_side as i32 / 10 + wave { // Create a "floor" for the aquarium
+                        positions.push(pos);
+                        colors.push(Color::from(Srgba::rgba_u8(230, 230, 200, 255))); // yellow sand floor
+                    }
+                }
+            }
+        }
+    }
     Atoms4D { positions, colors }
 }

@@ -738,9 +738,10 @@ pub(crate) fn create_aquarium(size_atom: f32, number_per_side: usize) -> Atoms4D
                     }
 
                     let wave = (sin((x as f32 + 4.) * 0.1) * cos(z as f32 * 0.2) * 2.) as i32; // Add some waves to the floor surface
-                    if y < y_start + number_per_side as i32 / 10 + wave { // Create a "floor" for the aquarium
+                    if y < y_start + number_per_side as i32 / 7 + wave { // Create a "floor" for the aquarium
                         positions.push(pos);
-                        colors.push(Color::from(Srgba::rgba_u8(230, 230, 200, 255))); // yellow sand floor
+                        let yellow = rand::random_range(150..=255);
+                        colors.push(Color::from(Srgba::rgba_u8(yellow, yellow, 100, 255))); // yellow sand floor
                     }
                 }
             }
@@ -817,15 +818,15 @@ pub(crate) fn create_fish_3d(size_atom: f32, number_of_atoms_total_length: usize
                 let eye_radius_y = body_radius_y * 0.22;
                 let eye_radius_z = body_radius_z * 0.25;
 
-                let left_eye = body
-                    && ((pos.x - eye_center_x) / eye_radius_x).powi(2)
+                let left_eye = /*body
+                    &&*/ ((pos.x - eye_center_x) / eye_radius_x).powi(2)
                         + ((pos.y - eye_center_y) / eye_radius_y).powi(2)
                         + ((pos.z + body_radius_z * 0.5) / eye_radius_z).powi(2)
                         <= 1.0
                     && pos.y > 0.0;
 
-                let right_eye = body
-                    && ((pos.x - eye_center_x) / eye_radius_x).powi(2)
+                let right_eye = /*body
+                    &&*/ ((pos.x - eye_center_x) / eye_radius_x).powi(2)
                         + ((pos.y - eye_center_y) / eye_radius_y).powi(2)
                         + ((pos.z - body_radius_z * 0.5) / eye_radius_z).powi(2)
                         <= 1.0

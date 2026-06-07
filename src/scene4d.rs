@@ -149,10 +149,11 @@ impl Scene4D {
         //let index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
         let index_aquarium = scene.add_object(create_aquarium(size_of_atom, number_per_side));
         let index_cube_4d = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side/3, true));
+        let index_fish = scene.add_object(create_fish_3d(size_of_atom, number_per_side/4));
         //let index = scene.add_object(create_tripod_4d(size_of_atom, number_per_side));
         //let index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
         //let index = scene.add_object(create_atoms_from_file(size_of_atom, "C:/Dev/bevy/bevy_4d/src/fish.txt".to_string()));
-        scene.objects_spaceland = vec![index_aquarium, index_cube_4d];
+        scene.objects_spaceland = vec![index_aquarium, index_cube_4d, index_fish];
 
         scene
     }
@@ -178,13 +179,6 @@ impl Scene4D {
             }
         }
     }
-
-    // pub fn toggle_drag_all_objects(&mut self, delta: Vec2) {
-    //     let current_drag = self.objects[0].drag; // take reference from first object. Todo: last rotated object
-    //     for object in &mut self.objects {
-    //         object.drag = current_drag + delta * 0.02;
-    //     }
-    // }
 
     fn add_object(&mut self, new_atoms: Atoms4D) -> usize {
         let index = self.objects.len();
@@ -275,14 +269,16 @@ impl Scene4D {
     }
 
     /// Transforms all atoms in the 4D scene. Returns the new positions.
+    /// 0. in complex scene only (last state): Positioning of objects in the complex scene
     /// 1. local transformations
-    ///    - continuous rotation
+    ///    - continuous rotation (around y axis)
     ///    - dragging
     /// 2. generate 2D/3D Scenes: spreading center points on X axis
     /// 3. Hyper jump: global rotation of both scenes
     /// 4. optionally handle higher dimension:
-    ///    - apply High-dimension offset xor
-    ///    - Projection
+    ///    - apply High-dimension offset (move atoms along w-axis for 3D Scene; move atoms along y-axis for 2D Scene) 
+    ///     XOR
+    ///    - Projection (move atoms to w=0 space for 3D Scene; move atoms to y=0 plane for 2D Scene)
     /// 5. separate 3D from 2D scene: move up on Y axis
     ///
     pub fn transform_scene(&mut self, time: f32) -> Vec<Vec4> {
@@ -293,7 +289,11 @@ impl Scene4D {
             // move the second object in spaceland (cube_4d) to the right in complex scene
             for index_atom in self.objects[self.objects_spaceland[1]].range() { 
                 new_positions[index_atom].x += 2.0;
-                new_positions[index_atom].y -= 0.1;
+                new_positions[index_atom].y -= 0.5;
+            }
+            // move the third object in spaceland (fish) to the left in complex scene
+            for index_atom in self.objects[self.objects_spaceland[2]].range() { 
+                new_positions[index_atom].x -= 2.0;
             }
         }
 

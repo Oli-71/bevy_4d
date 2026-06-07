@@ -748,3 +748,113 @@ pub(crate) fn create_aquarium(size_atom: f32, number_per_side: usize) -> Atoms4D
     }
     Atoms4D { positions, colors }
 }
+
+/// Create a goldfish shape using an ellipsoid for the body and a tapering tail.
+/// number_of_atoms_total_length is the total length of the fish in atom steps, including body and tail.
+/// The length of the fish goes along the x-axis, the height along the y-axis, and the width along the z-axis.
+pub(crate) fn create_fish_3d(size_atom: f32, number_of_atoms_total_length: usize) -> Atoms4D {
+    let total_atoms = number_of_atoms_total_length.max(6) as i32;
+    let spacing = 1.1 * size_atom;
+    let tail_atoms = ((total_atoms as f32) * 0.2).round().max(2.0) as i32;
+    let body_atoms = total_atoms - tail_atoms;
+
+    let x_min = -total_atoms / 2;
+    let x_max = x_min + total_atoms - 1;
+    let tail_max_x = x_min + tail_atoms - 1;
+    let body_x_min = tail_max_x + 1;
+
+    let body_half_length = (body_atoms as f32) * 0.5 * spacing;
+    let body_center_x = (body_x_min + x_max) as f32 * 0.5 * spacing;
+    let body_radius_y = body_half_length * 0.7;
+    let body_radius_z = body_half_length * 0.5;
+    let tail_length = (tail_atoms as f32) * spacing;
+    let tail_max_height = body_radius_y * 0.6;
+    let tail_max_width = body_radius_z * 0.4;
+
+    let y_min = -(body_radius_y * 1.2).ceil() as i32;
+    let y_max = (body_radius_y * 1.2).ceil() as i32;
+    let z_min = -(body_radius_z * 1.4).ceil() as i32;
+    let z_max = (body_radius_z * 1.4).ceil() as i32;
+
+    let capacity = (total_atoms * (y_max - y_min + 1) * (z_max - z_min + 1)).max(total_atoms * 10) as usize;
+    let mut positions = Vec::with_capacity(capacity);
+    let mut colors = Vec::with_capacity(capacity);
+
+    for x in x_min-10..=x_max+10 {
+        for y in y_min-10..=y_max+10 {
+            for z in z_min-10..=z_max+10 {
+                let pos = Vec3::new(x as f32 * spacing, y as f32 * spacing, z as f32 * spacing);
+
+                let body = x >= body_x_min // ellipsoid body
+                    && ((pos.x - body_center_x) / body_half_length).powi(2)
+                        + (pos.y / body_radius_y).powi(2)
+                        + (pos.z / body_radius_z).powi(2)
+                        <= 1.0;
+
+                let inside_body = body
+                    && ((pos.x - body_center_x) / body_half_length).powi(2)
+                        + (pos.y / body_radius_y).powi(2)
+                        + (pos.z / body_radius_z).powi(2)
+                        <= 0.7;
+
+                let bones = body
+                    && (pos.y.abs() < spacing || x%2 == 0 && inside_body) // spine and vertical bones
+                    && pos.z.abs() < spacing; // only in the middle of the body
+
+                let tail = x <= tail_max_x && x >= x_min && tail_length > 0.0;
+                let tail = tail && {
+                    let progress = 1. - ((pos.x - x_min as f32 * spacing) / tail_length).clamp(0.0, 1.0);
+                    let height = tail_max_height * progress;
+                    let width = tail_max_width * progress;
+                    height > 0.0
+                        && width > 0.0
+                        && (pos.y.abs() / height).powi(2) + (pos.z.abs() / width).powi(2) <= 1.0
+                };
+
+                let eye_center_x = body_center_x + body_half_length * 0.2;
+                let eye_center_y = body_radius_y * 0.45;
+                let eye_radius_x = body_half_length * 0.3;//0.18;
+                let eye_radius_y = body_radius_y * 0.22;
+                let eye_radius_z = body_radius_z * 0.25;
+
+                let left_eye = body
+                    && ((pos.x - eye_center_x) / eye_radius_x).powi(2)
+                        + ((pos.y - eye_center_y) / eye_radius_y).powi(2)
+                        + ((pos.z + body_radius_z * 0.5) / eye_radius_z).powi(2)
+                        <= 1.0
+                    && pos.y > 0.0;
+
+                let right_eye = body
+                    && ((pos.x - eye_center_x) / eye_radius_x).powi(2)
+                        + ((pos.y - eye_center_y) / eye_radius_y).powi(2)
+                        + ((pos.z - body_radius_z * 0.5) / eye_radius_z).powi(2)
+                        <= 1.0
+                    && pos.y > 0.0;
+
+                let eyes = left_eye || right_eye;
+
+                if eyes {
+                    positions.push(Vec4::new(pos.x, pos.y, pos.z, 0.0));
+                    colors.push(Color::from(Srgba::rgb_u8(0, 50, 0)));// dark green for eyes
+                }
+                else if body {
+                    positions.push(Vec4::new(pos.x, pos.y, pos.z, 0.0));
+                    if inside_body {
+                        if bones {
+                            colors.push(Color::from(Srgba::rgb_u8(255, 255, 255)));// white for bones
+                        } else {
+                            colors.push(Color::from(Srgba::rgb_u8(255, 200, 50)));// orange for inner body
+                        }
+                    } else {
+                        colors.push(Color::from(Srgba::rgb_u8(255, 150, 50)));// darker orange for surface of the body
+                    }
+                } else if tail {
+                    positions.push(Vec4::new(pos.x, pos.y, pos.z, 0.0));
+                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 150)));// pink for tail
+                }
+            }
+        }
+    }
+
+    Atoms4D { positions, colors }
+}

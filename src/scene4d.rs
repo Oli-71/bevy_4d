@@ -40,8 +40,8 @@ impl Object4D {
 pub struct Scene4D {
     pub atoms: Atoms4D, // all atoms in the scene
 
-    pub size_of_atom: f32,
-    pub number_of_atoms_per_side: usize,
+    pub spacing: f32,// ortho dist between neighbored atom's center points
+    pub number_of_atoms_per_side: usize,// axis parallel bounding cube
 
     objects: Vec<Object4D>, // all objects in the scene
 
@@ -64,12 +64,17 @@ pub struct Scene4D {
 }
 
 impl Scene4D {
+
+    /// Diameter of a sphere like atom
+    pub fn size_of_atom(&self) -> f32 {
+        1.5 * self.spacing // some overlap, more than sqrt(2) to avoid gaps for sphere like atoms 
+    }
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 16; // Total atoms will be number_per_side^4, 
         // so be careful with this number to avoid performance issues.
-        let size_of_atom = size / number_per_side as f32;
+        let spacing = size / number_per_side as f32;
 
         //empty scene
         let mut scene = Self {
@@ -77,7 +82,7 @@ impl Scene4D {
                 positions: Vec::new(),
                 colors: Vec::new(),
             },
-            size_of_atom,
+            spacing,
             number_of_atoms_per_side: number_per_side,
             objects: Vec::new(),
             is_2row_structured_scene: true,
@@ -96,15 +101,15 @@ impl Scene4D {
         };
 
         //add some objects to the scene.
-        let heart_index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
-        let cube3d_index = scene.add_object(create_cube_surface(size_of_atom, number_per_side));
-        let cube4d_index = scene.add_object(create_cube_4d_surface(size_of_atom, number_per_side));
+        let heart_index = scene.add_object(create_heart_3d(spacing, number_per_side));
+        let cube3d_index = scene.add_object(create_cube_surface(spacing, number_per_side));
+        let cube4d_index = scene.add_object(create_cube_4d_surface(spacing, number_per_side));
         let cube4d_edges_index =
-            scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side, false));
-        let circle_index = scene.add_object(create_circle(size_of_atom, number_per_side));
-        let square_index = scene.add_object(create_square_surface(size_of_atom, number_per_side));
-        let cube_index = scene.add_object(create_cube_surface(size_of_atom, number_per_side));
-        let cube_edges_index = scene.add_object(create_cube_edges(size_of_atom, number_per_side));
+            scene.add_object(create_cube_4d_edges(spacing, number_per_side));
+        let circle_index = scene.add_object(create_circle(spacing, number_per_side));
+        let square_index = scene.add_object(create_square_surface(spacing, number_per_side));
+        let cube_index = scene.add_object(create_cube_surface(spacing, number_per_side));
+        let cube_edges_index = scene.add_object(create_cube_edges(spacing, number_per_side));
 
         scene.objects_spaceland = vec![heart_index, cube3d_index, cube4d_index, cube4d_edges_index];
         scene.objects_flatland = vec![circle_index, square_index, cube_index, cube_edges_index];
@@ -118,7 +123,7 @@ impl Scene4D {
     pub fn new_complex_scene() -> Self {
         let size = 10.;
         let number_per_side = 50; // be careful with this number to avoid performance issues.
-        let size_of_atom = size / number_per_side as f32;
+        let spacing = size / number_per_side as f32;
 
         //empty scene
         let mut scene = Self {
@@ -126,7 +131,7 @@ impl Scene4D {
                 positions: Vec::new(),
                 colors: Vec::new(),
             },
-            size_of_atom,
+            spacing,
             number_of_atoms_per_side: number_per_side,
             objects: Vec::new(),
             is_2row_structured_scene: false,
@@ -145,21 +150,26 @@ impl Scene4D {
         };
 
         //add some objects to the scene.
-        //scene.add_object(create_cube_surface_colorful(size_of_atom, number_per_side));
-        //let index = scene.add_object(create_heart_3d(size_of_atom, number_per_side));
-        let index_aquarium = scene.add_object(create_aquarium(size_of_atom, number_per_side));
-        let index_cube_4d = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side/3, true));
-        let index_fish = scene.add_object(create_fish_3d(size_of_atom, number_per_side/4));
-        //let index = scene.add_object(create_tripod_4d(size_of_atom, number_per_side));
-        //let index = scene.add_object(create_cube_4d_edges(size_of_atom, number_per_side));
-        //let index = scene.add_object(create_atoms_from_file(size_of_atom, "C:/Dev/bevy/bevy_4d/src/fish.txt".to_string()));
-        scene.objects_spaceland = vec![index_aquarium, index_cube_4d, index_fish];
+        let index_aquarium = scene.add_object(create_aquarium(spacing, number_per_side));
+        let size_fish = number_per_side / 4;
+        let number_per_side_hyper_cube = number_per_side / 3;
+        let w_offset = spacing * (number_per_side_hyper_cube as f32) * 0.5;
+        let index_cube_4d = scene.add_composed_object(vec![
+                    create_cube_4d_edges(spacing, number_per_side_hyper_cube)
+                        .translate(vec4(0.,0.,0.,w_offset)),
+                    create_fish_3d(spacing, size_fish)
+                        .translate(vec4(0.,0.,0.,w_offset)),
+                    create_heart_3d(spacing, number_per_side / 4)
+                        .translate(vec4(0.,0.,0.,0.5 * w_offset)),
+                ]);
+        let index_fish = scene.add_object(create_fish_3d(spacing, size_fish));
 
+        scene.objects_spaceland = vec![index_aquarium, index_cube_4d, index_fish];
         scene
     }
 
     pub fn is_atom_visible(&self, position: Vec4) -> bool {
-        let threshold = 0.8 * self.size_of_atom; // Atoms with |w| less than this threshold will be visible
+        let threshold = 0.8 * self.size_of_atom(); // Atoms with |w| less than this threshold will be visible
         abs(position.w) < threshold
     }
 
@@ -189,6 +199,23 @@ impl Scene4D {
         });
         self.atoms.positions.extend(new_atoms.positions);
         self.atoms.colors.extend(new_atoms.colors);
+        index
+    }
+
+    fn add_composed_object(&mut self, new_atoms_vec: Vec<Atoms4D>) -> usize {
+        let index = self.objects.len();
+        let mut number_of_atoms = 0;
+        let start_index = self.atoms.positions.len();
+        for atoms in new_atoms_vec {
+            number_of_atoms += atoms.positions.len();
+            self.atoms.positions.extend(atoms.positions);
+            self.atoms.colors.extend(atoms.colors);
+        }
+        self.objects.push(Object4D {
+            start_index,
+            number_of_atoms,
+            drag: Vec2::ZERO,
+        });
         index
     }
 
@@ -286,14 +313,9 @@ impl Scene4D {
 
         // Positioning of objects in the complex scene
         if !self.is_2row_structured_scene{
-
-           
-
-
             // move the second object in spaceland (cube_4d) to the right in complex scene
             for index_atom in self.objects[self.objects_spaceland[1]].range() { 
                 new_positions[index_atom].x += 2.0;
-                //new_positions[index_atom].y -= 0.5;
             }
 
             // move the third object in spaceland (fish) to the left in complex scene

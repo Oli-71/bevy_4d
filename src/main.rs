@@ -1,3 +1,15 @@
+/// A Bevy application to visualize a 4D scene from different viewpoints and with different transformations,
+/// to give an intuition of how a 4D world would look like and how it relates to our 3D world and a 2D world.
+/// 
+/// The content is incrementally added to the scene, so you can explore the different aspects step by step.
+/// 
+/// The code is structured in a way that the 
+/// - main.rs file contains the general setup of the scene and the controls, while the 
+/// - scene4d.rs file contains the logic for the 4D scene and the transformations. 
+/// - atoms.rs file contains the logic for generating objects composed of atoms.
+/// 
+/// author: Oliver Bringmann, 2026
+
 use std::f32::consts::PI;
 
 use bevy::{
@@ -434,9 +446,9 @@ fn setup_scene(
     // Cover Panel to hide invisible 3D-Space for flatland
     let size_of_panel = 30. * SCALE;
     let color = 200;
-    let offset_atom_thickness = scene.scene_4d.size_of_atom * 0.5 * SCALE;
+    let atom_size_at_panel_plane = 0.5 * scene.scene_4d.spacing * SCALE; // factor, because panel is closer to camera
     let z_offset =
-        scene.scene_4d.size_of_atom * 1.1 * SCALE * scene.scene_4d.number_of_atoms_per_side as f32;
+        scene.scene_4d.spacing * SCALE * scene.scene_4d.number_of_atoms_per_side as f32;
 
     // top horizontal panel 
     // (high alpha to mark the 2D slice when looking at it from the spaceland view)
@@ -452,7 +464,7 @@ fn setup_scene(
         MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
         Transform::from_translation(vec3(
             0.,
-            0. + offset_atom_thickness,
+            0. + atom_size_at_panel_plane,
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
@@ -473,7 +485,7 @@ fn setup_scene(
         MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 200))),
         Transform::from_translation(vec3(
             0.,
-            0. - offset_atom_thickness,
+            0. - atom_size_at_panel_plane,
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
@@ -492,7 +504,7 @@ fn setup_scene(
         MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 100))),
         Transform::from_translation(vec3(
             0.,
-            0. + y_size + offset_atom_thickness,
+            0. + y_size + atom_size_at_panel_plane,
             z_offset,
         )),
         Pickable::IGNORE,
@@ -510,7 +522,7 @@ fn setup_scene(
         MeshMaterial3d(materials.add(Color::srgba_u8(color, color, color, 100))),
         Transform::from_translation(vec3(
             0.,
-            0. - y_size_of_bottom_panel - offset_atom_thickness,
+            0. - y_size_of_bottom_panel - atom_size_at_panel_plane,
             z_offset,
         )),
         Pickable::IGNORE,
@@ -537,21 +549,21 @@ fn setup_scene(
 
     // Flatland Indicator Lines
     let _flatland_top_line_entity = spawn_thick_red_line(
-        vec3(- size_of_panel / 2., offset_atom_thickness, z_offset),
-        vec3( size_of_panel / 2., offset_atom_thickness, z_offset),
+        vec3(- size_of_panel / 2., atom_size_at_panel_plane, z_offset),
+        vec3( size_of_panel / 2., atom_size_at_panel_plane, z_offset),
         0.02 * SCALE,
     );
     
     let _flatland_bottom_line_entity = spawn_thick_red_line(
-        vec3(- size_of_panel / 2., - offset_atom_thickness, z_offset),
-        vec3( size_of_panel / 2., - offset_atom_thickness, z_offset),
+        vec3(- size_of_panel / 2., - atom_size_at_panel_plane, z_offset),
+        vec3( size_of_panel / 2., - atom_size_at_panel_plane, z_offset),
         0.02 * SCALE,
     );
 
     let flatland_bottom =commands.spawn((
             Mesh3d(meshes.add(Sphere::new(1.))),
             MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
-            Transform::from_translation(vec3(-9.5 * SCALE, - offset_atom_thickness, z_offset)),
+            Transform::from_translation(vec3(-9.5 * SCALE, - atom_size_at_panel_plane, z_offset)),
             Control {advanced: false, flatland_deco : true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         )).id();
 
@@ -1111,13 +1123,14 @@ fn spawn_scene (
     // to their corresponding atoms in the Scene4D. This way, we can easily update their positions and 
     // visibilities based on the state of the Scene4D.
     let sphere_shape = scene.scene_4d.is_2row_structured_scene;
-    let radius = scene.scene_4d.size_of_atom * 0.8 * SCALE;
+    let radius = scene.scene_4d.size_of_atom() * 0.5 * SCALE;
+    let cube_size = scene.scene_4d.size_of_atom() * SCALE;
     // Create a single Handle<Mesh> so both branches have the same type
     let atom_mesh_handle = if sphere_shape {
         meshes.add(Sphere::new(radius))
+        //meshes.add(Cuboid::new(cube_size, cube_size, cube_size))
     } else {
-        //let factor = 1.6;
-        //meshes.add(Cuboid::new(factor * radius, factor * radius, factor * radius))
+        //meshes.add(Cuboid::new(cube_size, cube_size, cube_size))
         meshes.add(Sphere::new(radius))
     };
     for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {

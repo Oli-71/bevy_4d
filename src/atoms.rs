@@ -10,6 +10,20 @@ pub struct Atoms4D {
     pub colors: Vec<Color>,
 }
 
+impl Atoms4D {
+    pub fn transform(mut self, transform: Mat4) -> Self {
+        for pos in &mut self.positions {
+            *pos = transform.mul_vec4(*pos);
+        }
+        self
+    }
+    pub fn translate(mut self, translation: Vec4) -> Self {
+        for pos in &mut self.positions {
+            *pos += translation;
+        }
+        self
+    }
+}
 
 fn orange() -> Srgba {
     Srgba::rgb_u8(255, 140, 26)
@@ -19,14 +33,13 @@ fn orange() -> Srgba {
 
 /// Creates a 3D cube composed of atoms.
 /// `size` is the length of an edge of the cube, and `number_per_side` is how many smaller cubes there are along each edge.
-pub(crate) fn create_cube_surface_colorful(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_cube_surface_colorful(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * 6 * 2;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32;
     let start = -end;
-    let spacing = 1.1 * size_atom;
     let wall_thickness = 1; // Number of atoms to keep on each side to create a hollow cube
 
     for x in start..=end {
@@ -58,14 +71,13 @@ pub(crate) fn create_cube_surface_colorful(size_atom: f32, number_per_side: usiz
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_cube_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32;
     let start = -end;
-    let spacing = 1.1 * size_atom;
     let wall_thickness = 1; // Number of atoms to keep on each side to create a hollow cube
 
     for x in start..=end {
@@ -102,15 +114,13 @@ pub(crate) fn create_cube_4d(size_atom: f32, number_per_side: usize) -> Atoms4D 
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_cube_4d_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_cube_4d_surface(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * number_per_side * 8;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32 - 1;
     let start = -end;
-
-    let spacing = 1.1 * size_atom;
 
     let low = (start - 1) as f32 * spacing; // Position for the "low" side of the cube (e.g., w = low)
     let high = (end + 1) as f32 * spacing; // Position for the "high" side of the cube (e.g., w = high)
@@ -152,12 +162,11 @@ pub(crate) fn create_cube_4d_surface(size_atom: f32, number_per_side: usize) -> 
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_cube_4d_corners(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_cube_4d_corners(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = 16; // A 4D cube has 16 corners
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
-    let spacing = 1.1 * size_atom;
     let end = (number_per_side / 2) as f32 * spacing;
     let start = -end;
 
@@ -197,14 +206,12 @@ pub(crate) fn create_cube_4d_corners(size_atom: f32, number_per_side: usize) -> 
 }
 
 // thick edges with multiple colors to visualize the 3d cubes ("faces") too. 
-pub(crate) fn create_cube_4d_edges(size_atom: f32, number_per_side: usize, displaced: bool) -> Atoms4D {
+pub(crate) fn create_cube_4d_edges(spacing: f32, number_per_side: usize) -> Atoms4D {
     let mut positions = Vec::new();
     let mut colors = Vec::new();
 
     let end = (number_per_side / 2) as i32 - 1;
     let start = -end;
-
-    let spacing = 1.1 * size_atom;
 
     let low = (start - 1) as f32 * spacing; // Position for the "low" side of the cube (e.g., w = low)
     let high = (end + 1) as f32 * spacing; // Position for the "high" side of the cube (e.g., w = high)
@@ -255,56 +262,10 @@ pub(crate) fn create_cube_4d_edges(size_atom: f32, number_per_side: usize, displ
             }
         }
     }
-    if displaced {
-        // Displace to make one cube - face visible in standard 3D.
-        for pos in &mut positions {
-            pos.w += spacing * (number_per_side as f32) * 0.5; // Displace along the w-axis
-        }
-
-        // One solid 3D cube 
-        for a in start+1..=end-1 {
-            for b in start+1..=end-1 {
-                for c in start+1..=end-1 {
-                    let aa = a as f32 * spacing;
-                    let bb = b as f32 * spacing;
-                    let cc = c as f32 * spacing;
-                    let inner_pos = Vec4::new(aa, bb, cc, spacing);
-                    positions.push(inner_pos);
-                    colors.push(Color::from(Srgba::rgb_u8(255, 0, 0))); //red
-                }
-            }
-        }
-        // One solid 3D cube 
-        for a in start+1..=end-1 {
-            for b in start+1..=end-1 {
-                for c in start+1..=end-1 {
-                    let aa = a as f32 * spacing;
-                    let bb = b as f32 * spacing;
-                    let cc = c as f32 * spacing;
-                    let inner_pos = Vec4::new(aa, bb, cc, 3.0*spacing);
-                    positions.push(inner_pos);
-                    colors.push(Color::from(Srgba::rgb_u8(150, 0, 0))); //red
-                }
-            }
-        }
-        // One solid 3D cube 
-        for a in start+1..=end-1 {
-            for b in start+1..=end-1 {
-                for c in start+1..=end-1 {
-                    let aa = a as f32 * spacing;
-                    let bb = b as f32 * spacing;
-                    let cc = c as f32 * spacing;
-                    let inner_pos = Vec4::new(aa, bb, cc, 5.0*spacing);
-                    positions.push(inner_pos);
-                    colors.push(Color::from(Srgba::rgb_u8(50, 0, 0))); //red
-                }
-            }
-        }
-    }
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_heart_3d(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_heart_3d(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
@@ -313,7 +274,6 @@ pub(crate) fn create_heart_3d(size_atom: f32, number_per_side: usize) -> Atoms4D
 
     let end = (actual_number_per_side / 2) as i32;
     let start = -end;
-    let spacing = 1.1 * size_atom;
     let scale = 4.0 / (spacing * actual_number_per_side as f32); // Scale the heart to fit within the cube
 
     for x in start..=end {
@@ -346,14 +306,14 @@ pub(crate) fn create_heart_3d(size_atom: f32, number_per_side: usize) -> Atoms4D
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_sphere_4d(radius: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_sphere_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32;
     let start = -end;
-    let spacing = 1.1 * radius / (number_per_side as f32 / 2.0);
+    let radius  = number_per_side as f32 / 2.0;
 
     for x in start..=end {
         for y in start..=end {
@@ -381,14 +341,13 @@ pub(crate) fn create_sphere_4d(radius: f32, number_per_side: usize) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_square(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_square(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32;
     let start = -end;
-    let spacing = 1.1 * size_atom;
 
     for x in start..=end {
         for z in start..=end {
@@ -408,14 +367,13 @@ pub(crate) fn create_square(size_atom: f32, number_per_side: usize) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_circle(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_circle(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32;
     let start = -end;
-    let spacing = 1.1 * size_atom;
 
     for x in start..=end {
         for z in start..=end {
@@ -445,15 +403,13 @@ pub(crate) fn create_circle(size_atom: f32, number_per_side: usize) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_cube_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_cube_surface(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * 6;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32 - 1;
     let start = -end;
-
-    let spacing = 1.1 * size_atom;
 
     let low = (start - 1) as f32 * spacing; // Position for the "low" side of the cube (e.g., w = low)
     let high = (end + 1) as f32 * spacing; // Position for the "high" side of the cube (e.g., w = high)
@@ -486,15 +442,13 @@ pub(crate) fn create_cube_surface(size_atom: f32, number_per_side: usize) -> Ato
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_square_surface(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_square_surface(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * 4;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32 - 1;
     let start = -end;
-
-    let spacing = 1.1 * size_atom;
 
     let low = (start - 1) as f32 * spacing; // Position for the "low" side of the cube (e.g., w = low)
     let high = (end + 1) as f32 * spacing; // Position for the "high" side of the cube (e.g., w = high)
@@ -518,14 +472,12 @@ pub(crate) fn create_square_surface(size_atom: f32, number_per_side: usize) -> A
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_cube_edges(spacing: f32, number_per_side: usize) -> Atoms4D {
     let mut positions = Vec::new();
     let mut colors = Vec::new();
 
     let end = (number_per_side / 2) as i32 - 1;
     let start = -end;
-
-    let spacing = 1.1 * size_atom;
 
     let low = (start - 1) as f32 * spacing; // Position for the "low" side of the cube (e.g., w = low)
     let high = (end + 1) as f32 * spacing; // Position for the "high" side of the cube (e.g., w = high)
@@ -562,11 +514,9 @@ pub(crate) fn create_cube_edges(size_atom: f32, number_per_side: usize) -> Atoms
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_tripod_4d(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_tripod_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
     let mut positions = Vec::new();
     let mut colors = Vec::new();
-
-    let spacing = 1.1 * size_atom;
 
     // origin
     positions.push(Vec4::new(0., 0., 0., 0.));
@@ -587,13 +537,11 @@ pub(crate) fn create_tripod_4d(size_atom: f32, number_per_side: usize) -> Atoms4
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_head(size_atom: f32) -> Atoms4D {
+pub(crate) fn create_head(spacing: f32) -> Atoms4D {
     let number_per_side = 16;
     let capacity = number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
-
-    let spacing = 1.1 * size_atom;
 
     let start = -(number_per_side as i32 / 2);
     let end = start + number_per_side as i32 - 1;
@@ -665,7 +613,7 @@ pub(crate) fn create_head(size_atom: f32) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_atoms_from_file (size_atom: f32, name: String) -> Atoms4D {
+pub(crate) fn create_atoms_from_file (spacing: f32, name: String) -> Atoms4D {
     let file_contents = std::fs::read_to_string(&name)
         .expect("Could not read file");
     let lines = file_contents
@@ -674,7 +622,6 @@ pub(crate) fn create_atoms_from_file (size_atom: f32, name: String) -> Atoms4D {
         .filter(|line| !line.is_empty() && !line.starts_with('#'))
         .collect::<Vec<_>>();
 
-    let spacing = 1.1 * size_atom;
     let mut positions = Vec::with_capacity(lines.len());
     let mut colors = Vec::with_capacity(lines.len());
 
@@ -703,15 +650,14 @@ pub(crate) fn create_atoms_from_file (size_atom: f32, name: String) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_aquarium(size_atom: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn create_aquarium(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * 6;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
     let end = (number_per_side / 2) as i32;
     let start = -end;
-    let spacing = 1.1 * size_atom;
-    let radius = (number_per_side as f32 / 2.0) * size_atom;
+    let radius = (number_per_side as f32 / 2.0) * spacing; 
     let y_start = start + number_per_side as i32 / 5; 
     let y_end = end - number_per_side as i32 / 5;
     for x in start..=end {
@@ -753,9 +699,8 @@ pub(crate) fn create_aquarium(size_atom: f32, number_per_side: usize) -> Atoms4D
 /// Create a goldfish shape using an ellipsoid for the body and a tapering tail.
 /// number_of_atoms_total_length is the total length of the fish in atom steps, including body and tail.
 /// The length of the fish goes along the x-axis, the height along the y-axis, and the width along the z-axis.
-pub(crate) fn create_fish_3d(size_atom: f32, number_of_atoms_total_length: usize) -> Atoms4D {
+pub(crate) fn create_fish_3d(spacing: f32, number_of_atoms_total_length: usize) -> Atoms4D {
     let total_atoms = number_of_atoms_total_length.max(6) as i32;
-    let spacing = 1.1 * size_atom;
     let tail_atoms = ((total_atoms as f32) * 0.2).round().max(2.0) as i32;
     let body_atoms = total_atoms - tail_atoms;
 
@@ -812,11 +757,11 @@ pub(crate) fn create_fish_3d(size_atom: f32, number_of_atoms_total_length: usize
                         && (pos.y.abs() / height).powi(2) + (pos.z.abs() / width).powi(2) <= 1.0
                 };
 
-                let eye_center_x = body_center_x + body_half_length * 0.2;
-                let eye_center_y = body_radius_y * 0.45;
+                let eye_center_x = body_center_x + body_half_length * 0.3;//0.2;
+                let eye_center_y = body_radius_y * 0.5;//0.45;
                 let eye_radius_x = body_half_length * 0.3;//0.18;
                 let eye_radius_y = body_radius_y * 0.22;
-                let eye_radius_z = body_radius_z * 0.25;
+                let eye_radius_z = body_radius_z * 0.3;//0.25;
 
                 let left_eye = /*body
                     &&*/ ((pos.x - eye_center_x) / eye_radius_x).powi(2)
@@ -836,7 +781,7 @@ pub(crate) fn create_fish_3d(size_atom: f32, number_of_atoms_total_length: usize
 
                 if eyes {
                     positions.push(Vec4::new(pos.x, pos.y, pos.z, 0.0));
-                    colors.push(Color::from(Srgba::rgb_u8(0, 50, 0)));// dark green for eyes
+                    colors.push(Color::from(Srgba::rgb_u8(0, 70, 0)));// dark green for eyes
                 }
                 else if body {
                     positions.push(Vec4::new(pos.x, pos.y, pos.z, 0.0));
@@ -844,7 +789,7 @@ pub(crate) fn create_fish_3d(size_atom: f32, number_of_atoms_total_length: usize
                         if bones {
                             colors.push(Color::from(Srgba::rgb_u8(255, 255, 255)));// white for bones
                         } else {
-                            colors.push(Color::from(Srgba::rgb_u8(255, 200, 50)));// orange for inner body
+                            colors.push(Color::from(Srgba::rgb_u8(255, 180, 50)));// orange for inner body
                         }
                     } else {
                         colors.push(Color::from(Srgba::rgb_u8(255, 150, 50)));// darker orange for surface of the body

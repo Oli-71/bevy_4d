@@ -699,7 +699,7 @@ pub(crate) fn create_aquarium(spacing: f32, number_per_side: usize) -> Atoms4D {
 /// Create a goldfish shape using an ellipsoid for the body and a tapering tail.
 /// number_of_atoms_total_length is the total length of the fish in atom steps, including body and tail.
 /// The length of the fish goes along the x-axis, the height along the y-axis, and the width along the z-axis.
-pub(crate) fn create_fish_3d(spacing: f32, number_of_atoms_total_length: usize) -> Atoms4D {
+pub(crate) fn create_fish_3d(spacing: f32, number_of_atoms_total_length: usize, color: Srgba) -> Atoms4D {
     let total_atoms = number_of_atoms_total_length.max(6) as i32;
     let tail_atoms = ((total_atoms as f32) * 0.2).round().max(2.0) as i32;
     let body_atoms = total_atoms - tail_atoms;
@@ -792,7 +792,7 @@ pub(crate) fn create_fish_3d(spacing: f32, number_of_atoms_total_length: usize) 
                             colors.push(Color::from(Srgba::rgb_u8(255, 180, 50)));// orange for inner body
                         }
                     } else {
-                        colors.push(Color::from(Srgba::rgb_u8(255, 150, 50)));// darker orange for surface of the body
+                        colors.push(Color::from(color));// darker orange for surface of the body
                     }
                 } else if tail {
                     positions.push(Vec4::new(pos.x, pos.y, pos.z, 0.0));

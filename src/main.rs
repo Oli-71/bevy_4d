@@ -94,13 +94,13 @@ const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich einige M
 ...Stellen Sie sich vor, wie ein Mensch aus der 4D-Perspektive gesehen werden würde. 'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
 
 const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try carefully all Transformations.
-Can you figure out what is visible? It's not quite so simple!
+Can you figure out what is visible?
 
 The end of the demo is reached.
 Thank you for your attention!"#;
 
 const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie in Ruhe alle Transformationen aus.
-Können Sie herausfinden, was zu sehen ist? Es ist nicht ganz einfach!
+Können Sie herausfinden, was zu sehen ist?
 
 Das Ende der Demo ist erreicht.
 Vielen Dank für Ihre Aufmerksamkeit!"#;
@@ -320,7 +320,13 @@ fn setup_scene(
         Transform::from_xyz(0., Y_CTR_ROW1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
         Control { advanced: true, flatland_deco: false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         AngleMonitor,
-    ))
+    )).with_children(|parent| {
+        // 2. Erstes Mesh (Kind 1)
+        parent.spawn((
+            Mesh3d(meshes.add(Sphere::new(size_of_controls/5.))),
+            MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
+            Transform::from_xyz(0.,size_of_controls,0.),
+        ));})
     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
     .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
     .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
@@ -1087,19 +1093,28 @@ fn toggle_rotation_on_press(
     time: Res<Time>,
 ) {
     let tripod = tripods.get_mut(press.entity).unwrap();
-    scene.scene_4d.rotation = tripod.rotation;
 
-    // show active rotation by on/off marker visibility
-    for (mut vis,control) in on_off {
-        if control.on_off_marker == OnOffMarker::Rotation {
-            *vis = if control.rotation_type == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
+    if(scene.scene_4d.rotation != tripod.rotation)
+    {//switch and start new rotation
+        scene.scene_4d.rotation = tripod.rotation;
+
+        // show active rotation by on/off marker visibility
+        for (mut vis,control) in on_off {
+            if control.on_off_marker == OnOffMarker::Rotation {
+                *vis = if control.rotation_type == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
+            }
         }
-    }
 
-    // start hyper jump
-    scene
-        .scene_4d
-        .force_high_dimension_view(time.elapsed_secs());
+        // start hyper jump
+        scene
+            .scene_4d
+            .force_high_dimension_view(time.elapsed_secs());
+    } else if scene.scene_4d.is_high_dimension_view {
+        // turn off hyper jump
+        scene
+            .scene_4d
+            .toggle_high_dimension_view(time.elapsed_secs());
+    }
 }
 
 /// An observer to trigger toggle_4d when the ControlShape is pressed.

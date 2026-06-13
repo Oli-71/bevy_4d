@@ -149,20 +149,23 @@ impl Scene4D {
             rotation: Rotation::Xz,
         };
 
-        //add some objects to the scene.
+        //add some objects to the scene (an aquarium, a hyper cube with hidden objects, a gold fish)
         let index_aquarium = scene.add_object(create_aquarium(spacing, number_per_side));
+
         let size_fish = number_per_side / 4;
         let number_per_side_hyper_cube = number_per_side / 3;
         let w_offset = spacing * (number_per_side_hyper_cube as f32) * 0.5;
         let index_cube_4d = scene.add_composed_object(vec![
                     create_cube_4d_edges(spacing, number_per_side_hyper_cube)
                         .translate(vec4(0.,0.,0.,w_offset)),
-                    create_fish_3d(spacing, size_fish)
+                    create_fish_3d(spacing, size_fish,Srgba::rgb_u8(50, 150, 255))// blueish
                         .translate(vec4(0.,0.,0.,w_offset)),
                     create_heart_3d(spacing, number_per_side / 4)
                         .translate(vec4(0.,0.,0.,0.5 * w_offset)),
                 ]);
-        let index_fish = scene.add_object(create_fish_3d(spacing, size_fish));
+        
+        let index_fish = scene.add_object(
+            create_fish_3d(spacing, size_fish,Srgba::rgb_u8(255, 150, 50)));//orange
 
         scene.objects_spaceland = vec![index_aquarium, index_cube_4d, index_fish];
         scene

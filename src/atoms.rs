@@ -686,7 +686,7 @@ pub(crate) fn create_aquarium(spacing: f32, number_per_side: usize) -> Atoms4D {
                     let wave = (sin((x as f32 + 4.) * 0.1) * cos(z as f32 * 0.2) * 2.) as i32; // Add some waves to the floor surface
                     if y < y_start + number_per_side as i32 / 7 + wave { // Create a "floor" for the aquarium
                         positions.push(pos);
-                        let yellow = rand::random_range(150..=255);
+                        let yellow = 155;//rand::random_range(150..=255);
                         colors.push(Color::from(Srgba::rgba_u8(yellow, yellow, 100, 255))); // yellow sand floor
                     }
                 }

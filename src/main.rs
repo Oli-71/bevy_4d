@@ -1,14 +1,14 @@
 /// A Bevy application to visualize a 4D scene from different viewpoints and with different transformations,
 /// to give an intuition of how a 4D world would look like and how it relates to our 3D world and a 2D world.
 /// 
-/// The content is incrementally added to the scene, so you can explore the different aspects step by step.
+/// The content is incrementally added to the scene, so user can explore the different aspects step by step.
 /// 
 /// The code is structured in a way that the 
 /// - main.rs file contains the general setup of the scene and the controls, while the 
 /// - scene4d.rs file contains the logic for the 4D scene and the transformations. 
 /// - atoms.rs file contains the logic for generating objects composed of atoms.
 /// 
-/// author: Oliver Bringmann, 2026
+/// Author: Oliver Bringmann, Leipzig, Germany, 2026
 
 use std::f32::consts::PI;
 
@@ -34,8 +34,8 @@ const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0., 0., 140.);
 
 const SLIDER_HEIGHT_CONTROL_OFFSET_Y: f32 = 5. * SCALE;
 
-const LABEL_VIEW_POINT: &str = "View Point";
-const LABEL_VIEW_POINT_GERMAN: &str = "Standpunkt";
+const LABEL_VIEW_POINT: &str = "Top View";
+const LABEL_VIEW_POINT_GERMAN: &str = "Draufsicht";
 const LABEL_HYPER: &str = "__Hyper";
 const LABEL_HYPER_GERMAN: &str = "__Hyper";
 const LABEL_PROJECTION: &str = "Projection";
@@ -54,7 +54,7 @@ const LABEL_LANGUAGE: &str = "Deutsch/English";
 const LABEL_LANGUAGE_GERMAN: &str = "English/Deutsch";
 
 const INSTRUCTIONS_INITIAL: &str = r#"What would our three-dimensional world look like from a location in the fourth dimension? Let’s start with what inhabitants of a two-dimensional world see:
-Look into the flatland gap below. Flatlanders can only see what happens between the red lines. Rotate the objects... If you understand what they represent, try the gray controls at the top.
+Look into the flatland gap below. Flatlanders can only see what happens between the red lines. Drag the objects... If you understand what they represent, try the gray controls at the top.
 The 'Hyper' cone moves your location slowly into the third dimension and back. Wow, From 3D the Flatlanders can look into closed shapes!
 If you feel familiar with the Flatlander's understanding of dimension jump, click 'Show more'."#;
 
@@ -66,13 +66,13 @@ Wenn Sie sich mit dem Verständnis der Dimensionssprünge der Flachländer vertr
 const INSTRUCTIONS_FLATLAND_COMPLETE: &str = r#"Now we have also two 3D cubes extending into our 2D world.
 Try to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension ('Hyper') it would be a challenge.
 BTW: There are a few more options available. Try them all.
-Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Continuous Rotation' and 'View Point'. Now you will understand...
+Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Continuous Rotation' and 'Top View'. Now you will understand...
 When you are ready to experience the 3D-to-4D effect, click 'Show more'."#;
 
 const INSTRUCTIONS_FLATLAND_COMPLETE_GERMAN: &str = r#"Nun haben wir zwei 3D-Würfel, die in unsere 2D-Welt hineinragen.
 Versuchen Sie sich vorzustellen, wie schwierig es für die Bewohner von Flachland ist, deren Struktur zu erfassen. Selbst wenn sie in die dritte Dimension springen könnten ('Hyper'), wäre es eine Herausforderung.
 Übrigens: Es gibt nun noch ein paar weitere Einstellmöglichkeiten. Probieren Sie sie alle aus.
-Überrascht, was passiert, wenn Sie 'Projektion' und 'Hyper' kombinieren? Fügen Sie etwas 'Kontinuierliche Rotation' und 'Standpunkt' hinzu... Jetzt werden Sie es verstehen.
+Überrascht, was passiert, wenn Sie 'Projektion' und 'Hyper' kombinieren? Fügen Sie etwas 'Kontinuierliche Rotation' und 'Draufsicht' hinzu... Jetzt werden Sie es verstehen.
 Wenn Sie bereit sind, den 3D-zu-4D-Effekt zu erleben, klicken Sie auf 'Mehr anzeigen'."#;
 
 const INSTRUCTIONS_THREE_DIMENSIONAL: &str = r#"Study how the two new 3D-Objects behave if we go up to a fourth dimension view point (Again: 'Hyper').
@@ -87,23 +87,23 @@ Gibt es Ähnlichkeiten zu den Erfahrungen der Flachländer?
 
 const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take a few minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider and 'Synchronized Dragging' can help...
 ‘Projection’ pushes the atoms from the higher dimensions into the visible range. Note that actually we can never see 4D objects completely.  
-...Imagine a human being seen from 4D. 'Show more' will display a complex scene, the construction of which now takes a bit longer..."#;
+'Show more' will display a complex scene, the construction of which now takes a bit longer..."#;
 
-const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich einige Minuten Zeit, um die Erfahrungen der Flachländer und Raumländer mit einer zusätzlichen Dimension zu vergleichen. Der 'Higher Dimension Offset' Slider und 'Synchronized Dragging' können helfen...
+const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich einige Minuten Zeit, um die Erfahrungen der Flachländer und Raumländer mit einer zusätzlichen Dimension zu vergleichen. Der 'Offset der höheren Dimension' Schieber und 'Synchrones Drehen' können helfen...
 ‘Projektion’ schiebt die Atome aus den höheren Dimensionen in den sichtbaren Bereich. Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können.  
-...Stellen Sie sich vor, wie ein Mensch aus der 4D-Perspektive gesehen werden würde. 'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
+'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
 
 const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try carefully all Transformations.
-Can you figure out what is visible?
+Can you figure out what are the segrets of the cube?
 
 The end of the demo is reached.
 Thank you for your attention!"#;
 
 const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie in Ruhe alle Transformationen aus.
-Können Sie herausfinden, was zu sehen ist?
+Können Sie herausfinden, was die Geheimnisse des Würfels sind?
 
 Das Ende der Demo ist erreicht.
-Vielen Dank für Ihre Aufmerksamkeit!"#;
+Vielen Dank!"#;
 
 fn main() {
     App::new()
@@ -145,10 +145,10 @@ enum OnOffMarker {
 #[derive(Component)]
 struct Control {
     advanced: bool, // only visible in advanced states
-    flatland_deco: bool,
+    only_in_2row_scene: bool,
     high_dim_offset: bool,
     on_off_marker: OnOffMarker, // is it an on/off marker; if this is the case: which one?
-    rotation_type: Rotation,// if it is a rotation control, which rotation does it trigger?
+    rotation_type: Rotation, // if it is a rotation control, which rotation does it trigger?
 }
 
 #[derive(Component)]
@@ -200,6 +200,7 @@ enum Language {
     German,
 }
 
+// a control to visualize a rotation around a plane (two axis), has actually 4 axes :)
 #[derive(Component)]
 struct Tripod {
     rotation: Rotation,
@@ -253,7 +254,7 @@ impl Scene {
     }
 }
 
-// A system to set up the initial scene, including the 3D objects, controls, camera, and instructions.
+/// A system to set up the initial scene, including the 3D objects, controls, camera, and instructions.
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -278,7 +279,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, Y_CTR_ROW1, 0.),
-            Control { advanced: false, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control { advanced: false, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Visible, 
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -294,7 +295,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(0. * SCALE, Y_CTR_ROW1, 0.),
-            Control { advanced: true, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Hidden, 
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -308,7 +309,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(0. * SCALE, Y_CTR_ROW1, 0.),
-        Control { advanced: true, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::ViewPoint, rotation_type: Rotation::Yw },
+        Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::ViewPoint, rotation_type: Rotation::Yw },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -319,7 +320,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
         MeshMaterial3d(white_matl.clone()),
         Transform::from_xyz(0., Y_CTR_ROW1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
-        Control { advanced: true, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         AngleMonitor,
     )).with_children(|parent| {
         // 2. Erstes Mesh (Kind 1)
@@ -341,21 +342,21 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
-            Control { advanced: false, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control { advanced: false, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Visible,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(drag_all_objects_on_press)
+        .observe(toggle_drag_all_on_press)
         .id();
     
     commands.spawn((
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
-        Control { advanced: false, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::SynchronizedDrag, rotation_type: Rotation::Yw },
+        Control { advanced: false, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::SynchronizedDrag, rotation_type: Rotation::Yw },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -388,6 +389,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW2, 0.),
+            Control { advanced: false, only_in_2row_scene: true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -402,7 +404,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, Y_CTR_ROW2, 0.),
-            Control { advanced: true, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -416,7 +418,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(left, Y_CTR_ROW2, 0.),
-        Control { advanced: true, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::Projection, rotation_type: Rotation::Yw },
+        Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::Projection, rotation_type: Rotation::Yw },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -427,7 +429,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
-            Control { advanced: true, flatland_deco: false, high_dim_offset:true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control { advanced: true, only_in_2row_scene: false, high_dim_offset:true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
             Visibility::Hidden,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -443,7 +445,7 @@ fn setup_scene(
             vec3(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
-        Control { advanced: true, flatland_deco: false, high_dim_offset:true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control { advanced: true, only_in_2row_scene: false, high_dim_offset:true, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         Visibility::Hidden,
     ));
 
@@ -475,7 +477,7 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
-        Control {advanced: false, flatland_deco : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {advanced: false, only_in_2row_scene : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -496,7 +498,7 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
-        Control {advanced: false, flatland_deco : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {advanced: false, only_in_2row_scene : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -515,7 +517,7 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
-        Control {advanced: false, flatland_deco : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {advanced: false, only_in_2row_scene : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -533,7 +535,7 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
-        Control {advanced: false, flatland_deco : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {advanced: false, only_in_2row_scene : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         NotShadowReceiver,
     ));
 
@@ -550,7 +552,7 @@ fn setup_scene(
             MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 200))),
             Transform::from_translation(start + direction / 2.0)
                 .with_rotation(rotation),
-            Control {advanced: false, flatland_deco : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {advanced: false, only_in_2row_scene : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         )).id()
     };
 
@@ -571,7 +573,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(1.))),
             MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
             Transform::from_translation(vec3(-9.5 * SCALE, - atom_size_at_panel_plane, z_offset)),
-            Control {advanced: false, flatland_deco : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {advanced: false, only_in_2row_scene : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
         )).id();
 
     // Background Panel - indicates that your viewpoint is in 3D-space (no hyper)
@@ -621,7 +623,7 @@ fn setup_scene(
         NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
         //Transform::from_xyz(8.0 * SCALE, 0.0 * SCALE, 8.0 * SCALE),
         Transform::from_xyz(0.0 * SCALE, 0.0 * SCALE, 16.0 * SCALE),
-        Control {advanced: false, flatland_deco : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {advanced: false, only_in_2row_scene : true, high_dim_offset:false, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
     ));
 
     // Camera
@@ -656,14 +658,14 @@ fn setup_scene(
     // A helper closure to add labels to the control objects.
     // We use a closure here to avoid repeating the same code for each label,
     // since they all have the same structure (a parent node with absolute positioning and a child text node with the label).
-    let mut spawn_label = |entity: Entity, label: &str, offset: f32, visibility: Visibility, flatland_deco: bool, high_dim_offset: bool| {
+    let mut spawn_label = |entity: Entity, label: &str, offset: f32, visibility: Visibility, only_in_2row_scene: bool, high_dim_offset: bool| {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 ..default()
             },
             Label { entity, offset_y: offset },
-            Control { advanced: true, flatland_deco, high_dim_offset, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw}, // to show labels together with advanced controls
+            Control { advanced: true, only_in_2row_scene, high_dim_offset, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw}, // to show labels together with advanced controls
             visibility,
             children![(
                 Text::new(label),
@@ -686,7 +688,7 @@ fn setup_scene(
     spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9, Visibility::Visible,false,false);
     spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden,false,true);
     spawn_label(flatland_bottom, LABEL_FLATLAND, 0.0, Visibility::Visible,true,false);
-    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible,false,false);
+    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible,true,false);
     spawn_label(language_control_entity, LABEL_LANGUAGE, 0.9, Visibility::Visible,false,false);
 
     // Instructions
@@ -819,7 +821,7 @@ fn monitor_scene_4d(
 }
 
 /// An observer to trigger synchronized dragging of all objects.
-fn drag_all_objects_on_press(
+fn toggle_drag_all_on_press(
     _press: On<Pointer<Press>>,
     mut scene: ResMut<Scene>,
     on_off: Query<(&mut Visibility, &mut Control)>,
@@ -891,6 +893,46 @@ fn toggle_projection_on_press(_press: On<Pointer<Press>>,
             *vis = if scene.scene_4d.is_projection_view {Visibility::Hidden} else {Visibility::Visible};     
         }
     }
+}
+
+/// An observer to toggle_rotation when the tripod is pressed.
+fn toggle_rotation_on_press(
+    press: On<Pointer<Press>>,
+    mut tripods: Query<&mut Tripod>,
+    mut scene: ResMut<Scene>,
+    on_off: Query<(&mut Visibility, &Control)>,
+    time: Res<Time>,
+) {
+    let tripod = tripods.get_mut(press.entity).unwrap();
+
+    if(scene.scene_4d.rotation != tripod.rotation)
+    {//switch and start new rotation
+        scene.scene_4d.rotation = tripod.rotation;
+
+        // show active rotation by on/off marker visibility
+        for (mut vis,control) in on_off {
+            if control.on_off_marker == OnOffMarker::Rotation {
+                *vis = if control.rotation_type == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
+            }
+        }
+
+        // start hyper jump
+        scene
+            .scene_4d
+            .force_high_dimension_view(time.elapsed_secs());
+    } else if scene.scene_4d.is_high_dimension_view {
+        // turn off hyper jump
+        scene
+            .scene_4d
+            .toggle_high_dimension_view(time.elapsed_secs());
+    }
+}
+
+/// An observer to trigger toggle_4d when the ControlShape is pressed.
+fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time: Res<Time>) {
+    scene
+    .scene_4d
+    .toggle_high_dimension_view(time.elapsed_secs());
 }
 
 /// An observer to switch to the next scene state.
@@ -979,7 +1021,7 @@ fn show_more_on_press(
                 //left bottom position
                 node.top = percent(80.);
                 node.left = percent(3.);
-                node.right = percent(50.);
+                node.right = percent(25.);
             }
 
             for (_entity, mut atom) in &mut atoms {
@@ -1003,7 +1045,7 @@ fn show_more_on_press(
 
             // hide flatlands panels etc.
             for (mut visibility, control) in &mut vis_control {
-                if control.flatland_deco {
+                if control.only_in_2row_scene {
                     *visibility = Visibility::Hidden;
                 }
             }
@@ -1027,6 +1069,18 @@ fn show_more_on_press(
                     ..default()
                 },
                 Transform::from_xyz(8.0 * SCALE, 2.0 * SCALE, 8.0 * SCALE),
+            ));
+
+            // Light inside aquarium
+            commands.spawn((
+                PointLight {
+                    shadows_enabled: true,
+                    intensity: 1_000_000. * SCALE,
+                    range: 50.0 * SCALE,
+                    shadow_depth_bias: 0.2,
+                    ..default()
+                },
+                Transform::from_xyz(-3.0 * SCALE, 2.0 * SCALE, 1.0 * SCALE),
             ));
 
             // synchronized dragging is standard in complex scene
@@ -1083,54 +1137,14 @@ fn drag_to_adjust_higher_dimension_height(
 }
 
 /// An observer to rotate an Object4d entity.
-fn rotate_object_on_drag(
+fn drag_to_rotate_object(
     drag: On<Pointer<Drag>>,
     mut atoms: Query<&mut Atom>,
     mut scene: ResMut<Scene>,
-) {
+){
     // Update the drag state in the 4D scene based on the drag delta and the atom index
     let atom = atoms.get_mut(drag.entity).unwrap();
     scene.scene_4d.drag_object_from_atom(atom.index, drag.delta);
-}
-
-/// An observer to toggle_rotation when the tripod is pressed.
-fn toggle_rotation_on_press(
-    press: On<Pointer<Press>>,
-    mut tripods: Query<&mut Tripod>,
-    mut scene: ResMut<Scene>,
-    on_off: Query<(&mut Visibility, &Control)>,
-    time: Res<Time>,
-) {
-    let tripod = tripods.get_mut(press.entity).unwrap();
-
-    if(scene.scene_4d.rotation != tripod.rotation)
-    {//switch and start new rotation
-        scene.scene_4d.rotation = tripod.rotation;
-
-        // show active rotation by on/off marker visibility
-        for (mut vis,control) in on_off {
-            if control.on_off_marker == OnOffMarker::Rotation {
-                *vis = if control.rotation_type == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
-            }
-        }
-
-        // start hyper jump
-        scene
-            .scene_4d
-            .force_high_dimension_view(time.elapsed_secs());
-    } else if scene.scene_4d.is_high_dimension_view {
-        // turn off hyper jump
-        scene
-            .scene_4d
-            .toggle_high_dimension_view(time.elapsed_secs());
-    }
-}
-
-/// An observer to trigger toggle_4d when the ControlShape is pressed.
-fn toggle_4d_on_press(_press: On<Pointer<Press>>, mut scene: ResMut<Scene>, time: Res<Time>) {
-    scene
-        .scene_4d
-        .toggle_high_dimension_view(time.elapsed_secs());
 }
 
 /// A helper function to spawn the 3D scene based on the current state of the Scene4D. 
@@ -1148,7 +1162,7 @@ fn spawn_scene (
     // visibilities based on the state of the Scene4D.
     let sphere_shape = scene.scene_4d.is_2row_structured_scene;
     let radius = scene.scene_4d.size_of_atom() * 0.5 * SCALE;
-    let cube_size = scene.scene_4d.size_of_atom() * SCALE;
+    let _cube_size = 1.5 * scene.scene_4d.size_of_atom() * SCALE;
     // Create a single Handle<Mesh> so both branches have the same type
     let atom_mesh_handle = if sphere_shape {
         meshes.add(Sphere::new(radius))
@@ -1169,7 +1183,7 @@ fn spawn_scene (
                 )),
                 Atom { index: atom_index, visible: scene.state == StateScene::SpacelandOnly || scene.scene_4d.is_planar(atom_index) },
             ))
-            .observe(rotate_object_on_drag);
+            .observe(drag_to_rotate_object);
     }
 }
 
@@ -1189,6 +1203,7 @@ fn spawn_tripods(
     spawn_tripod(commands,meshes,materials,Rotation::Zw,active_rotation,vec3(-5. * SCALE, Y_CTR_ROW2, 0.),size);
 }
 
+/// A helpe to spawn one tripod
 fn spawn_tripod (
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -1272,7 +1287,7 @@ fn spawn_tripod (
         parent.spawn((
             Mesh3d(meshes.add(Sphere::new(5.2 * radius))),
             MeshMaterial3d(activated_matl.clone()),
-            Control { advanced: true, flatland_deco: false, high_dim_offset:false, on_off_marker: OnOffMarker::Rotation, rotation_type: rotation },
+            Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::Rotation, rotation_type: rotation },
             if activate_rotation == rotation {Visibility::Visible} else {Visibility::Hidden},
             Pickable::IGNORE,
         ));

@@ -395,7 +395,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(show_more_on_press)
+        //.observe(show_more_on_press)
         .id();
 
     // Sphere to trigger projection view

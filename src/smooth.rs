@@ -26,7 +26,7 @@ impl PositionTarget {
         self.reached
     }
 
-    pub fn get_target(&self) -> Vec3 {
+    pub fn _get_target(&self) -> Vec3 {
         self.translation_target
     }
 
@@ -45,7 +45,7 @@ impl PositionTarget {
     }
 }
 
-// add to cameras which could change field of view
+/*// add to cameras which could change field of view
 #[derive(Component)]
 pub struct FovTarget {
     fov_target: f32,
@@ -116,4 +116,4 @@ impl ScaleTarget {
             vec3(self.scale_target, self.scale_target, self.scale_target)
         }
     }
-}
+}*/

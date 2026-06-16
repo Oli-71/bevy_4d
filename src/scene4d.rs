@@ -177,7 +177,6 @@ impl Scene4D {
     }
 
     pub fn drag_object_from_atom(&mut self, atom_index: usize, delta: Vec2) {
-        let mut current_drag = Vec2::ZERO;
         for object in &mut self.objects {
             if object.range().contains(&atom_index) {
                 if self.is_synchronized_drag {

@@ -11,7 +11,7 @@ pub struct Atoms4D {
 }
 
 impl Atoms4D {
-    pub fn transform(mut self, transform: Mat4) -> Self {
+    pub fn _transform(mut self, transform: Mat4) -> Self {
         for pos in &mut self.positions {
             *pos = transform.mul_vec4(*pos);
         }
@@ -33,7 +33,7 @@ fn orange() -> Srgba {
 
 /// Creates a 3D cube composed of atoms.
 /// `size` is the length of an edge of the cube, and `number_per_side` is how many smaller cubes there are along each edge.
-pub(crate) fn create_cube_surface_colorful(spacing: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn _create_cube_surface_colorful(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * 6 * 2;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
@@ -71,7 +71,7 @@ pub(crate) fn create_cube_surface_colorful(spacing: f32, number_per_side: usize)
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_cube_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn _create_cube_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
@@ -162,7 +162,7 @@ pub(crate) fn create_cube_4d_surface(spacing: f32, number_per_side: usize) -> At
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_cube_4d_corners(spacing: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn _create_cube_4d_corners(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = 16; // A 4D cube has 16 corners
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
@@ -306,7 +306,7 @@ pub(crate) fn create_heart_3d(spacing: f32, number_per_side: usize) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_sphere_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn _create_sphere_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
@@ -341,7 +341,7 @@ pub(crate) fn create_sphere_4d(spacing: f32, number_per_side: usize) -> Atoms4D 
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_square(spacing: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn _create_square(spacing: f32, number_per_side: usize) -> Atoms4D {
     let capacity = number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
@@ -514,7 +514,7 @@ pub(crate) fn create_cube_edges(spacing: f32, number_per_side: usize) -> Atoms4D
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_tripod_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
+pub(crate) fn _create_tripod_4d(spacing: f32, number_per_side: usize) -> Atoms4D {
     let mut positions = Vec::new();
     let mut colors = Vec::new();
 
@@ -537,7 +537,7 @@ pub(crate) fn create_tripod_4d(spacing: f32, number_per_side: usize) -> Atoms4D 
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_head(spacing: f32) -> Atoms4D {
+pub(crate) fn _create_head(spacing: f32) -> Atoms4D {
     let number_per_side = 16;
     let capacity = number_per_side * number_per_side * number_per_side;
     let mut positions = Vec::with_capacity(capacity);
@@ -613,7 +613,7 @@ pub(crate) fn create_head(spacing: f32) -> Atoms4D {
     Atoms4D { positions, colors }
 }
 
-pub(crate) fn create_atoms_from_file (spacing: f32, name: String) -> Atoms4D {
+pub(crate) fn _create_atoms_from_file (spacing: f32, name: String) -> Atoms4D {
     let file_contents = std::fs::read_to_string(&name)
         .expect("Could not read file");
     let lines = file_contents

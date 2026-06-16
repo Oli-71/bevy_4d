@@ -1,14 +1,14 @@
-/// A Bevy application to visualize a 4D scene from different viewpoints and with different transformations,
-/// to give an intuition of how a 4D world would look like and how it relates to our 3D world and a 2D world.
-/// 
-/// The content is incrementally added to the scene, so user can explore the different aspects step by step.
-/// 
-/// The code is structured in a way that the 
-/// - main.rs file contains the general setup of the scene and the controls, while the 
-/// - scene4d.rs file contains the logic for the 4D scene and the transformations. 
-/// - atoms.rs file contains the logic for generating objects composed of atoms.
-/// 
-/// Author: Oliver Bringmann, Leipzig, Germany, 2026
+//! A Bevy application to visualize a 4D scene from different viewpoints and with different transformations,
+//! to give an intuition of how a 4D world would look like and how it relates to our 3D world and a 2D world.
+//! 
+//! The content is incrementally added to the scene, so user can explore the different aspects step by step.
+//! 
+//! The code is structured in a way that the 
+//! - main.rs file contains the general setup of the scene and the controls, while the 
+//! - scene4d.rs file contains the logic for the 4D scene and the transformations. 
+//! - atoms.rs file contains the logic for generating objects composed of atoms.
+//! 
+//! Author: Oliver Bringmann, Leipzig, Germany, 2026
 
 use std::f32::consts::PI;
 
@@ -85,22 +85,24 @@ Gibt es Ähnlichkeiten zu den Erfahrungen der Flachländer?
 
 'Mehr anzeigen' fügt der Szene zwei unterschiedliche 4D-Würfel hinzu. Es wird verrückt ;-)"#;
 
-const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take a few minutes to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider and 'Synchronized Dragging' can help...
+const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take some time to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider and 'Synchronized Dragging' can help...
 ‘Projection’ pushes the atoms from the higher dimensions into the visible range. Note that actually we can never see 4D objects completely.  
 'Show more' will display a complex scene, the construction of which now takes a bit longer..."#;
 
-const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich einige Minuten Zeit, um die Erfahrungen der Flachländer und Raumländer mit einer zusätzlichen Dimension zu vergleichen. Der 'Offset der höheren Dimension' Schieber und 'Synchrones Drehen' können helfen...
+const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich Zeit, um die Erfahrungen der Flachländer und Raumländer mit einer zusätzlichen Dimension zu vergleichen. Der 'Offset der höheren Dimension' Schieber und 'Synchrones Drehen' können helfen...
 ‘Projektion’ schiebt die Atome aus den höheren Dimensionen in den sichtbaren Bereich. Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können.  
 'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
 
-const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try carefully all Transformations.
-Can you figure out what are the segrets of the cube?
+const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations.
+Can you figure out what are 
+the segrets of the cube?
 
 The end of the demo is reached.
 Thank you for your attention!"#;
 
-const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie in Ruhe alle Transformationen aus.
-Können Sie herausfinden, was die Geheimnisse des Würfels sind?
+const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren alle Transformationen aus.
+Können Sie herausfinden, 
+was die Geheimnisse des Würfels sind?
 
 Das Ende der Demo ist erreicht.
 Vielen Dank!"#;
@@ -136,7 +138,7 @@ fn main() {
 enum OnOffMarker {
     Non,
     Projection,
-    ViewPoint,
+    TopView,
     Rotation,
     SynchronizedDrag,
 }
@@ -309,7 +311,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(0. * SCALE, Y_CTR_ROW1, 0.),
-        Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::ViewPoint, rotation_type: Rotation::Yw },
+        Control { advanced: true, only_in_2row_scene: false, high_dim_offset:false, on_off_marker: OnOffMarker::TopView, rotation_type: Rotation::Yw },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -395,7 +397,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        //.observe(show_more_on_press)
+        .observe(show_more_on_press)
         .id();
 
     // Sphere to trigger projection view
@@ -864,7 +866,7 @@ fn toggle_view_point_on_press(
     scene.viewpoint_is_spaceland = !scene.viewpoint_is_spaceland;
 
     for (mut vis, control) in on_off {
-        if control.on_off_marker == OnOffMarker::ViewPoint {
+        if control.on_off_marker == OnOffMarker::TopView {
             *vis = if scene.viewpoint_is_spaceland {Visibility::Visible} else {Visibility::Hidden}; 
         }
     }
@@ -905,7 +907,7 @@ fn toggle_rotation_on_press(
 ) {
     let tripod = tripods.get_mut(press.entity).unwrap();
 
-    if(scene.scene_4d.rotation != tripod.rotation)
+    if scene.scene_4d.rotation != tripod.rotation
     {//switch and start new rotation
         scene.scene_4d.rotation = tripod.rotation;
 

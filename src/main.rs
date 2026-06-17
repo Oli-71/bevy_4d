@@ -95,14 +95,14 @@ const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich Zeit, um
 
 const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations.
 Can you figure out what are 
-the segrets of the cube?
+the two segrets of the cube?
 
 The end of the demo is reached.
 Thank you for your attention!"#;
 
-const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren alle Transformationen aus.
+const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie alle Transformationen aus.
 Können Sie herausfinden, 
-was die Geheimnisse des Würfels sind?
+was die beiden Geheimnisse des Würfels sind?
 
 Das Ende der Demo ist erreicht.
 Vielen Dank!"#;
@@ -127,6 +127,7 @@ fn main() {
                 transform_scene_4d,
                 monitor_scene_4d,
                 update_labels,
+                sync_label_visibility,
                 update_move_position_smooth,
             ),
         )
@@ -660,15 +661,13 @@ fn setup_scene(
     // A helper closure to add labels to the control objects.
     // We use a closure here to avoid repeating the same code for each label,
     // since they all have the same structure (a parent node with absolute positioning and a child text node with the label).
-    let mut spawn_label = |entity: Entity, label: &str, offset: f32, visibility: Visibility, only_in_2row_scene: bool, high_dim_offset: bool| {
+    let mut spawn_label = |entity: Entity, label: &str, offset: f32, /*visibility: Visibility, only_in_2row_scene: bool, high_dim_offset: bool*/| {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 ..default()
             },
             Label { entity, offset_y: offset },
-            Control { advanced: true, only_in_2row_scene, high_dim_offset, on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw}, // to show labels together with advanced controls
-            visibility,
             children![(
                 Text::new(label),
                 label_text_style.clone(),
@@ -683,15 +682,15 @@ fn setup_scene(
         ));
     };
 
-    spawn_label(view_point_control_entity, LABEL_VIEW_POINT, 0.9, Visibility::Hidden,false,false);
-    spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9, Visibility::Visible,false,false);
-    spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9, Visibility::Hidden,false,false);
-    spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9, Visibility::Visible,false,false);
-    spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9, Visibility::Visible,false,false);
-    spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, Visibility::Hidden,false,true);
-    spawn_label(flatland_bottom, LABEL_FLATLAND, 0.0, Visibility::Visible,true,false);
-    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, Visibility::Visible,true,false);
-    spawn_label(language_control_entity, LABEL_LANGUAGE, 0.9, Visibility::Visible,false,false);
+    spawn_label(view_point_control_entity, LABEL_VIEW_POINT, 0.9);
+    spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9);
+    spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9);
+    spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9);
+    spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9);
+    spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9);
+    spawn_label(flatland_bottom, LABEL_FLATLAND, 0.0);
+    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9);
+    spawn_label(language_control_entity, LABEL_LANGUAGE, 0.9);
 
     // Instructions
     commands.spawn((
@@ -794,6 +793,18 @@ fn update_labels(
         // position the label's node in the viewport based on the world position of the labeled entity
         node.top = px(viewport_position.y);
         node.left = px(viewport_position.x);
+    }
+}
+
+/// A system that synchronizes the visibility of label entities with their referenced control entities
+fn sync_label_visibility(
+    vis_of_all_entities: Query<&Visibility, Without<Label>>,
+    mut labels: Query<(&mut Visibility, &Label), Without<Control>>,
+) {
+    for (mut label_vis, label) in &mut labels {
+        if let Ok(control_vis) = vis_of_all_entities.get(label.entity) { // interesting filtering
+            *label_vis = *control_vis;
+        }
     }
 }
 

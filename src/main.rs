@@ -578,12 +578,13 @@ fn setup_scene(
         0.02 * SCALE,
     );
 
+    // placeholder for flatland label
     let flatland_bottom =commands.spawn((
-            Mesh3d(meshes.add(Sphere::new(1.))),
-            MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
-            Transform::from_translation(vec3(-9.5 * SCALE, - atom_size_at_panel_plane, z_offset)),
-            OnlyIn2rowScene,
-        )).id();
+        Mesh3d(meshes.add(Sphere::new(1.))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
+        Transform::from_translation(vec3(8.35 * SCALE, atom_size_at_panel_plane, z_offset)),
+        OnlyIn2rowScene,
+    )).id();
 
     // Background Panel - indicates that your viewpoint is in 3D-space (no hyper)
     commands.spawn((
@@ -656,26 +657,29 @@ fn setup_scene(
     ));
 
     // Text Labels
-    let text_style = TextFont {
+    let text_style_black = TextFont {
+        font: asset_server.load("fonts/CenturyGothicPaneuropeanBlack.ttf"),
+        ..default()
+    };
+    let text_style_thin = TextFont {
         font: asset_server.load("fonts/CenturyGothicPaneuropeanThin.ttf"),
         ..default()
     };
-
-    let label_text_style = (text_style.clone(), TextColor(Color::srgb_u8(200, 200, 200)));
+    
+    let thin = (text_style_thin.clone(), TextColor(Color::srgb_u8(200, 200, 200)));
+    let black = (text_style_black.clone(), TextColor(Color::srgb_u8(0, 0, 0)));
 
     // A helper closure to add labels to the control objects.
-    // We use a closure here to avoid repeating the same code for each label,
-    // since they all have the same structure (a parent node with absolute positioning and a child text node with the label).
-    let mut spawn_label = |entity: Entity, label: &str, offset: f32, /*visibility: Visibility, only_in_2row_scene: bool, high_dim_offset: bool*/| {
+    let mut spawn_label = |entity: Entity, label: &str, offset: f32, style: (TextFont, TextColor)| {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 ..default()
             },
             Label { entity, offset_y: offset },
-            children![(
+        )).with_child((
                 Text::new(label),
-                label_text_style.clone(),
+                style.clone(),
                 Node {
                     position_type: PositionType::Absolute,
                     bottom: Val::ZERO,
@@ -683,19 +687,18 @@ fn setup_scene(
                 },
                 TextLayout::default().with_no_wrap(),
                 LabelId { id: label.to_string() },
-            )],
         ));
     };
 
-    spawn_label(view_point_control_entity, LABEL_VIEW_POINT, 0.9);
-    spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9);
-    spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9);
-    spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9);
-    spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9);
-    spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9);
-    spawn_label(flatland_bottom, LABEL_FLATLAND, 0.0);
-    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9);
-    spawn_label(language_control_entity, LABEL_LANGUAGE, 0.9);
+    spawn_label(view_point_control_entity, LABEL_VIEW_POINT, 0.9, thin.clone());
+    spawn_label(angle_monitor_entity, LABEL_HYPER, 0.9, thin.clone());
+    spawn_label(projection_control_entity, LABEL_PROJECTION, 0.9, thin.clone());
+    spawn_label(drag_all_objects_entity, LABEL_SYNC_DRAG, 0.9, thin.clone());
+    spawn_label(slider_3d_rotation_entity, LABEL_CONTINUOUS_ROTATION, 0.9, thin.clone());
+    spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, thin.clone());
+    spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, thin.clone());
+    spawn_label(language_control_entity, LABEL_LANGUAGE, 0.9, thin.clone());
+    spawn_label(flatland_bottom, LABEL_FLATLAND, 0.1, black.clone());
 
     // Instructions
     commands.spawn((
@@ -712,7 +715,7 @@ fn setup_scene(
             font_size: 20.0,
             ..default()
         },
-        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        TextColor(Color::srgb(1., 1., 1.)),
         BackgroundColor(Color::srgba_u8(10, 10, 10, 50)),
         Instructions,
     ));
@@ -868,7 +871,9 @@ fn toggle_language_on_press(_press: On<Pointer<Press>>,
     }
     // switch between english and german label texts
     for (mut label_text, label_id) in &mut label_texts {
-        label_text.0 = scene.label_localized(&label_id.id).to_string();
+        if LABEL_FLATLAND != label_id.id { // bugfix: ignore Flatland to keep the Black font :-(
+            label_text.0 = scene.label_localized(&label_id.id).to_string();
+        }
     }
 }
 

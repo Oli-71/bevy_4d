@@ -4,11 +4,8 @@ use bevy::prelude::*;
 
 use std::f32::consts::PI;
 
-/// Sequence of atoms, represented by equal numbered positions and colors.
-// `Atoms4D` and helper `create_*` functions moved to `src/atoms.rs`.
-
 #[derive(PartialEq, Clone, Copy)]
-pub enum Rotation {
+pub enum Rotation4d {
     Xy,
     Xz,
     Xw,
@@ -60,7 +57,7 @@ pub struct Scene4D {
     higher_dimension_height: f32,
     angle_high_dimension: f32,
 
-    pub rotation: Rotation,
+    pub rotation: Rotation4d,
 }
 
 impl Scene4D {
@@ -97,7 +94,7 @@ impl Scene4D {
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
-            rotation: Rotation::Xz,
+            rotation: Rotation4d::Xz,
         };
 
         //add some objects to the scene.
@@ -146,7 +143,7 @@ impl Scene4D {
             speed_3d_rotation: 0.0, // default: no continuous rotation
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
-            rotation: Rotation::Xz,
+            rotation: Rotation4d::Xz,
         };
 
         //add some objects to the scene (an aquarium, a hyper cube with hidden objects, a gold fish)
@@ -404,12 +401,12 @@ impl Scene4D {
             for object_3d in self.objects_spaceland() {
                 for atom_index in object_3d.range() {
                     match self.rotation {
-                        Rotation::Xy => rotate_4d_xy(&mut new_positions[atom_index], self.angle_high_dimension),
-                        Rotation::Xz => rotate_4d_xz(&mut new_positions[atom_index], self.angle_high_dimension),
-                        Rotation::Xw => rotate_4d_xw(&mut new_positions[atom_index], self.angle_high_dimension),
-                        Rotation::Yz => rotate_4d_yz(&mut new_positions[atom_index], self.angle_high_dimension),
-                        Rotation::Yw => rotate_4d_yw(&mut new_positions[atom_index], self.angle_high_dimension),
-                        Rotation::Zw => rotate_4d_zw(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation4d::Xy => rotate_4d_xy(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation4d::Xz => rotate_4d_xz(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation4d::Xw => rotate_4d_xw(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation4d::Yz => rotate_4d_yz(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation4d::Yw => rotate_4d_yw(&mut new_positions[atom_index], self.angle_high_dimension),
+                        Rotation4d::Zw => rotate_4d_zw(&mut new_positions[atom_index], self.angle_high_dimension),
                     }
                 }
             }

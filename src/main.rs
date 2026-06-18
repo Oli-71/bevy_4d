@@ -136,19 +136,17 @@ fn main() {
 
 // Marker component to identify which entities are controls, so we can show/hide them together based on the state of the scene.
 #[derive(PartialEq)]
-enum OnOffMarker {
+enum OnOffMarkerType {
     Non,
     Projection,
     TopView,
-    Rotation,
     SynchronizedDrag,
 }
 
 // We use the Control component for all control objects, to easily show/hide them together based on the state of the scene.
 #[derive(Component)]
 struct Control {
-    on_off_marker: OnOffMarker, // is it an on/off marker; if this is the case: which one?
-    rotation_type: Rotation, // if it is a rotation control, which rotation does it trigger?
+    on_off_marker: OnOffMarkerType, // is it an on/off marker; if this is the case: which one?
 }
 
 #[derive(Component)]
@@ -159,6 +157,11 @@ struct OnlyIn2rowScene; // not visible in complex scene (last state)
 
 #[derive(Component)]
 struct HighDimOffset; // not visible in Projection
+
+#[derive(Component)]
+struct Rotation{
+    rotation: Rotation4d,
+}
 
 #[derive(Component)]
 struct BackgroundPanel;
@@ -212,7 +215,7 @@ enum Language {
 // a control to visualize a rotation around a plane (two axis), has actually 4 axes :)
 #[derive(Component)]
 struct Tripod {
-    rotation: Rotation,
+    rotation: Rotation4d,
 }
 
 // The main resource that holds the 4D scene and the current state of the application.
@@ -288,7 +291,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, Y_CTR_ROW1, 0.),
-            Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {on_off_marker: OnOffMarkerType::Non},
             Visibility::Visible, 
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -304,7 +307,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(0. * SCALE, Y_CTR_ROW1, 0.),
-            Control { on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control { on_off_marker: OnOffMarkerType::Non},
             Visibility::Hidden,
             AdvancedControl,
         ))
@@ -319,7 +322,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(0. * SCALE, Y_CTR_ROW1, 0.),
-        Control { on_off_marker: OnOffMarker::TopView, rotation_type: Rotation::Yw },
+        Control { on_off_marker: OnOffMarkerType::TopView },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -330,7 +333,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Cone::new(size_of_controls, size_of_controls * 2.0))),
         MeshMaterial3d(white_matl.clone()),
         Transform::from_xyz(0., Y_CTR_ROW1, 0.).with_rotation(Quat::from_rotation_y(PI/2.)),
-        Control { on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control { on_off_marker: OnOffMarkerType::Non},
         AngleMonitor,
         AdvancedControl,
     )).with_children(|parent| {
@@ -352,7 +355,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
-            Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {on_off_marker: OnOffMarkerType::Non},
             Visibility::Visible,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -366,7 +369,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
-        Control { on_off_marker: OnOffMarker::SynchronizedDrag, rotation_type: Rotation::Yw },
+        Control { on_off_marker: OnOffMarkerType::SynchronizedDrag },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -399,7 +402,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW2, 0.),
-            Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {on_off_marker: OnOffMarkerType::Non},
             OnlyIn2rowScene,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
@@ -415,7 +418,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, Y_CTR_ROW2, 0.),
-            Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {on_off_marker: OnOffMarkerType::Non},
             Visibility::Hidden,
             AdvancedControl,
         ))
@@ -430,7 +433,7 @@ fn setup_scene(
         Mesh3d(meshes.add(Sphere::new(size_of_controls*1.2))),
         MeshMaterial3d(activated_matl.clone()),
         Transform::from_xyz(left, Y_CTR_ROW2, 0.),
-        Control {on_off_marker: OnOffMarker::Projection, rotation_type: Rotation::Yw },
+        Control {on_off_marker: OnOffMarkerType::Projection },
         Visibility::Hidden,
         Pickable::IGNORE,
     ));
@@ -441,7 +444,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
-            Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {on_off_marker: OnOffMarkerType::Non},
             Visibility::Hidden,
             AdvancedControl,
             HighDimOffset,
@@ -459,7 +462,7 @@ fn setup_scene(
             vec3(left, 2. * SCALE + SLIDER_HEIGHT_CONTROL_OFFSET_Y, 0.),
         ))),
         MeshMaterial3d(white_matl.clone()),
-        Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {on_off_marker: OnOffMarkerType::Non},
         Visibility::Hidden,
         AdvancedControl,
         HighDimOffset,
@@ -493,7 +496,7 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
-        Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {on_off_marker: OnOffMarkerType::Non},
         NotShadowReceiver,
         OnlyIn2rowScene,
     ));
@@ -515,7 +518,7 @@ fn setup_scene(
             z_offset - size_of_panel / 2.,
         )),
         Pickable::IGNORE,
-        Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {on_off_marker: OnOffMarkerType::Non},
         NotShadowReceiver,
         OnlyIn2rowScene,
     ));
@@ -535,7 +538,7 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
-        Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control {on_off_marker: OnOffMarkerType::Non},
         NotShadowReceiver,
         OnlyIn2rowScene,
     ));
@@ -554,7 +557,7 @@ fn setup_scene(
             z_offset,
         )),
         Pickable::IGNORE,
-        Control { on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control { on_off_marker: OnOffMarkerType::Non},
         NotShadowReceiver,
         OnlyIn2rowScene,
     ));
@@ -572,7 +575,7 @@ fn setup_scene(
             MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 200))),
             Transform::from_translation(start + direction / 2.0)
                 .with_rotation(rotation),
-            Control {  on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {  on_off_marker: OnOffMarkerType::Non},
             OnlyIn2rowScene,
         )).id()
     };
@@ -594,7 +597,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(1.))),
             MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
             Transform::from_translation(vec3(-9.5 * SCALE, - atom_size_at_panel_plane, z_offset)),
-            Control {on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+            Control {on_off_marker: OnOffMarkerType::Non},
             OnlyIn2rowScene,
         )).id();
 
@@ -644,7 +647,7 @@ fn setup_scene(
         },
         NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
         Transform::from_xyz(0.0 * SCALE, 0.0 * SCALE, 16.0 * SCALE),
-        Control { on_off_marker: OnOffMarker::Non, rotation_type: Rotation::Yw},
+        Control { on_off_marker: OnOffMarkerType::Non},
         OnlyIn2rowScene,
     ));
 
@@ -861,7 +864,7 @@ fn toggle_drag_all_on_press(
     scene.scene_4d.is_synchronized_drag = !scene.scene_4d.is_synchronized_drag;
 
     for (mut vis, control) in on_off {
-        if control.on_off_marker == OnOffMarker::SynchronizedDrag {
+        if control.on_off_marker == OnOffMarkerType::SynchronizedDrag {
             *vis = if scene.scene_4d.is_synchronized_drag {Visibility::Visible} else {Visibility::Hidden}; 
         }
     }
@@ -896,7 +899,7 @@ fn toggle_view_point_on_press(
     scene.viewpoint_is_spaceland = !scene.viewpoint_is_spaceland;
 
     for (mut vis, control) in on_off {
-        if control.on_off_marker == OnOffMarker::TopView {
+        if control.on_off_marker == OnOffMarkerType::TopView {
             *vis = if scene.viewpoint_is_spaceland {Visibility::Visible} else {Visibility::Hidden}; 
         }
     }
@@ -918,10 +921,11 @@ fn toggle_projection_on_press(_press: On<Pointer<Press>>,
     scene.scene_4d.toggle_projection_view();
     for (mut vis, control_opt, hd_opt) in vis {
         if let Some(control) = control_opt {
-            if control.on_off_marker == OnOffMarker::Projection {
+            if control.on_off_marker == OnOffMarkerType::Projection {
                 *vis = if scene.scene_4d.is_projection_view {Visibility::Visible} else {Visibility::Hidden}; 
             }
         }
+        // Hide Slider for High Dim Offset
         if let Some(_hd) = hd_opt {
             *vis = if scene.scene_4d.is_projection_view {Visibility::Hidden} else {Visibility::Visible};
         }
@@ -933,7 +937,7 @@ fn toggle_rotation_on_press(
     press: On<Pointer<Press>>,
     mut tripods: Query<&mut Tripod>,
     mut scene: ResMut<Scene>,
-    on_off: Query<(&mut Visibility, &Control)>,
+    on_off: Query<(&mut Visibility, &Rotation)>,
     time: Res<Time>,
 ) {
     let tripod = tripods.get_mut(press.entity).unwrap();
@@ -943,10 +947,8 @@ fn toggle_rotation_on_press(
         scene.scene_4d.rotation = tripod.rotation;
 
         // show active rotation by on/off marker visibility
-        for (mut vis,control) in on_off {
-            if control.on_off_marker == OnOffMarker::Rotation {
-                *vis = if control.rotation_type == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
-            }
+        for (mut vis,rot) in on_off {
+                *vis = if rot.rotation == tripod.rotation {Visibility::Visible} else {Visibility::Hidden};
         }
 
         // start hyper jump
@@ -998,7 +1000,7 @@ fn show_more_on_press(
 
     // hide all on/off marker
     for (mut visibility, control) in visibility_set.p0().iter_mut() {
-        if control.on_off_marker != OnOffMarker::Non {
+        if control.on_off_marker != OnOffMarkerType::Non {
             *visibility = Visibility::Hidden;
         }
     }
@@ -1122,7 +1124,7 @@ fn show_more_on_press(
             // synchronized dragging is standard in complex scene
             scene.scene_4d.is_synchronized_drag = true;  
             for (mut visibility, control) in visibility_set.p0().iter_mut() {
-                if control.on_off_marker == OnOffMarker::SynchronizedDrag {
+                if control.on_off_marker == OnOffMarkerType::SynchronizedDrag {
                     *visibility = Visibility::Visible;
                 }
             }
@@ -1228,15 +1230,15 @@ fn spawn_tripods(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    active_rotation: Rotation,
+    active_rotation: Rotation4d,
 ){
     let size = 0.5 * SCALE;
-    spawn_tripod(commands,meshes,materials,Rotation::Xy,active_rotation,vec3(-7. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Xz,active_rotation,vec3(-6. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Xw,active_rotation,vec3(-5. * SCALE, Y_CTR_ROW1, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Yz,active_rotation,vec3(-7. * SCALE, Y_CTR_ROW2, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Yw,active_rotation,vec3(-6. * SCALE, Y_CTR_ROW2, 0.),size);
-    spawn_tripod(commands,meshes,materials,Rotation::Zw,active_rotation,vec3(-5. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation4d::Xy,active_rotation,vec3(-7. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation4d::Xz,active_rotation,vec3(-6. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation4d::Xw,active_rotation,vec3(-5. * SCALE, Y_CTR_ROW1, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation4d::Yz,active_rotation,vec3(-7. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation4d::Yw,active_rotation,vec3(-6. * SCALE, Y_CTR_ROW2, 0.),size);
+    spawn_tripod(commands,meshes,materials,Rotation4d::Zw,active_rotation,vec3(-5. * SCALE, Y_CTR_ROW2, 0.),size);
 }
 
 /// A helpe to spawn one tripod
@@ -1244,8 +1246,8 @@ fn spawn_tripod (
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    rotation: Rotation,
-    activate_rotation: Rotation,
+    rotation: Rotation4d,
+    activate_rotation: Rotation4d,
     position: Vec3,
     scale: f32
 ) {
@@ -1257,37 +1259,37 @@ fn spawn_tripod (
     let gray_transparent = Color::from(Srgba::rgba_u8(25, 25, 25, 160));
     let yellow_transparent = Color::from(Srgba::rgba_u8(255, 255, 0, 160));
     let (x_color, y_color, z_color, w_color) = match rotation {
-        Rotation::Xy => (
+        Rotation4d::Xy => (
             Color::from(Srgba::RED),
             Color::from(Srgba::GREEN),
             gray,
             gray_transparent,
         ),
-        Rotation::Xz => (
+        Rotation4d::Xz => (
             Color::from(Srgba::RED),
             gray,
             Color::from(Srgba::BLUE),
             gray_transparent,
         ),
-        Rotation::Xw => (
+        Rotation4d::Xw => (
             Color::from(Srgba::RED),
             gray,
             gray,
             yellow_transparent,
         ),
-        Rotation::Yz => (
+        Rotation4d::Yz => (
             gray,
             Color::from(Srgba::GREEN),
             Color::from(Srgba::BLUE),
             gray_transparent,
         ),
-        Rotation::Yw => (
+        Rotation4d::Yw => (
             gray,
             Color::from(Srgba::GREEN),
             gray,
             yellow_transparent,
         ),
-        Rotation::Zw => (
+        Rotation4d::Zw => (
             gray,
             gray,
             Color::from(Srgba::BLUE),
@@ -1323,7 +1325,7 @@ fn spawn_tripod (
         parent.spawn((
             Mesh3d(meshes.add(Sphere::new(5.2 * radius))),
             MeshMaterial3d(activated_matl.clone()),
-            Control {on_off_marker: OnOffMarker::Rotation, rotation_type: rotation },
+            Rotation {rotation},
             if activate_rotation == rotation {Visibility::Visible} else {Visibility::Hidden},
             Pickable::IGNORE,
         ));

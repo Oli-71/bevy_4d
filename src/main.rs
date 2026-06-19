@@ -13,7 +13,7 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::SubCameraView, color::palettes::tailwind::*, light::{NotShadowCaster, NotShadowReceiver}, prelude::*
+    camera::{SubCameraView}, color::palettes::tailwind::*, light::{NotShadowCaster, NotShadowReceiver}, prelude::*
 };
 
 use bevy::prelude::Srgba;
@@ -46,8 +46,10 @@ const LABEL_CONTINUOUS_ROTATION: &str = "Continuous Rotation";
 const LABEL_CONTINUOUS_ROTATION_GERMAN: &str = "Kontinuierliche Rotation";
 const LABEL_HIGHER_DIMENSION_OFFSET: &str = "Higher Dimension Offset";
 const LABEL_HIGHER_DIMENSION_OFFSET_GERMAN: &str = "Offset der höheren Dimension";
-const LABEL_FLATLAND: &str = "Flatland";
-const LABEL_FLATLAND_GERMAN: &str = "Flachland";
+const LABEL_FLATLAND: &str = "2D Flatland";
+const LABEL_FLATLAND_GERMAN: &str = "2D-Flachland";
+const LABEL_SPACELAND: &str = "3D Spaceland";
+const LABEL_SPACELAND_GERMAN: &str = "3D-raumland"; // Bug :-) capital R renders a Bladerunner logo
 const LABEL_SHOW_MORE: &str = "Show more";
 const LABEL_SHOW_MORE_GERMAN: &str = "Mehr anzeigen";
 const LABEL_LANGUAGE: &str = "Deutsch/English";
@@ -154,6 +156,9 @@ struct AdvancedControl; // only visible in advanced states
 struct OnlyIn2rowScene; // not visible in complex scene (last state)
 
 #[derive(Component)]
+struct SpacelandDeco;
+
+#[derive(Component)]
 struct HighDimOffset; // not visible in Projection
 
 #[derive(Component)]
@@ -258,6 +263,7 @@ impl Scene {
                 LABEL_SHOW_MORE => LABEL_SHOW_MORE_GERMAN,
                 LABEL_FLATLAND => LABEL_FLATLAND_GERMAN,
                 LABEL_LANGUAGE => LABEL_LANGUAGE_GERMAN,
+                LABEL_SPACELAND => LABEL_SPACELAND_GERMAN,
                 _ => "german localisation missing",
             }
         }
@@ -430,7 +436,7 @@ fn setup_scene(
         Pickable::IGNORE,
     ));
 
-    // slider to adjust higher dimension height (w in Spaceland, y in Flatland)
+    // Slider to adjust higher dimension height (w in Spaceland, y in Flatland)
     let slider_height_entity = commands
         .spawn((
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
@@ -582,8 +588,18 @@ fn setup_scene(
     let flatland_bottom =commands.spawn((
         Mesh3d(meshes.add(Sphere::new(1.))),
         MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
-        Transform::from_translation(vec3(8.35 * SCALE, atom_size_at_panel_plane, z_offset)),
+        Transform::from_translation(vec3(-9. * SCALE, atom_size_at_panel_plane, z_offset)),
         OnlyIn2rowScene,
+    )).id();
+
+    // placeholder for spaceland label
+    let spaceland_bottom =commands.spawn((
+        Mesh3d(meshes.add(Sphere::new(1.))),
+        MeshMaterial3d(materials.add(Color::srgba_u8(255, 0, 0, 0))),
+        Transform::from_translation(vec3(-9. * SCALE, 2. * y_size + atom_size_at_panel_plane, z_offset)),
+        OnlyIn2rowScene,
+        SpacelandDeco,
+        Visibility::Hidden,
     )).id();
 
     // Background Panel - indicates that your viewpoint is in 3D-space (no hyper)
@@ -658,7 +674,8 @@ fn setup_scene(
 
     // Text Labels
     let text_style_black = TextFont {
-        font: asset_server.load("fonts/CenturyGothicPaneuropeanBlack.ttf"),
+        //font: asset_server.load("fonts/CenturyGothicPaneuropeanBlack.ttf"),
+        font: asset_server.load("fonts/BLADRMF_.TTF"),
         ..default()
     };
     let text_style_thin = TextFont {
@@ -667,7 +684,8 @@ fn setup_scene(
     };
     
     let thin = (text_style_thin.clone(), TextColor(Color::srgb_u8(200, 200, 200)));
-    let black = (text_style_black.clone(), TextColor(Color::srgb_u8(0, 0, 0)));
+    let white = (text_style_black.clone(), TextColor(Color::srgb_u8(0, 0, 0)));
+    let black = (text_style_black.clone(), TextColor(Color::srgb_u8(255, 255, 255)));
 
     // A helper closure to add labels to the control objects.
     let mut spawn_label = |entity: Entity, label: &str, offset: f32, style: (TextFont, TextColor)| {
@@ -698,7 +716,8 @@ fn setup_scene(
     spawn_label(slider_height_entity, LABEL_HIGHER_DIMENSION_OFFSET, 0.9, thin.clone());
     spawn_label(show_more_control_entity, LABEL_SHOW_MORE, 0.9, thin.clone());
     spawn_label(language_control_entity, LABEL_LANGUAGE, 0.9, thin.clone());
-    spawn_label(flatland_bottom, LABEL_FLATLAND, 0.1, black.clone());
+    spawn_label(flatland_bottom, LABEL_FLATLAND, 0.1, white.clone());
+    spawn_label(spaceland_bottom, LABEL_SPACELAND, 0.1, black.clone());
 
     // Instructions
     commands.spawn((
@@ -871,9 +890,9 @@ fn toggle_language_on_press(_press: On<Pointer<Press>>,
     }
     // switch between english and german label texts
     for (mut label_text, label_id) in &mut label_texts {
-        if LABEL_FLATLAND != label_id.id { // bugfix: ignore Flatland to keep the Black font :-(
+        //if LABEL_FLATLAND != label_id.id { // bugfix: ignore Flatland to keep the Black font :-(
             label_text.0 = scene.label_localized(&label_id.id).to_string();
-        }
+        //}
     }
 }
 
@@ -986,10 +1005,11 @@ fn show_more_on_press(
     mut atoms: Query<(Entity, &mut Atom)>,
     mut scene: ResMut<Scene>,
     mut visibility_set: ParamSet<(
-        Query<(&mut Visibility, &OnOffMarker)>,
-        Query<(&mut Visibility, &AdvancedControl)>,
-        Query<(&mut Visibility, &OnlyIn2rowScene)>,
-        Query<(&mut Visibility, &HighDimOffset)>,
+        Query<(&mut Visibility, &OnOffMarker)>,//0
+        Query<(&mut Visibility, &AdvancedControl)>,//1
+        Query<(&mut Visibility, &OnlyIn2rowScene)>,//2
+        Query<(&mut Visibility, &HighDimOffset)>,//3
+        Query<(&mut Visibility, &SpacelandDeco)>,//4
     )>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -1054,6 +1074,11 @@ fn show_more_on_press(
                 node.top = percent(22.);
                 node.left = percent(60.);
                 node.right = percent(5.);
+            }
+
+            // show Spaceland Deco
+            for (mut visibility, _high_dim_offset_control) in visibility_set.p4().iter_mut() {
+                *visibility = Visibility::Visible;
             }
 
             for (_entity, mut atom) in &mut atoms {

@@ -68,13 +68,13 @@ Wenn Sie sich mit dem Verständnis der Dimensionssprünge der Flachländer vertr
 const INSTRUCTIONS_FLATLAND_COMPLETE: &str = r#"Now we have also two 3D cubes extending into our 2D world.
 Try to imagine how difficult it is for the inhabitants of Flatland to grasp their structure. Even if they could jump to the third dimension ('Hyper') it would be a challenge.
 BTW: There are a few more options available. Try them all.
-Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Continuous Rotation' and 'Top View'. Now you will understand...
+Surprised what happens when you combine 'Projection' and 'Hyper'? Add some 'Continuous Rotation' and 'Top View'. Now you will understand: 'Projection' moves all atoms from 3D space into the visible 2D area.
 When you are ready to experience the 3D-to-4D effect, click 'Show more'."#;
 
 const INSTRUCTIONS_FLATLAND_COMPLETE_GERMAN: &str = r#"Nun haben wir zwei 3D-Würfel, die in unsere 2D-Welt hineinragen.
 Versuchen Sie sich vorzustellen, wie schwierig es für die Bewohner von Flachland ist, deren Struktur zu erfassen. Selbst wenn sie in die dritte Dimension springen könnten ('Hyper'), wäre es eine Herausforderung.
 Übrigens: Es gibt nun noch ein paar weitere Einstellmöglichkeiten. Probieren Sie sie alle aus.
-Überrascht, was passiert, wenn Sie 'Projektion' und 'Hyper' kombinieren? Fügen Sie etwas 'Kontinuierliche Rotation' und 'Draufsicht' hinzu... Jetzt werden Sie es verstehen.
+Überrascht, was passiert, wenn Sie 'Projektion' und 'Hyper' kombinieren? Fügen Sie etwas 'Kontinuierliche Rotation' und 'Draufsicht' hinzu... Nun werden Sie es verstehen: 'Projektion' verschiebt alle Atome aus dem 3D-Raum in den 2D-Bereich.
 Wenn Sie bereit sind, den 3D-zu-4D-Effekt zu erleben, klicken Sie auf 'Mehr anzeigen'."#;
 
 const INSTRUCTIONS_THREE_DIMENSIONAL: &str = r#"Study how the two new 3D-Objects behave if we go up to a fourth dimension view point (Again: 'Hyper').
@@ -88,11 +88,11 @@ Gibt es Ähnlichkeiten zu den Erfahrungen der Flachländer?
 'Mehr anzeigen' fügt der Szene zwei unterschiedliche 4D-Würfel hinzu. Es wird verrückt ;-)"#;
 
 const INSTRUCTIONS_SPACELAND_COMPLETE: &str = r#"Take some time to compare Flatlander's and Spacelander's experiences with an extra dimension. The 'Higher Dimension Offset' slider and 'Synchronized Dragging' can help...
-‘Projection’ pushes the atoms from the higher dimensions into the visible range. Note that actually we can never see 4D objects completely.  
+Note that actually we can never see 4D objects completely. 'Projection' is just a trick.
 'Show more' will display a complex scene, the construction of which now takes a bit longer..."#;
 
 const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich Zeit, um die Erfahrungen der Flachländer und Raumländer mit einer zusätzlichen Dimension zu vergleichen. Der 'Offset der höheren Dimension' Schieber und 'Synchrones Drehen' können helfen...
-‘Projektion’ schiebt die Atome aus den höheren Dimensionen in den sichtbaren Bereich. Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können.  
+Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können. 'Projektion' ist nur ein Trick.
 'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
 
 const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations.
@@ -224,7 +224,7 @@ struct Tripod {
 // The main resource that holds the 4D scene and the current state of the application.
 #[derive(Resource)]
 struct Scene {
-    scene_4d: Scene4D,
+    scene_4d: Scene4D, // all the atoms...
     viewpoint_is_spaceland: bool,
     state: StateScene,
     language: Language,
@@ -270,7 +270,7 @@ impl Scene {
     }
 }
 
-/// A system to set up the initial scene, including the 3D objects, controls, camera, and instructions.
+/// A system to set up the initial scene, including the 3D objects, controls, camera, decorations and instructions.
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -408,7 +408,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-        .observe(show_more_on_press)
+//        .observe(show_more_on_press)
         .id();
 
     // Sphere to trigger projection view
@@ -465,7 +465,7 @@ fn setup_scene(
     ));
 
     // 4D-Scene: Flatland and Spaceland
-    spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
+    //spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
 
     // Cover Panel to hide invisible 3D-Space for flatland
     let size_of_panel = 30. * SCALE;
@@ -599,7 +599,7 @@ fn setup_scene(
         Transform::from_translation(vec3(-9. * SCALE, 2. * y_size + atom_size_at_panel_plane, z_offset)),
         OnlyIn2rowScene,
         SpacelandDeco,
-        Visibility::Hidden,
+        Visibility::Hidden, // only visible later
     )).id();
 
     // Background Panel - indicates that your viewpoint is in 3D-space (no hyper)
@@ -658,7 +658,7 @@ fn setup_scene(
     commands.spawn((
         Camera3d::default(),
         Camera {
-            // lens shift for nice flatland -> we look within the plane
+            // lens shift for nice flatland -> we look within the flatland gap
             sub_camera_view: Some(SubCameraView {
                 full_size: UVec2::new(x, y),
                 offset: Vec2::ZERO,
@@ -673,8 +673,8 @@ fn setup_scene(
     ));
 
     // Text Labels
-    let text_style_black = TextFont {
-        //font: asset_server.load("fonts/CenturyGothicPaneuropeanBlack.ttf"),
+    let text_style_bold = TextFont {
+        //font: asset_server.load("fonts/CenturyGothicPaneuropeanBlack.ttf"),// Bug: does not work
         font: asset_server.load("fonts/BLADRMF_.TTF"),
         ..default()
     };
@@ -684,8 +684,8 @@ fn setup_scene(
     };
     
     let thin = (text_style_thin.clone(), TextColor(Color::srgb_u8(200, 200, 200)));
-    let white = (text_style_black.clone(), TextColor(Color::srgb_u8(0, 0, 0)));
-    let black = (text_style_black.clone(), TextColor(Color::srgb_u8(255, 255, 255)));
+    let white = (text_style_bold.clone(), TextColor(Color::srgb_u8(0, 0, 0)));
+    let black = (text_style_bold.clone(), TextColor(Color::srgb_u8(255, 255, 255)));
 
     // A helper closure to add labels to the control objects.
     let mut spawn_label = |entity: Entity, label: &str, offset: f32, style: (TextFont, TextColor)| {
@@ -890,9 +890,7 @@ fn toggle_language_on_press(_press: On<Pointer<Press>>,
     }
     // switch between english and german label texts
     for (mut label_text, label_id) in &mut label_texts {
-        //if LABEL_FLATLAND != label_id.id { // bugfix: ignore Flatland to keep the Black font :-(
-            label_text.0 = scene.label_localized(&label_id.id).to_string();
-        //}
+        label_text.0 = scene.label_localized(&label_id.id).to_string();
     }
 }
 
@@ -1057,8 +1055,8 @@ fn show_more_on_press(
                 text.0 = instructions_string.to_string();
                 //middle right position
                 node.top = percent(22.);
-                node.left = percent(43.);
-                node.right = percent(5.);
+                node.left = percent(36.);
+                node.right = percent(1.);
             }
 
             for (_entity, mut atom) in &mut atoms {

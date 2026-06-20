@@ -96,7 +96,7 @@ impl Scene4D {
             angle_high_dimension: 0.0,
             rotation: Rotation4d::Xz,
         };
-
+/*
         //add some objects to the scene.
         let heart_index = scene.add_object(create_heart_3d(spacing, number_per_side));
         let cube3d_index = scene.add_object(create_cube_surface(spacing, number_per_side));
@@ -112,7 +112,7 @@ impl Scene4D {
         scene.objects_flatland = vec![circle_index, square_index, cube_index, cube_edges_index];
         scene.objects_planar = vec![circle_index, square_index];
         scene.objects_4d = vec![cube4d_index, cube4d_edges_index];
-
+*/
         scene
     }
 

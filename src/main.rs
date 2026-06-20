@@ -408,7 +408,7 @@ fn setup_scene(
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
         .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
         .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
-//        .observe(show_more_on_press)
+        .observe(show_more_on_press)
         .id();
 
     // Sphere to trigger projection view
@@ -465,7 +465,7 @@ fn setup_scene(
     ));
 
     // 4D-Scene: Flatland and Spaceland
-    //spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
+    spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
 
     // Cover Panel to hide invisible 3D-Space for flatland
     let size_of_panel = 30. * SCALE;

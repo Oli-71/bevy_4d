@@ -97,15 +97,20 @@ Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können.
 
 const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations.
 Can you figure out what are 
-the two segrets of the cube?
-
-The end of the demo is reached.
-Thank you for your attention!"#;
+the two segrets of the cube?"#;
 
 const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie alle Transformationen aus.
 Können Sie herausfinden, 
 was die beiden Geheimnisse des Würfels sind?
 
+Das Ende der Demo ist erreicht.
+Vielen Dank!"#;
+
+const INSTRUCTIONS_PHOTONS: &str = r#"Try all Transformations.
+The end of the demo is reached.
+Thank you for your attention!"#;
+
+const INSTRUCTIONS_PHOTONS_GERMAN: &str = r#"Probieren Sie alle Transformationen aus.
 Das Ende der Demo ist erreicht.
 Vielen Dank!"#;
 
@@ -153,7 +158,10 @@ struct OnOffMarker {
 struct AdvancedControl; // only visible in advanced states
 
 #[derive(Component)]
-struct OnlyIn2rowScene; // not visible in complex scene (last state)
+struct OnlyIn2rowScene; // not visible in complex scenes
+
+#[derive(Component)]
+struct SeeMore;
 
 #[derive(Component)]
 struct SpacelandDeco;
@@ -206,7 +214,8 @@ enum StateScene {
     FlatlandComplete,
     ThreeDimensional,
     SpacelandComplete,
-    SpacelandOnly,
+    Aquarium,
+    Photons,
 }
 
 #[derive(PartialEq)]
@@ -238,14 +247,16 @@ impl Scene {
                 StateScene::FlatlandComplete => INSTRUCTIONS_FLATLAND_COMPLETE,
                 StateScene::ThreeDimensional => INSTRUCTIONS_THREE_DIMENSIONAL,
                 StateScene::SpacelandComplete => INSTRUCTIONS_SPACELAND_COMPLETE,
-                StateScene::SpacelandOnly => INSTRUCTIONS_SPACELAND_ONLY,
+                StateScene::Aquarium => INSTRUCTIONS_SPACELAND_ONLY,
+                StateScene::Photons => INSTRUCTIONS_PHOTONS,
             },
             Language::German => match self.state {
                 StateScene::Planar => INSTRUCTIONS_INITIAL_GERMAN,
                 StateScene::FlatlandComplete => INSTRUCTIONS_FLATLAND_COMPLETE_GERMAN,
                 StateScene::ThreeDimensional => INSTRUCTIONS_THREE_DIMENSIONAL_GERMAN,
                 StateScene::SpacelandComplete => INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN,
-                StateScene::SpacelandOnly => INSTRUCTIONS_SPACELAND_ONLY_GERMAN,
+                StateScene::Aquarium => INSTRUCTIONS_SPACELAND_ONLY_GERMAN,
+                StateScene::Photons => INSTRUCTIONS_PHOTONS_GERMAN,
             }
         }
     }
@@ -402,7 +413,7 @@ fn setup_scene(
             Mesh3d(meshes.add(Sphere::new(size_of_controls))),
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW2, 0.),
-            OnlyIn2rowScene,
+            SeeMore,
         ))
         .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
         .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
@@ -984,7 +995,7 @@ fn toggle_4d_on_press(
     .scene_4d
     .toggle_high_dimension_view(time.elapsed_secs());
 
-    if !scene.scene_4d.is_2row_structured_scene {
+    if scene.scene_4d.scene_type != SceneType::FlatlandSpaceland {
         // update all on/off marker 
         for (mut vis,rot) in on_off {
             if ! scene.scene_4d.is_high_dimension_view {// not hyper
@@ -1008,6 +1019,7 @@ fn show_more_on_press(
         Query<(&mut Visibility, &OnlyIn2rowScene)>,//2
         Query<(&mut Visibility, &HighDimOffset)>,//3
         Query<(&mut Visibility, &SpacelandDeco)>,//4
+        Query<(&mut Visibility, &SeeMore)>,//5
     )>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -1018,8 +1030,9 @@ fn show_more_on_press(
         StateScene::Planar => StateScene::FlatlandComplete,
         StateScene::FlatlandComplete => StateScene::ThreeDimensional,
         StateScene::ThreeDimensional => StateScene::SpacelandComplete,
-        StateScene::SpacelandComplete => StateScene::SpacelandOnly,
-        StateScene::SpacelandOnly => StateScene::SpacelandOnly, // no further state
+        StateScene::SpacelandComplete => StateScene::Aquarium,
+        StateScene::Aquarium => StateScene::Photons,
+        StateScene::Photons => StateScene::Photons, // no further state
     };
 
     // good settings to start exploring a new state
@@ -1098,7 +1111,7 @@ fn show_more_on_press(
                 atom.visible = true;
             }
         },
-        StateScene::SpacelandOnly => {// complex scene
+        StateScene::Aquarium => {
             // instructions
             for (mut text, mut node) in &mut text {
                 text.0 = instructions_string.to_string();
@@ -1119,7 +1132,7 @@ fn show_more_on_press(
             }
 
             // create a new Scene4d
-            scene.scene_4d = Scene4D::new_complex_scene();
+            scene.scene_4d = Scene4D::new_aquarium_scene();
 
             // create the new atoms from new scene4d
             spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
@@ -1159,6 +1172,36 @@ fn show_more_on_press(
                 }
             }
         },
+        StateScene::Photons => {
+            // instructions
+            for (mut text, mut _node) in &mut text {
+                text.0 = instructions_string.to_string();
+            }
+
+            //remove all atoms
+            for (entity, _atom) in atoms {
+                commands.entity(entity).despawn();
+            }
+
+            // create a new Scene4d
+            scene.scene_4d = Scene4D::new_photon_scene();
+
+            // create the new atoms from new scene4d
+            spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
+
+            // hide "see more"
+            for (mut visibility, _on_off_marker) in visibility_set.p5().iter_mut() {
+                *visibility = Visibility::Hidden;
+            }
+
+            // synchronized dragging is standard in complex scene
+            scene.scene_4d.is_synchronized_drag = true;  
+            for (mut visibility, control) in visibility_set.p0().iter_mut() {
+                if control.on_off_marker == OnOffMarkerType::SynchronizedDrag {
+                    *visibility = Visibility::Visible;
+                }
+            }
+        }
     }
 }
 
@@ -1228,16 +1271,14 @@ fn spawn_scene (
     // We spawn an entity for each atom in the 4D scene, and use the Atom component to link them 
     // to their corresponding atoms in the Scene4D. This way, we can easily update their positions and 
     // visibilities based on the state of the Scene4D.
-    let sphere_shape = scene.scene_4d.is_2row_structured_scene;
+    let sphere_shape = true;//scene.scene_4d.scene_type == SceneType::FlatlandSpaceland;
     let radius = scene.scene_4d.size_of_atom() * 0.5 * SCALE;
-    let _cube_size = 1.5 * scene.scene_4d.size_of_atom() * SCALE;
+    let cube_size = 1.5 * scene.scene_4d.size_of_atom() * SCALE;
     // Create a single Handle<Mesh> so both branches have the same type
     let atom_mesh_handle = if sphere_shape {
         meshes.add(Sphere::new(radius))
-        //meshes.add(Cuboid::new(cube_size, cube_size, cube_size))
     } else {
-        //meshes.add(Cuboid::new(cube_size, cube_size, cube_size))
-        meshes.add(Sphere::new(radius))
+        meshes.add(Cuboid::new(cube_size, cube_size, cube_size))
     };
     for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         commands
@@ -1249,7 +1290,12 @@ fn spawn_scene (
                     position.y * SCALE,
                     position.z * SCALE,
                 )),
-                Atom { index: atom_index, visible: scene.state == StateScene::SpacelandOnly || scene.scene_4d.is_planar(atom_index) },
+                Atom { 
+                    index: atom_index, 
+                    visible: scene.state == StateScene::Aquarium 
+                        || scene.state == StateScene::Photons
+                        || scene.scene_4d.is_planar(atom_index) 
+                },
             ))
             .observe(drag_to_rotate_object);
     }

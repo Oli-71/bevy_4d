@@ -33,6 +33,14 @@ impl Object4D {
     }
 }
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum SceneType
+{
+    FlatlandSpaceland,
+    Aquarium,
+    EntangledPhotons,
+}
+
 /// The 4D scene, which contains a list of atoms and a list of objects.
 pub struct Scene4D {
     pub atoms: Atoms4D, // all atoms in the scene
@@ -42,7 +50,7 @@ pub struct Scene4D {
 
     objects: Vec<Object4D>, // all objects in the scene
 
-    pub is_2row_structured_scene: bool,
+    pub scene_type: SceneType,
     // indices of objects in the scene, grouped by type for easier access.
     objects_spaceland: Vec<usize>,
     objects_flatland: Vec<usize>,
@@ -69,7 +77,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
         // so be careful with this number to avoid performance issues.
         let spacing = size / number_per_side as f32;
 
@@ -82,7 +90,7 @@ impl Scene4D {
             spacing,
             number_of_atoms_per_side: number_per_side,
             objects: Vec::new(),
-            is_2row_structured_scene: true,
+            scene_type: SceneType::FlatlandSpaceland,
             objects_spaceland: Vec::new(),
             objects_flatland: Vec::new(),
             objects_planar: Vec::new(),
@@ -117,7 +125,7 @@ impl Scene4D {
     }
 
     // complexer Spaceland to have more fun
-    pub fn new_complex_scene() -> Self {
+    pub fn new_aquarium_scene() -> Self {
         let size = 10.;
         let number_per_side = 50; // be careful with this number to avoid performance issues.
         let spacing = size / number_per_side as f32;
@@ -131,7 +139,7 @@ impl Scene4D {
             spacing,
             number_of_atoms_per_side: number_per_side,
             objects: Vec::new(),
-            is_2row_structured_scene: false,
+            scene_type: SceneType::Aquarium,
             objects_spaceland: Vec::new(),
             objects_flatland: Vec::new(),
             objects_planar: Vec::new(),
@@ -165,6 +173,50 @@ impl Scene4D {
             create_fish_3d(spacing, size_fish,Srgba::rgb_u8(255, 150, 50)));//orange
 
         scene.objects_spaceland = vec![index_aquarium, index_cube_4d, index_fish];
+        scene
+    }
+
+     // fishes with entangled photons
+    pub fn new_photon_scene() -> Self {
+        let size = 10.;
+        let number_per_side = 50; // be careful with this number to avoid performance issues.
+        let spacing = size / number_per_side as f32;
+
+        //empty scene
+        let mut scene = Self {
+            atoms: Atoms4D {
+                positions: Vec::new(),
+                colors: Vec::new(),
+            },
+            spacing,
+            number_of_atoms_per_side: number_per_side,
+            objects: Vec::new(),
+            scene_type: SceneType::EntangledPhotons,
+            objects_spaceland: Vec::new(),
+            objects_flatland: Vec::new(),
+            objects_planar: Vec::new(),
+            objects_4d: Vec::new(),
+            is_high_dimension_view: false,
+            is_projection_view: false,
+            is_synchronized_drag: true,
+            start_time_high_dimension: 0.0,
+            speed_3d_rotation: 0.0, // default: no continuous rotation
+            higher_dimension_height: 0.0,
+            angle_high_dimension: 0.0,
+            rotation: Rotation4d::Xz,
+        };
+
+        //add some objects to the scene (an aquarium, two fishes)
+        let index_aquarium = scene.add_object(create_aquarium(spacing, number_per_side));
+
+        let size_fish = number_per_side / 4;
+        let index_fish_blue = scene.add_object(
+            create_fish_3d(spacing, size_fish,Srgba::rgb_u8(50, 50, 255)));//blue
+        
+        let index_fish_orange = scene.add_object(
+            create_fish_3d(spacing, size_fish,Srgba::rgb_u8(255, 150, 50)));//orange
+
+        scene.objects_spaceland = vec![index_aquarium, index_fish_blue, index_fish_orange];
         scene
     }
 
@@ -310,8 +362,8 @@ impl Scene4D {
     pub fn transform_scene(&mut self, time: f32) -> Vec<Vec4> {
         let mut new_positions = self.atoms.positions.clone();
 
-        // Positioning of objects in the complex scene
-        if !self.is_2row_structured_scene{
+        // Positioning of objects in the complex scenes
+        if self.scene_type != SceneType::FlatlandSpaceland {
             // move the second object in spaceland (cube_4d) to the right in complex scene
             for index_atom in self.objects[self.objects_spaceland[1]].range() { 
                 new_positions[index_atom].x += 2.0;
@@ -321,13 +373,12 @@ impl Scene4D {
             let rotation_matrix = Mat3::from_rotation_y(1.0 * time);
             let local_rotation_matrix = Mat3::from_rotation_y(- PI/2.0);
             for index_atom in self.objects[self.objects_spaceland[2]].range() { 
-                // align fish parallel to the glass of the aquarium
+                // align orange fish parallel to the glass of the aquarium
                 new_positions[index_atom] = (local_rotation_matrix * vec3(new_positions[index_atom].x, new_positions[index_atom].y, new_positions[index_atom].z))
                     .extend(new_positions[index_atom].w);
-                // down a bit and to the left, so it doesn't overlap with the cube_4d.
+                // down a bit and to the left, so it doesn't overlap with the cube_4d/blue fish
                 new_positions[index_atom].x -= 2.5;
-                //new_positions[index_atom].y -= 0.5;
-                // apply a slow continuous rotation to rotate through the cube_4d.
+                // apply a slow continuous rotation to rotate through the aquarium.
                 new_positions[index_atom] = (rotation_matrix * vec3(new_positions[index_atom].x, new_positions[index_atom].y, new_positions[index_atom].z))
                     .extend(new_positions[index_atom].w);
             }
@@ -367,7 +418,7 @@ impl Scene4D {
         }
 
         let dist_between_columns = 2.5; // Distance to move the objects apart
-        if self.is_2row_structured_scene {
+        if self.scene_type == SceneType::FlatlandSpaceland {
             // Placement of objects in the scenes (2D/3D)-> constructing two rows (both still on x-axis)
             let mut spread_on_x_axis = |objects: &[usize]| {
                 let mut delta_x = -3. * dist_between_columns;
@@ -417,7 +468,7 @@ impl Scene4D {
         let hd_offset = 2.1 * self.higher_dimension_height; // Distance to move the objects in the higher dimension.
         // Spaceland row:
         // - project to w=0 space in projection view
-        let dist_between_rows = if self.is_2row_structured_scene { 2. * dist_between_columns } else { 1. * dist_between_columns }; // Distance to move the 3D objects up on the Y-axis to separate from 2D objects in 2-row structure
+        let dist_between_rows = if self.scene_type == SceneType::FlatlandSpaceland { 2. * dist_between_columns } else { 1. * dist_between_columns }; // Distance to move the 3D objects up on the Y-axis to separate from 2D objects in 2-row structure
         for object_3d in self.objects_spaceland() {
             for atom_index in object_3d.range() {
                 new_positions[atom_index].y += dist_between_rows; // separate rows

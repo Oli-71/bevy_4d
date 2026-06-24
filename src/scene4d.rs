@@ -220,7 +220,9 @@ impl Scene4D {
 
         let size_fish = number_per_side / 4;
         let index_fish_blue = scene.add_object(
-            create_fish_3d(spacing, size_fish,Srgba::rgb_u8(50, 50, 255)));//blue
+            create_fish_3d(spacing, size_fish,Srgba::rgb_u8(50, 50, 255))
+            //._transform(Mat4::from_rotation_y(-0.2)) // todo: do this after find_atom_index_with_max_x
+        );//blue
         
         let index_fish_orange = scene.add_object(
             create_fish_3d(spacing, size_fish,Srgba::rgb_u8(255, 150, 50)));//orange
@@ -391,20 +393,26 @@ impl Scene4D {
 
         // Positioning of objects in the complex scenes
         if self.scene_type != SceneType::FlatlandSpaceland {
+            let offset_cube_or_blue_fish = if self.scene_type == SceneType::Aquarium {
+                vec4( 2.,0.,0.,0.)
+            } else {
+                vec4( 0.8,0.4,0.,0.)
+            };
             // move the second object in spaceland (cube_4d/fish_blue) to the right in complex scene
             for index_atom in self.objects[self.objects_spaceland[1]].range() { 
-                new_positions[index_atom].x += 2.0;
+                new_positions[index_atom] += offset_cube_or_blue_fish;
             }
 
             // move the third object in spaceland (fish) to the left in complex scene
+            let offset = if self.scene_type == SceneType::Aquarium {2.5} else {2.7};
             let rotation_matrix = Mat3::from_rotation_y(1.0 * time);
             let local_rotation_matrix = Mat3::from_rotation_y(- PI/2.0);
             for index_atom in self.objects[self.objects_spaceland[2]].range() { 
                 // align orange fish parallel to the glass of the aquarium
                 new_positions[index_atom] = (local_rotation_matrix * vec3(new_positions[index_atom].x, new_positions[index_atom].y, new_positions[index_atom].z))
                     .extend(new_positions[index_atom].w);
-                // down a bit and to the left, so it doesn't overlap with the cube_4d/blue fish
-                new_positions[index_atom].x -= 2.5;
+                // a bit to the left, so it doesn't overlap with the cube_4d/blue fish
+                new_positions[index_atom].x -= offset;
                 // apply a slow continuous rotation to rotate through the aquarium.
                 new_positions[index_atom] = (rotation_matrix * vec3(new_positions[index_atom].x, new_positions[index_atom].y, new_positions[index_atom].z))
                     .extend(new_positions[index_atom].w);
@@ -422,7 +430,7 @@ impl Scene4D {
                 let mut i=0.;
                 for index_atom in self.objects[self.objects_spaceland[3]].range() {
                     let mut pos = from + i * step_length * dir_normalized;
-                    pos.w = new_positions[index_atom].w;
+                    pos.w = new_positions[index_atom].w + self.size_of_atom();
                     new_positions[index_atom] = pos;
                     i += 1.;
                 }

@@ -806,13 +806,14 @@ pub(crate) fn create_fish_3d(spacing: f32, number_of_atoms_total_length: usize, 
     Atoms4D { positions, colors }
 }
 
+//sinus arc in 4d; (1,1,1, 0) -> (1,1,1, 1) -> (1,1,1, 0)
 pub(crate) fn create_wormhole(number_of_atoms: usize) -> Atoms4D {
     let mut positions = Vec::with_capacity(number_of_atoms);
     let mut colors = Vec::with_capacity(number_of_atoms);
     let spacing = PI/(number_of_atoms as f32);
     for i in 0..number_of_atoms {
         positions.push(Vec4::new(1., 1., 1., (i as f32 * spacing).sin()));
-        colors.push(Color::from(Srgba::rgba_u8(255, 0, 0, 200)));
+        colors.push(Color::from(Srgba::rgba_u8(255, 0, 0, 180)));
     }
     Atoms4D { positions, colors }
 }

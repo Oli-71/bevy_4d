@@ -17,6 +17,7 @@ use bevy::{
 };
 
 use bevy::prelude::Srgba;
+//use rand::Rng;
 
 mod atoms;
 mod scene4d;
@@ -95,24 +96,31 @@ const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich Zeit, um
 Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können. 'Projektion' ist nur ein Trick.
 'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
 
-const INSTRUCTIONS_AQUARIUM: &str = r#"Try all Transformations.
+const INSTRUCTIONS_AQUARIUM: &str = r#"Try all 4D Rotations 
+(two axes define one).
 Can you figure out what are 
-the two segrets of the cube?"#;
+the segrets of the cube?"#;
 
-const INSTRUCTIONS_AQUARIUM_GERMAN: &str = r#"Probieren Sie alle Transformationen aus.
+const INSTRUCTIONS_AQUARIUM_GERMAN: &str = r#"Probieren Sie alle 4D-Rotationen aus
+(zwei Achsen definieren eine Rotaion).
 Können Sie herausfinden, 
-was die beiden Geheimnisse des Würfels sind?
+was die Geheimnisse des Würfels sind?"#;
 
-Das Ende der Demo ist erreicht.
-Vielen Dank!"#;
+const INSTRUCTIONS_PHOTONS: &str = r#"Entangled photons strike polarizing filters 
+aligned in the same direction, generating an unbreakable 
+encryption code in both fish. Can you find the wormhole 
+that creates the entanglement? 
 
-const INSTRUCTIONS_PHOTONS: &str = r#"Try all Transformations.
-The end of the demo is reached.
-Thank you for your attention!"#;
+The end of the demo is reached. Thank you for your attention!"#;
 
-const INSTRUCTIONS_PHOTONS_GERMAN: &str = r#"Probieren Sie alle Transformationen aus.
-Das Ende der Demo ist erreicht.
-Vielen Dank!"#;
+const INSTRUCTIONS_PHOTONS_GERMAN: &str = r#"Verschränkte Photonen treffen auf 
+gleichausgerichtete Polfilter und erzeugen bei beiden 
+Fischen einen nicht abfangbaren Verschlüsselungscode. 
+Finden Sie das Wurmloch, das die Verschränkung realisiert?
+
+Das Ende der Demo ist erreicht. Vielen Dank!"#;
+
+const PHOTON_LIGHT_INTENSITY: f32 = 1_000_000.0 * SCALE;
 
 fn main() {
     App::new()
@@ -123,6 +131,10 @@ fn main() {
             viewpoint_is_spaceland: false,
             state: StateScene::Planar,
             language: Language::English,
+        })
+        .insert_resource(QuantumEncryptionKey {
+            current_bit: false,
+            timer: Timer::from_seconds(0.5, TimerMode::Repeating),
         })
         .add_systems(
             Startup, 
@@ -136,6 +148,8 @@ fn main() {
                 update_labels,
                 sync_label_visibility,
                 update_move_position_smooth,
+                update_encryption_key,
+                update_photon_lights,
             ),
         )
         .run();
@@ -204,6 +218,9 @@ struct Atom {
 }
 
 #[derive(Component)]
+struct Photon;
+
+#[derive(Component)]
 struct Instructions;
 
 // Content will be incrementally added to the scene, 
@@ -237,6 +254,12 @@ struct Scene {
     viewpoint_is_spaceland: bool,
     state: StateScene,
     language: Language,
+}
+
+#[derive(Resource)]
+struct QuantumEncryptionKey { 
+    current_bit: bool, 
+    timer: Timer,
 }
 
 impl Scene {
@@ -278,6 +301,31 @@ impl Scene {
                 _ => "german localisation missing",
             }
         }
+    }
+}
+
+fn update_encryption_key(
+    time: Res<Time>,
+    mut key: ResMut<QuantumEncryptionKey>,
+) {
+    if key.timer.tick(time.delta()).just_finished() {
+        //todo: simulate random
+        key.current_bit = !key.current_bit;//rand::thread_rng().gen_bool(0.5);
+    }
+}
+
+fn update_photon_lights(
+    key: Res<QuantumEncryptionKey>,
+    mut query: Query<&mut PointLight, With<Photon>>,
+) {
+    let target_intensity = if key.current_bit {
+        PHOTON_LIGHT_INTENSITY
+    } else {
+        0.0
+    };
+
+    for mut light in &mut query {
+        light.intensity = target_intensity;
     }
 }
 
@@ -1281,10 +1329,24 @@ fn spawn_scene (
         meshes.add(Cuboid::new(cube_size, cube_size, cube_size))
     };
     for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
-        commands
-            .spawn((
-                Mesh3d(atom_mesh_handle.clone()),
-                MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[atom_index])),
+        if scene.state == StateScene::Photons && (atom_index == scene.scene_4d.photon1 || atom_index == scene.scene_4d.photon2) {
+            commands.spawn((// create a Photon
+                PointLight {
+                    shadows_enabled: true,
+                    intensity: 1_000_000. * SCALE,
+                    range: 50.0 * SCALE,
+                    shadow_depth_bias: 0.2,
+                    ..default()
+                },
+                Atom{
+                    index: atom_index,
+                    visible: true,
+                },
+                Photon,
+            ));
+            commands.spawn((
+                Mesh3d(meshes.add(Sphere::new(1.5 * radius))),
+                MeshMaterial3d(materials.add(Color::from(Srgba::rgba_u8(255, 240, 0, 80)))),
                 Transform::from_translation(vec3(
                     position.x * SCALE,
                     position.y * SCALE,
@@ -1292,12 +1354,29 @@ fn spawn_scene (
                 )),
                 Atom { 
                     index: atom_index, 
-                    visible: scene.state == StateScene::Aquarium 
-                        || scene.state == StateScene::Photons
-                        || scene.scene_4d.is_planar(atom_index) 
+                    visible: true 
                 },
             ))
             .observe(drag_to_rotate_object);
+
+            continue;
+        }
+        commands.spawn((// create a standard atom
+            Mesh3d(atom_mesh_handle.clone()),
+            MeshMaterial3d(materials.add(scene.scene_4d.atoms.colors[atom_index])),
+            Transform::from_translation(vec3(
+                position.x * SCALE,
+                position.y * SCALE,
+                position.z * SCALE,
+            )),
+            Atom { 
+                index: atom_index, 
+                visible: scene.state == StateScene::Aquarium 
+                    || scene.state == StateScene::Photons
+                    || scene.scene_4d.is_planar(atom_index) 
+            },
+        ))
+        .observe(drag_to_rotate_object);
     }
 }
 

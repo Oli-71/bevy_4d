@@ -95,11 +95,11 @@ const INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN: &str = r#"Nehmen Sie sich Zeit, um
 Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können. 'Projektion' ist nur ein Trick.
 'Mehr anzeigen' zeigt eine komplexe Szene, deren Aufbau nun etwas länger dauert..."#;
 
-const INSTRUCTIONS_SPACELAND_ONLY: &str = r#"Try all Transformations.
+const INSTRUCTIONS_AQUARIUM: &str = r#"Try all Transformations.
 Can you figure out what are 
 the two segrets of the cube?"#;
 
-const INSTRUCTIONS_SPACELAND_ONLY_GERMAN: &str = r#"Probieren Sie alle Transformationen aus.
+const INSTRUCTIONS_AQUARIUM_GERMAN: &str = r#"Probieren Sie alle Transformationen aus.
 Können Sie herausfinden, 
 was die beiden Geheimnisse des Würfels sind?
 
@@ -247,7 +247,7 @@ impl Scene {
                 StateScene::FlatlandComplete => INSTRUCTIONS_FLATLAND_COMPLETE,
                 StateScene::ThreeDimensional => INSTRUCTIONS_THREE_DIMENSIONAL,
                 StateScene::SpacelandComplete => INSTRUCTIONS_SPACELAND_COMPLETE,
-                StateScene::Aquarium => INSTRUCTIONS_SPACELAND_ONLY,
+                StateScene::Aquarium => INSTRUCTIONS_AQUARIUM,
                 StateScene::Photons => INSTRUCTIONS_PHOTONS,
             },
             Language::German => match self.state {
@@ -255,7 +255,7 @@ impl Scene {
                 StateScene::FlatlandComplete => INSTRUCTIONS_FLATLAND_COMPLETE_GERMAN,
                 StateScene::ThreeDimensional => INSTRUCTIONS_THREE_DIMENSIONAL_GERMAN,
                 StateScene::SpacelandComplete => INSTRUCTIONS_SPACELAND_COMPLETE_GERMAN,
-                StateScene::Aquarium => INSTRUCTIONS_SPACELAND_ONLY_GERMAN,
+                StateScene::Aquarium => INSTRUCTIONS_AQUARIUM_GERMAN,
                 StateScene::Photons => INSTRUCTIONS_PHOTONS_GERMAN,
             }
         }

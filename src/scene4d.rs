@@ -66,6 +66,9 @@ pub struct Scene4D {
     angle_high_dimension: f32,
 
     pub rotation: Rotation4d,
+    
+    pub photon1: usize, //index in atoms
+    pub photon2: usize,
 }
 
 impl Scene4D {
@@ -103,6 +106,8 @@ impl Scene4D {
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
             rotation: Rotation4d::Xz,
+            photon1:0,
+            photon2:0,
         };
 
         //add some objects to the scene.
@@ -152,6 +157,8 @@ impl Scene4D {
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
             rotation: Rotation4d::Xz,
+            photon1:0,
+            photon2:0,
         };
 
         //add some objects to the scene (an aquarium, a hyper cube with hidden objects, a gold fish)
@@ -204,6 +211,8 @@ impl Scene4D {
             higher_dimension_height: 0.0,
             angle_high_dimension: 0.0,
             rotation: Rotation4d::Xz,
+            photon1:0,
+            photon2:0,
         };
 
         //add some objects to the scene (an aquarium, two fishes)
@@ -216,7 +225,13 @@ impl Scene4D {
         let index_fish_orange = scene.add_object(
             create_fish_3d(spacing, size_fish,Srgba::rgb_u8(255, 150, 50)));//orange
 
-        scene.objects_spaceland = vec![index_aquarium, index_fish_blue, index_fish_orange];
+        scene.photon1 = scene.find_atom_index_with_max_x(index_fish_orange);
+        scene.photon2 = scene.find_atom_index_with_max_x(index_fish_blue);
+
+        let index_wormhole = scene.add_object(
+            create_wormhole(16));
+
+        scene.objects_spaceland = vec![index_aquarium, index_fish_blue, index_fish_orange, index_wormhole];
         scene
     }
 
@@ -346,6 +361,18 @@ impl Scene4D {
         self.angle_high_dimension
     }
 
+    pub fn find_atom_index_with_max_x(&self, object_index: usize) -> usize {
+        self.objects[object_index]
+            .range()
+            .max_by(|&a, &b| {
+                self.atoms.positions[a]
+                    .x
+                    .partial_cmp(&self.atoms.positions[b].x)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .unwrap_or(0)
+    }
+
     /// Transforms all atoms in the 4D scene. Returns the new positions.
     /// 0. in complex scene only (last state): Positioning of objects in the complex scene
     /// 1. local transformations
@@ -364,7 +391,7 @@ impl Scene4D {
 
         // Positioning of objects in the complex scenes
         if self.scene_type != SceneType::FlatlandSpaceland {
-            // move the second object in spaceland (cube_4d) to the right in complex scene
+            // move the second object in spaceland (cube_4d/fish_blue) to the right in complex scene
             for index_atom in self.objects[self.objects_spaceland[1]].range() { 
                 new_positions[index_atom].x += 2.0;
             }
@@ -382,6 +409,25 @@ impl Scene4D {
                 new_positions[index_atom] = (rotation_matrix * vec3(new_positions[index_atom].x, new_positions[index_atom].y, new_positions[index_atom].z))
                     .extend(new_positions[index_atom].w);
             }
+
+            if self.scene_type == SceneType::EntangledPhotons {
+                // place wormhole
+                let from = new_positions[self.photon1];
+                let to = new_positions[self.photon2];
+
+                let dir = to-from;
+                let step_number = self.objects[self.objects_spaceland[3]].number_of_atoms as f32;
+                let step_length = dir.length()/step_number;
+                let dir_normalized = dir.normalize();
+                let mut i=0.;
+                for index_atom in self.objects[self.objects_spaceland[3]].range() {
+                    let mut pos = from + i * step_length * dir_normalized;
+                    pos.w = new_positions[index_atom].w;
+                    new_positions[index_atom] = pos;
+                    i += 1.;
+                }
+            }
+
         }
 
         let angle = time; // Rotation angle for the continuous rotation and the higher-dimension rotation

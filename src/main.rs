@@ -257,7 +257,7 @@ struct Scene {
 }
 
 #[derive(Resource)]
-struct QuantumEncryptionKey { 
+struct QuantumEncryptionKey {
     current_bit: bool, 
     timer: Timer,
 }
@@ -309,8 +309,13 @@ fn update_encryption_key(
     mut key: ResMut<QuantumEncryptionKey>,
 ) {
     if key.timer.tick(time.delta()).just_finished() {
-        //todo: simulate random
-        key.current_bit = !key.current_bit;//rand::thread_rng().gen_bool(0.5);
+        //simulate random (rand - problems with web assembly)
+        const PSEUDO_RANDOM: &[bool] = &[true,false,true,true,false,true,false];
+        let seed = time.delta().subsec_micros();
+        let rand_index = seed as usize % PSEUDO_RANDOM.len();
+        let next_bit = PSEUDO_RANDOM[rand_index];
+
+        key.current_bit = next_bit;//rand::thread_rng().gen_bool(0.5);
     }
 }
 

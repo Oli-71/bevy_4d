@@ -108,15 +108,15 @@ was die Geheimnisse des Würfels sind?"#;
 
 const INSTRUCTIONS_PHOTONS: &str = r#"Entangled photons strike polarizing filters 
 aligned in the same direction, generating an unbreakable 
-encryption code in both fish. Can you find the wormhole 
-that creates the entanglement? 
+encryption code in both fish. There is a wormhole in 4D
+that creates the entanglement!
 
 The end of the demo is reached. Thank you for your attention!"#;
 
 const INSTRUCTIONS_PHOTONS_GERMAN: &str = r#"Verschränkte Photonen treffen auf 
 gleichausgerichtete Polfilter und erzeugen bei beiden 
 Fischen einen nicht abfangbaren Verschlüsselungscode. 
-Finden Sie das Wurmloch, das die Verschränkung realisiert?
+Es gibt ein Wurmloch durch 4D, das die Verschränkung realisiert!
 
 Das Ende der Demo ist erreicht. Vielen Dank!"#;
 

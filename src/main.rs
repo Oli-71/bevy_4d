@@ -191,6 +191,9 @@ struct OnOffMarkerRotation{
 #[derive(Component)]
 struct BackgroundPanel;
 
+#[derive(Component)]
+struct LightAquarium;
+
 // We use the Label component for all labels, to easily show/hide them together based on the state of the scene and to position them above their corresponding entities.
 #[derive(Component)]
 struct Label {
@@ -1065,6 +1068,7 @@ fn show_more_on_press(
     _press: On<Pointer<Press>>,
     mut text: Query<(&mut Text, &mut Node), With<Instructions>>,
     mut atoms: Query<(Entity, &mut Atom)>,
+    light: Query<(Entity, &LightAquarium)>,
     mut scene: ResMut<Scene>,
     mut visibility_set: ParamSet<(
         Query<(&mut Visibility, &OnOffMarker)>,//0
@@ -1215,6 +1219,7 @@ fn show_more_on_press(
                     ..default()
                 },
                 Transform::from_xyz(-3.0 * SCALE, 2.0 * SCALE, 1.0 * SCALE),
+                LightAquarium,
             ));
 
             // synchronized dragging is standard in complex scene
@@ -1235,6 +1240,10 @@ fn show_more_on_press(
             for (entity, _atom) in atoms {
                 commands.entity(entity).despawn();
             }
+
+            for (entity, _light) in light {
+                commands.entity(entity).despawn();
+            } 
 
             // create a new Scene4d
             scene.scene_4d = Scene4D::new_photon_scene();

@@ -656,6 +656,8 @@ pub(crate) fn create_aquarium(spacing: f32, number_per_side: usize) -> Atoms4D {
     let mut positions = Vec::with_capacity(capacity);
     let mut colors = Vec::with_capacity(capacity);
 
+    let glass = Srgba::rgba_u8(200,200,255, 10);
+
     let end = (number_per_side / 2) as i32;
     let start = -end;
     let radius = (number_per_side as f32 / 2.0) * spacing; 
@@ -674,21 +676,31 @@ pub(crate) fn create_aquarium(spacing: f32, number_per_side: usize) -> Atoms4D {
                 if l <= radius {// only create atoms within a certain radius to form a sphere
                     if l >= radius * 0.95 { // surface of the sphere to create a hollow aquarium
                         positions.push(pos);
-                        colors.push(Color::from(Srgba::rgba_u8(200,200,255, 10))); // light blue with low alpha for glass walls
+                        colors.push(Color::from(glass)); // light blue with low alpha for glass walls
+                        continue;
                     }
 
                     let wave = (sin((x as f32 + 5.) * 0.1) * cos(z as f32 * 0.2) * 2.) as i32; // Add some waves to the water surface
                     if y >= y_end - number_per_side as i32 / 20 + wave 
-                        && y<y_end - number_per_side as i32 / 30 + wave { // Create a "water surface"
+                        && y < y_end - number_per_side as i32 / 30 + wave { // Create a "water surface"
                         positions.push(pos);
                         colors.push(Color::from(Srgba::rgba_u8(0, 100, 255, 25))); // darker blue
+                        continue;
                     }
 
                     let wave = (sin((x as f32 + 4.) * 0.1) * cos(z as f32 * 0.2) * 2.) as i32; // Add some waves to the floor surface
-                    if y < y_start + number_per_side as i32 / 7 + wave { // Create a "floor" for the aquarium
+                    if y < y_start + number_per_side as i32 / 7 + wave 
+                        && y > y_start + 1 { // Create a "floor" for the aquarium
                         positions.push(pos);
                         let yellow = 155;//rand::random_range(150..=255);
                         colors.push(Color::from(Srgba::rgba_u8(yellow, yellow, 100, 255))); // yellow sand floor
+                        continue;                     
+                    }
+
+                    if y <= y_start + 1 { // Create a "floor" for the aquarium
+                        positions.push(pos);
+                        colors.push(Color::from(glass)); // light blue with low alpha for glass floor
+                        continue;                     
                     }
                 }
             }

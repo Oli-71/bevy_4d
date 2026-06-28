@@ -221,14 +221,17 @@ impl Scene4D {
         let size_fish = number_per_side / 4;
         let index_fish_blue = scene.add_object(
             create_fish_3d(spacing, size_fish,Srgba::rgb_u8(50, 50, 255))
-            //._transform(Mat4::from_rotation_y(-0.2)) // todo: do this after find_atom_index_with_max_x
         );//blue
         
         let index_fish_orange = scene.add_object(
             create_fish_3d(spacing, size_fish,Srgba::rgb_u8(255, 150, 50)));//orange
 
+        //objects should be in the initial orientation 
         scene.photon1 = scene.find_atom_index_with_max_x(index_fish_orange);
         scene.photon2 = scene.find_atom_index_with_max_x(index_fish_blue);
+
+        // so we can see the blue fish's photon from the beginning
+        scene.transform_object(index_fish_blue, Mat4::from_rotation_y(-0.5));
 
         let index_wormhole = scene.add_object(
             create_wormhole(16));
@@ -375,6 +378,13 @@ impl Scene4D {
             .unwrap_or(0)
     }
 
+    pub fn transform_object(&mut self, object_index: usize, transform: Mat4) {
+        for atom_index in self.objects[object_index].range() {
+            let pos = &mut self.atoms.positions[atom_index];
+            *pos = transform.mul_vec4(*pos);
+        }
+    }
+
     /// Transforms all atoms in the 4D scene. Returns the new positions.
     /// 0. in complex scene only (last state): Positioning of objects in the complex scene
     /// 1. local transformations
@@ -395,8 +405,8 @@ impl Scene4D {
         if self.scene_type != SceneType::FlatlandSpaceland {
             let offset_cube_or_blue_fish = if self.scene_type == SceneType::Aquarium {
                 vec4( 2.,0.,0.,0.)
-            } else {
-                vec4( 0.8,0.4,0.,0.)
+            } else {// move the blue fish a bit
+                vec4( 0.8,0.4 + 0.5 * time.sin(),0. + 0.1 * (0.8*(time-0.2)).sin(),0.)
             };
             // move the second object in spaceland (cube_4d/fish_blue) to the right in complex scene
             for index_atom in self.objects[self.objects_spaceland[1]].range() { 

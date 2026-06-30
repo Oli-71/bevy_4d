@@ -398,8 +398,12 @@ impl Scene4D {
     ///    - Projection (move atoms to w=0 space for 3D Scene; move atoms to y=0 plane for 2D Scene)
     /// 5. separate 3D from 2D scene: move up on Y axis
     ///
-    pub fn transform_scene(&mut self, time: f32) -> Vec<Vec4> {
-        let mut new_positions = self.atoms.positions.clone();
+    pub fn transform_scene(&mut self, time: f32, new_positions: &mut Vec<Vec4>) {
+        new_positions.clear(); // (no malloc!)
+    
+        // cloning default positions
+        // new_positions.reserve(self.atoms.positions.len());// only if size is changing very often
+        new_positions.extend_from_slice(&self.atoms.positions);
 
         // Positioning of objects in the complex scenes
         if self.scene_type != SceneType::FlatlandSpaceland {
@@ -555,8 +559,6 @@ impl Scene4D {
                 }
             }
         }
-
-        new_positions
     }
 }
 

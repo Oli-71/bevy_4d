@@ -99,7 +99,7 @@ Beachten Sie, dass wir eigentlich 4D-Objekte niemals vollständig sehen können.
 const INSTRUCTIONS_AQUARIUM: &str = r#"Try all 4D Rotations 
 (two axes define one).
 Can you figure out what are 
-the segrets of the cube?"#;
+the secrets of the cube?"#;
 
 const INSTRUCTIONS_AQUARIUM_GERMAN: &str = r#"Probieren Sie alle 4D-Rotationen aus
 (zwei Achsen definieren eine Rotaion).
@@ -128,6 +128,7 @@ fn main() {
         .add_plugins((DefaultPlugins, MeshPickingPlugin))
         .insert_resource(Scene {
             scene_4d: Scene4D::new(),
+            new_positions: Vec::new(),
             viewpoint_is_spaceland: false,
             state: StateScene::Planar,
             language: Language::English,
@@ -254,6 +255,7 @@ struct Tripod {
 #[derive(Resource)]
 struct Scene {
     scene_4d: Scene4D, // all the atoms...
+    pub new_positions: Vec<Vec4>, // transformed positions - buffer for better performance
     viewpoint_is_spaceland: bool,
     state: StateScene,
     language: Language,
@@ -828,7 +830,11 @@ fn transform_scene_4d(
     mut scene: ResMut<Scene>,
 ) {
     // get updated positions for all atoms in the 4D scene based on the current time (for animation)
-    let new_positions = scene.scene_4d.transform_scene(time.elapsed_secs());
+        // Bevy problem with smart pointer:
+        // ResMut<T> does not allow to borrow new_posistions and scene_4d independently, 
+        // -> so we create a &mut T
+    let scene = &mut *scene; 
+    scene.scene_4d.transform_scene(time.elapsed_secs(), &mut scene.new_positions);
 
     // update the transforms of the atom entities based on the rotated positions
     for (mut transform, mut visibility, atom_entity) in &mut query {
@@ -836,7 +842,7 @@ fn transform_scene_4d(
             *visibility = Visibility::Hidden;
             continue;
         }
-        if let Some(position) = new_positions.get(atom_entity.index) {
+        if let Some(position) =scene.new_positions.get(atom_entity.index) {
             *visibility = if scene.scene_4d.is_atom_visible(*position) {// w component is close to zero 
                 transform.translation =
                     vec3(position.x * SCALE, position.y * SCALE, position.z * SCALE);

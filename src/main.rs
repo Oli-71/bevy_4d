@@ -114,18 +114,18 @@ const INSTRUCTIONS_AQUARIUM_GERMAN: &str = r#"Probieren Sie alle 4D-Rotationen a
 Können Sie herausfinden, 
 was die Geheimnisse des Würfels sind?"#;
 
-const INSTRUCTIONS_PHOTONS: &str = r#"Entangled photons strike polarizing filters 
-aligned in the same direction, generating an unbreakable 
-encryption code in both fish. There is a wormhole in 4D
-that creates the entanglement!
-
+const INSTRUCTIONS_PHOTONS: &str = r#"Entangled photons strike 
+the co-aligned polarizing filters of the two fish. 
+They are either absorbed or transmitted with perfect correlation. 
+This generates an uninterceptable encryption code in both fish. 
+There is a wormhole through 4D that realizes the entanglement.
 The end of the demo is reached. Thank you for your attention!"#;
 
 const INSTRUCTIONS_PHOTONS_GERMAN: &str = r#"Verschränkte Photonen treffen auf 
-gleichausgerichtete Polfilter und erzeugen bei beiden 
-Fischen einen nicht abfangbaren Verschlüsselungscode. 
-Es gibt ein Wurmloch durch 4D, das die Verschränkung realisiert!
-
+gleichausgerichtete Polfilter der beiden Fische. 
+Sie werden mit perfekter Korrelation absorbiert oder durchgelassen. 
+Dies erzeugt bei beiden Fischen einen nicht abfangbaren Verschlüsselungscode. 
+Es gibt ein Wurmloch durch 4D, das die Verschränkung realisiert.
 Das Ende der Demo ist erreicht. Vielen Dank!"#;
 
 fn main() {
@@ -1264,8 +1264,11 @@ fn show_more_on_press(
         },
         StateScene::Photons => {
             // instructions
-            for (mut text, mut _node) in &mut text {
+            for (mut text, mut node) in &mut text {
                 text.0 = instructions_string.to_string();
+                node.top = percent(80.);
+                node.left = percent(3.);
+                node.right = percent(20.);
             }
 
             //remove all atoms

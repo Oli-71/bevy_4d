@@ -334,6 +334,7 @@ fn update_photon_lights(
     key: Res<QuantumEncryptionKey>,
     mut photon_query: Query<&MeshMaterial3d<StandardMaterial>, With<Photon>>,
     mut standard_materials: ResMut<Assets<StandardMaterial>>,
+    mut spot_light: Query<&mut SpotLight>,  
 ) {
     if !key.is_changed() {
         return; 
@@ -346,6 +347,10 @@ fn update_photon_lights(
         if let Some(material) = standard_materials.get_mut(material_handle) {
             material.emissive = target_emissive;
         }
+    }
+
+    for mut light in spot_light.iter_mut() {
+        light.color = if is_emitting { Color::WHITE } else { Color::BLACK };
     }
 }
 
@@ -1374,7 +1379,7 @@ fn spawn_scene (
             // create a Photon
             commands.spawn((
                 Mesh3d(meshes.add(Sphere::new(1.5 * radius))),
-                MeshMaterial3d(materials.add(Color::from(Srgba::rgb_u8(255, 240, 0)))),
+                MeshMaterial3d(materials.add(Color::from(Srgba::rgb_u8(0, 0, 0)))),
                 Transform::from_translation(vec3(
                     position.x * SCALE,
                     position.y * SCALE,
@@ -1386,7 +1391,20 @@ fn spawn_scene (
                 },
                 Photon,
             ))
-            .observe(drag_to_rotate_object);
+            .observe(drag_to_rotate_object)
+            .with_children(|parent| {
+                parent.spawn((
+                    SpotLight {
+                        shadows_enabled: true,
+                        intensity: 5_000_000. * SCALE,
+                        range: 500.0 * SCALE,
+                        shadow_depth_bias: 0.2,
+                        ..default()
+                    },
+                    Transform::from_translation(vec3(0., 1.2 * radius, 0.))
+                        .looking_at(Vec3::new(0. , 10. * radius, 0.), Vec3::X),
+                ));
+            });
             continue;
         }
         commands.spawn((// create a standard atom

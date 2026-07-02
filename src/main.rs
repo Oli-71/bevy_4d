@@ -13,11 +13,19 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::{SubCameraView}, color::palettes::tailwind::*, light::{NotShadowCaster, NotShadowReceiver}, prelude::*
+    camera::{SubCameraView}, 
+    color::palettes::tailwind::*,
+    light::{NotShadowCaster, NotShadowReceiver}, 
+    prelude::*
 };
 
 use bevy::prelude::Srgba;
-//use rand::Rng;
+//use rand::Rng; Problems with web assembly, so we use a pseudo random sequence instead
+
+// Bloom effect for the glowing photons
+/* use bevy::core_pipeline::tonemapping::Tonemapping;
+use bevy::post_process::bloom::Bloom;
+use bevy::render::view::Hdr; */
 
 mod atoms;
 mod scene4d;
@@ -119,8 +127,6 @@ Fischen einen nicht abfangbaren Verschlüsselungscode.
 Es gibt ein Wurmloch durch 4D, das die Verschränkung realisiert!
 
 Das Ende der Demo ist erreicht. Vielen Dank!"#;
-
-const PHOTON_LIGHT_INTENSITY: f32 = 1_000_000.0 * SCALE;
 
 fn main() {
     App::new()
@@ -326,16 +332,20 @@ fn update_encryption_key(
 
 fn update_photon_lights(
     key: Res<QuantumEncryptionKey>,
-    mut query: Query<&mut PointLight, With<Photon>>,
+    mut photon_query: Query<&MeshMaterial3d<StandardMaterial>, With<Photon>>,
+    mut standard_materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let target_intensity = if key.current_bit {
-        PHOTON_LIGHT_INTENSITY
-    } else {
-        0.0
-    };
+    if !key.is_changed() {
+        return; 
+    }
 
-    for mut light in &mut query {
-        light.intensity = target_intensity;
+    let is_emitting = key.current_bit;
+    let target_emissive = if is_emitting { LinearRgba::rgb(3.0, 3.0, 2.0) } else { LinearRgba::BLACK };
+
+    for material_handle in photon_query.iter_mut() {
+        if let Some(material) = standard_materials.get_mut(material_handle) {
+            material.emissive = target_emissive;
+        }
     }
 }
 
@@ -726,6 +736,12 @@ fn setup_scene(
     let y = 14;
     commands.spawn((
         Camera3d::default(),
+
+        // for bloom effect
+        /* Hdr, 
+        Tonemapping::TonyMcMapface,
+        Bloom::default(), */
+
         Camera {
             // lens shift for nice flatland -> we look within the flatland gap
             sub_camera_view: Some(SubCameraView {
@@ -736,6 +752,7 @@ fn setup_scene(
             order: 3,
             ..default()
         },
+
         Transform::from_translation(CAMERA_FLATLAND_POSITION)
             .looking_at(CAMERA_STANDARD_TARGET, Vec3::Y),
         smooth::PositionTarget::new(CAMERA_FLATLAND_POSITION), // can be moved smoothly
@@ -843,13 +860,17 @@ fn transform_scene_4d(
             continue;
         }
         if let Some(position) =scene.new_positions.get(atom_entity.index) {
-            *visibility = if scene.scene_4d.is_atom_visible(*position) {// w component is close to zero 
-                transform.translation =
-                    vec3(position.x * SCALE, position.y * SCALE, position.z * SCALE);
+            let new_visibility = if scene.scene_4d.is_atom_visible(*position) {
+                transform.translation = vec3(position.x * SCALE, position.y * SCALE, position.z * SCALE);
                 Visibility::Visible
             } else {
                 Visibility::Hidden
             };
+
+            // Nur zuweisen, wenn sich der Status geändert hat -> schont die Bevy-Änderungsüberwachung
+            if *visibility != new_visibility {
+                *visibility = new_visibility;
+            }
         }
     }
 }
@@ -1350,23 +1371,10 @@ fn spawn_scene (
     };
     for (atom_index, position) in scene.scene_4d.atoms.positions.iter().enumerate() {
         if scene.state == StateScene::Photons && (atom_index == scene.scene_4d.photon1 || atom_index == scene.scene_4d.photon2) {
-            commands.spawn((// create a Photon
-                PointLight {
-                    shadows_enabled: true,
-                    intensity: 1_000_000. * SCALE,
-                    range: 50.0 * SCALE,
-                    shadow_depth_bias: 0.2,
-                    ..default()
-                },
-                Atom{
-                    index: atom_index,
-                    visible: true,
-                },
-                Photon,
-            ));
+            // create a Photon
             commands.spawn((
                 Mesh3d(meshes.add(Sphere::new(1.5 * radius))),
-                MeshMaterial3d(materials.add(Color::from(Srgba::rgba_u8(255, 240, 0, 80)))),
+                MeshMaterial3d(materials.add(Color::from(Srgba::rgb_u8(255, 240, 0)))),
                 Transform::from_translation(vec3(
                     position.x * SCALE,
                     position.y * SCALE,
@@ -1376,9 +1384,9 @@ fn spawn_scene (
                     index: atom_index, 
                     visible: true 
                 },
+                Photon,
             ))
             .observe(drag_to_rotate_object);
-
             continue;
         }
         commands.spawn((// create a standard atom

@@ -34,10 +34,13 @@
       .container {
         max-width: 900px;
         text-align: center;
+        position: relative; /* allow intro to overlay the canvas */
       }
 
       h1 { margin: 0 0 8px 0; font-size: clamp(1.6rem, 3vw, 2.6rem); }
       p { margin: 0 0 16px 0; line-height: 1.5; }
+
+      .intro { position: relative; z-index: 2; display: inline-block; background: rgba(0,0,0,0.35); padding: 12px; border-radius: 6px; }
 
       .loader {
         width: 72px;
@@ -47,6 +50,17 @@
         border-top-color: #4aa3ff;
         animation: spin 1s linear infinite;
         margin: 18px auto 0;
+      }
+
+      /* full-width canvas for the WASM app */
+      .wasm-canvas {
+        position: relative !important;
+        z-index: 1;
+        width: 100% !important;
+        max-width: none !important;
+        display: block;
+        height: 70vh !important;
+        background: transparent;
       }
 
       @keyframes spin { to { transform: rotate(360deg); } }
@@ -76,13 +90,38 @@
       </section>
 
       <div class="loader" aria-hidden="true"></div>
+
+      <!-- Canvas für die WASM-App -->
+      <canvas id="bevy-canvas" class="wasm-canvas" aria-label="bevy 4d canvas"></canvas>
     </main>
 
     <script type="module">
       import init from './out/bevy_4d.js';
       const loader = document.querySelector('.loader');
-      // init() to load WASM module; later remove Loader
-      init().then(() => loader?.remove()).catch(() => loader?.remove());
+      // init() to load WASM module; after init, ensure the app canvas is full-width
+      init().then(() => {
+          // If the WASM module created its own canvas, move it into our container
+          const container = document.querySelector('.container');
+          const wasmCanvas = document.querySelector('canvas:not(#bevy-canvas)');
+          const placeholder = document.getElementById('bevy-canvas');
+          if (wasmCanvas && container) {
+            // reset potentially absolute positioning set by the generated canvas
+            wasmCanvas.style.position = 'relative';
+            wasmCanvas.style.left = '0';
+            wasmCanvas.style.top = '0';
+            wasmCanvas.style.width = '100%';
+            wasmCanvas.style.height = '70vh';
+            wasmCanvas.classList.add('wasm-canvas');
+            // move into our container so it sits below the intro
+            container.appendChild(wasmCanvas);
+            // remove placeholder if present
+            placeholder?.remove();
+          } else if (placeholder) {
+            // no generated canvas — keep placeholder
+            placeholder.classList.add('wasm-canvas');
+          }
+          loader?.remove();
+      }).catch(() => loader?.remove());
     </script>
   </body>
 </html>

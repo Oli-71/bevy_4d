@@ -19,20 +19,22 @@
         --fg: #fff;
       }
 
-      html,body { height:100%; }
+      html,body { min-height:100%; }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--fg);
         font-family: CenturyGothicPaneuropeanThin, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+        /* layout: stack from top, center horizontally */
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 24px;
+        justify-content: flex-start;
+        padding: 24px 24px 48px 24px;
       }
 
       .container {
-        max-width: 900px;
+        max-width: 100%;
         text-align: center;
         position: relative; /* allow intro to overlay the canvas */
       }
@@ -52,15 +54,19 @@
         margin: 18px auto 0;
       }
 
-      /* full-width canvas for the WASM app */
+      /* full-width canvas for the WASM app with fixed aspect ratio */
+      :root { --canvas-aspect: 16/9; }
       .wasm-canvas {
         position: relative !important;
         z-index: 1;
         width: 100% !important;
         max-width: none !important;
         display: block;
-        height: 70vh !important;
+        aspect-ratio: var(--canvas-aspect);
+        height: auto !important;
+        max-height: 80vh;
         background: transparent;
+        object-fit: contain;
       }
 
       @keyframes spin { to { transform: rotate(360deg); } }
@@ -110,7 +116,10 @@
             wasmCanvas.style.left = '0';
             wasmCanvas.style.top = '0';
             wasmCanvas.style.width = '100%';
-            wasmCanvas.style.height = '70vh';
+            // let CSS aspect-ratio control the displayed height
+            wasmCanvas.style.height = 'auto';
+            // remove intrinsic width/height attributes so CSS aspect-ratio applies
+            try { wasmCanvas.removeAttribute('width'); wasmCanvas.removeAttribute('height'); } catch (e) {}
             wasmCanvas.classList.add('wasm-canvas');
             // move into our container so it sits below the intro
             container.appendChild(wasmCanvas);

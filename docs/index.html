@@ -3,7 +3,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="keywords" content="bevy, rust, webassembly, 4d, physics-simulation, quantum-mechanics, Bell-inequality, non-locality, hyperspace, wormhole" />
-    <title>bevy_4d — Hyperspace</title>
+    <title>GroundTruthCAD</title>
     <style>
       /* local Century Gothic font*/
       @font-face {
@@ -17,21 +17,29 @@
       :root {
         --bg: #000;
         --fg: #fff;
+        --link: #c7e3ff;
       }
 
       html,body { min-height:100%; }
       body {
-        margin: 0;
         background: var(--bg);
         color: var(--fg);
         font-family: CenturyGothicPaneuropeanThin, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-        /* layout: stack from top, center horizontally */
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        padding: 24px 24px 48px 24px;
+        
+        /* HIER SIND DIE ÄNDERUNGEN: */
+        box-sizing: border-box; /* Zwingt den Browser, Padding in die 100% Breite einzurechnen */
+        width: 100%; 
+        max-width: 75ch; 
+        margin: 0 auto; 
+        padding: 0 16px; /* Bleibt bei 16px links und rechts */
       }
+
+      a:link { color: var(--link);}
+      a:visited { color: var(--link);}
 
       .container {
         max-width: 100%;
@@ -39,8 +47,8 @@
         position: relative; /* allow intro to overlay the canvas */
       }
 
-      h1 { margin: 0 0 8px 0; font-size: clamp(1.6rem, 3vw, 2.6rem); }
-      p { margin: 0 0 16px 0; line-height: 1.5; }
+      h1 { margin: 0 0 8px 0; font-size: clamp(1.8rem, 4vw, 2.8rem); }
+      p { margin: 0 0 16px 0; line-height: 1.5; font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem);}
 
       .intro { position: relative; z-index: 2; display: inline-block; background: rgba(0,0,0,0.35); padding: 12px; border-radius: 6px; }
 

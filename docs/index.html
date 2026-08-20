@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -20,37 +21,68 @@
         --link: #c7e3ff;
       }
 
-      html,body { min-height:100%; }
-      body {
+      html, body { 
+        min-height: 100%; 
+        margin: 0; 
+        padding: 0;
         background: var(--bg);
         color: var(--fg);
+      }
+      
+      body {
         font-family: CenturyGothicPaneuropeanThin, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: center; /* Zentriert alles absolut auf dem Bildschirm */
         justify-content: flex-start;
-        
-        /* HIER SIND DIE ÄNDERUNGEN: */
-        box-sizing: border-box; /* Zwingt den Browser, Padding in die 100% Breite einzurechnen */
+        box-sizing: border-box;
         width: 100%; 
-        max-width: 75ch; 
-        margin: 0 auto; 
-        padding: 0 16px; /* Bleibt bei 16px links und rechts */
+        padding: 0 16px 40px 16px; /* 40px Platz nach unten */
       }
 
       a:link { color: var(--link);}
       a:visited { color: var(--link);}
 
+      /* Der Hauptcontainer zentriert nun auch seine inneren Elemente per Flexbox */
       .container {
-        max-width: 100%;
-        text-align: center;
-        position: relative; /* allow intro to overlay the canvas */
+        width: 100%;
+        max-width: 1024px; /* Maximale Breite der WASM-App */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative; 
+        margin: 20px auto 0 auto; 
+        box-sizing: border-box;
       }
 
-      h1 { margin: 0 0 8px 0; font-size: clamp(1.8rem, 4vw, 2.8rem); }
-      p { margin: 0 0 16px 0; line-height: 1.5; font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem);}
+      /* Begrenzt gezielt die Textelemente auf die angenehme Lesebreite */
+      .intro { 
+        width: 100%;
+        max-width: 75ch; 
+        box-sizing: border-box;
+        position: relative; 
+        z-index: 2; 
+        display: block; 
+        background: rgba(0,0,0,0.35); 
+        padding: 12px; 
+        border-radius: 6px; 
+        text-align: center;
+      }
 
-      .intro { position: relative; z-index: 2; display: inline-block; background: rgba(0,0,0,0.35); padding: 12px; border-radius: 6px; }
+      h1 { margin: 0 0 8px 0; font-size: clamp(1.8rem, 4vw, 2.8rem); text-align: center; }
+      p { margin: 0 0 16px 0; line-height: 1.5; font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); text-align: center; }
+
+      /* Radikale Zentrierung für JEDES Canvas-Element (egal ob Platzhalter oder von Bevy erzeugt) */
+      .container canvas, .wasm-canvas {
+        width: 100% !important;
+        max-width: 1024px !important; 
+        height: auto !important;
+        display: block !important;
+        margin: 20px auto 0 auto !important; /* Zentriert das Canvas perfekt */
+        position: relative !important;
+        left: 0 !important;
+        transform: none !important;
+      }
 
       .loader {
         width: 72px;
@@ -62,21 +94,6 @@
         margin: 18px auto 0;
       }
 
-      /* full-width canvas for the WASM app with fixed aspect ratio */
-      :root { --canvas-aspect: 16/9; }
-      .wasm-canvas {
-        position: relative !important;
-        z-index: 1;
-        width: 100% !important;
-        max-width: none !important;
-        display: block;
-        aspect-ratio: var(--canvas-aspect);
-        height: auto !important;
-        max-height: 80vh;
-        background: transparent;
-        object-fit: contain;
-      }
-
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
   </head>
@@ -85,18 +102,23 @@
       <section class="intro">
         <h1>Hyperspace und Quantenverschränkung</h1>
         <p>
-          Wie würden unsere Welt aussehen, wenn wir sie aus einer Perspektive im 4D-Raum betrachten könnten?<br>
-          Zu dieser Simulation haben mich der Roman 'Quantum Space' von Douglas Phillips und das Sachbuch 'Quantum Non-Locality & Relativity' von Tim Maudlin inspiriert.
+          Wie sähe unsere Welt aus, wenn wir sie aus einer 4D-Perspektive betrachten könnten?<br>
+          Hier können Sie es ausprobieren!
+          Zu dieser in Bevy (Rust-Game-Engine) programmierten Simulation haben mich der Roman 'Quantum Space' von Douglas Phillips und das Sachbuch 'Quantum Non-Locality & Relativity' von Tim Maudlin angeregt.
           Starten wollen wir 1884 - auf den Spuren von Edwin Abbott.
-          Wie schwierig es sein kann, sich etwas völlig neues vorzustellen, zeigt er in der Novelle 'Flatland' anhand einer Analogie:<br>
+          In der Novelle 'Flatland' demonstriert er, wie schwierig es sein kann, sich etwas völlig neues vorzustellen:<br>
           Wie würde ein Bewohner einer zweidimensionalen Welt dreidimensionale Objekte wahrnehmen?
           <br>
           <br>
+          Die Simulation besteht aus sechs Szenen. Bitte lesen Sie immer erst den Text, bevor Sie mit den Parametern experimentieren. Momentan gibt es noch keinen "Zurück"-Button. Laden Sie die Seite erneut, um neu zu starten.
+          <br>
+          <br>
           Bleibt zu überlegen, ob höhere räumliche Dimensionen nur ein unterhaltsames Gedankenexperiment darstellen oder ob es sie geben kann oder gar geben muss?
-          Siehe dazu einen <a href="./res/Bell4.pdf">Essay</a> über die Absurdität der Quantenwelt. Ein 4D-Wurmloch - wie am Ende der Simulation angedeutet - könnte einen Ausweg aus dem Dilemma der Nicht-Lokalität darstellen.<br>
+          Siehe dazu einen <a href="./res/Bell4.pdf">Essay</a> über die Absurdität der Quantenwelt. Ein 4D-Wurmloch - wie am Ende der Simulation angedeutet - könnte das Dilemma der Nicht-Lokalität lösen...<br>
+          <br>
           Viel Vergnügen!<br>
           <br>
-          Oliver Bringmann, 2026 <br>
+          Oliver Bringmann<br>
           (Oli.Rust(at)gmx.de)
           <br>
           <br>
@@ -112,29 +134,17 @@
     <script type="module">
       import init from './out/bevy_4d.js';
       const loader = document.querySelector('.loader');
-      // init() to load WASM module; after init, ensure the app canvas is full-width
+      
       init().then(() => {
-          // If the WASM module created its own canvas, move it into our container
           const container = document.querySelector('.container');
           const wasmCanvas = document.querySelector('canvas:not(#bevy-canvas)');
           const placeholder = document.getElementById('bevy-canvas');
           if (wasmCanvas && container) {
-            // reset potentially absolute positioning set by the generated canvas
-            wasmCanvas.style.position = 'relative';
-            wasmCanvas.style.left = '0';
-            wasmCanvas.style.top = '0';
-            wasmCanvas.style.width = '100%';
-            // let CSS aspect-ratio control the displayed height
-            wasmCanvas.style.height = 'auto';
-            // remove intrinsic width/height attributes so CSS aspect-ratio applies
-            try { wasmCanvas.removeAttribute('width'); wasmCanvas.removeAttribute('height'); } catch (e) {}
+            // HIER AKTIVIERT: Wir zwingen das neue Canvas in unsere CSS-Klasse
             wasmCanvas.classList.add('wasm-canvas');
-            // move into our container so it sits below the intro
             container.appendChild(wasmCanvas);
-            // remove placeholder if present
             placeholder?.remove();
           } else if (placeholder) {
-            // no generated canvas — keep placeholder
             placeholder.classList.add('wasm-canvas');
           }
           loader?.remove();

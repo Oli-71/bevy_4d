@@ -19,6 +19,7 @@
         --bg: #000;
         --fg: #fff;
         --link: #c7e3ff;
+        --visited-link: #ffe3ff;
       }
 
       html, body { 
@@ -41,7 +42,7 @@
       }
 
       a:link { color: var(--link);}
-      a:visited { color: var(--link);}
+      a:visited { color: var(--visited-link);}
 
       /* Der Hauptcontainer zentriert nun auch seine inneren Elemente per Flexbox */
       .container {
@@ -69,8 +70,8 @@
         text-align: center;
       }
 
-      h1 { margin: 0 0 8px 0; font-size: clamp(1.8rem, 4vw, 2.8rem); text-align: center; }
-      p { margin: 0 0 16px 0; line-height: 1.5; font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); text-align: center; }
+      h1 { margin: 0 0 8px 0; font-size: clamp(1.8rem, 4vw, 2.8rem); text-align: left; }
+      p { margin: 0 0 16px 0; line-height: 1.5; font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); text-align: left; }
 
       /* Radikale Zentrierung für JEDES Canvas-Element (egal ob Platzhalter oder von Bevy erzeugt) */
       .container canvas, .wasm-canvas {
@@ -104,16 +105,16 @@
         <p>
           Wie sähe unsere Welt aus, wenn wir sie aus einer 4D-Perspektive betrachten könnten?<br>
           Hier können Sie es ausprobieren!
-          Zu dieser in Bevy (Rust-Game-Engine) programmierten Simulation haben mich der Roman 'Quantum Space' von Douglas Phillips und das Sachbuch 'Quantum Non-Locality & Relativity' von Tim Maudlin angeregt.
-          Starten wollen wir 1884 - auf den Spuren von Edwin Abbott.
-          In der Novelle 'Flatland' demonstriert er, wie schwierig es sein kann, sich etwas völlig neues vorzustellen:<br>
+          Auf die Idee zu dieser Simulation brachte mich der Roman 'Quantum Space' von Douglas Phillips.
+          Starten wollen wir auf den Spuren von Edwin Abbott.
+          In der Novelle 'Flatland' demonstriert Abbott, wie schwierig es ist, sich etwas völlig neues vorzustellen:<br>
           Wie würde ein Bewohner einer zweidimensionalen Welt dreidimensionale Objekte wahrnehmen?
           <br>
           <br>
-          Die Simulation besteht aus sechs Szenen. Bitte lesen Sie immer erst den Text, bevor Sie mit den Parametern experimentieren. Momentan gibt es noch keinen "Zurück"-Button. Laden Sie die Seite erneut, um neu zu starten.
+          Die Simulation besteht aus sechs Szenen. Bitte lesen Sie immer zunächst den Text, bevor Sie mit den Parametern experimentieren.
           <br>
           <br>
-          Bleibt zu überlegen, ob höhere räumliche Dimensionen nur ein unterhaltsames Gedankenexperiment darstellen oder ob es sie geben kann oder gar geben muss?
+          Bleibt zu überlegen, ob eine höhere räumliche Dimensionen nur Gehirnakrobatik ist oder ob es sie geben kann oder gar geben muss?
           Siehe dazu einen <a href="./res/Bell4.pdf">Essay</a> über die Absurdität der Quantenwelt. Ein 4D-Wurmloch - wie am Ende der Simulation angedeutet - könnte das Dilemma der Nicht-Lokalität lösen...<br>
           <br>
           Viel Vergnügen!<br>

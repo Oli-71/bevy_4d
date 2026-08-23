@@ -22,11 +22,6 @@ use bevy::{
 use bevy::prelude::Srgba;
 //use rand::Rng; Problems with web assembly, so we use a pseudo random sequence instead
 
-// Bloom effect for the glowing photons
-/* use bevy::core_pipeline::tonemapping::Tonemapping;
-use bevy::post_process::bloom::Bloom;
-use bevy::render::view::Hdr; */
-
 mod atoms;
 mod scene4d;
 use scene4d::*;

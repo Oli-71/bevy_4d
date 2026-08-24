@@ -16,10 +16,10 @@
       }
 
       :root {
-        --bg: #000;
-        --fg: #fff;
-        --link: #c7e3ff;
-        --visited-link: #ffe3ff;
+        --bg: #fff;
+        --fg: #000;
+        --link: #1a74cd;
+        --visited-link: #721c72;
       }
 
       html { 
@@ -31,7 +31,7 @@
       body {
         margin: 0 auto;        /* auto centers the block on handy and desktop */
         padding: 1rem;         /* text has distance to the edges (all edges); the distance belongs to the object (same colors etc)  */
-        max-width: 65ch;       /* maximum number of characters per line */
+        max-width: 77ch;       /* maximum number of characters per line */
         box-sizing: border-box;
         text-align: left;      
         
@@ -51,16 +51,25 @@
         line-height: 1.5; 
         font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); 
       }
+
+      img.wide-center {
+        display: block;             /* it is a block element */
+        max-width: 100%;            /* stays on screen on phones */
+        height: auto;               /* correct aspect ratio */
+        width: 75ch;                /* little more width than the text */
+        margin: 2rem calc(50% - 37.5ch); /* leave the body center the image; second number is half of the width! */
+      }
     </style>
   </head>
   <body>
+  <img src="./res/aspectsChatGPT.png" alt="Quantum Entanglement" class="wide-center" />
 	<h1>Quanten-Experiment von Alain Aspect und der Widerspruch zum klassischen Verständnis</h1>
 	<p>
 	  Niels Bohr: <em>„Wer von der Quantenmechanik nicht schockiert ist, der hat sie nicht verstanden.“</em><br>
 	  Lassen wir uns schockieren…<br>
 	  <br>
-	  Dieser Text basiert auf dem ersten Teil des überaus inspirierenden Buches 
-	  <i>“Quantum Non-Locality & Relativity”</i> von Tim Maudlin. Ich hatte beim Lesen das Gefühl, 
+	  Dieser Text basiert auf dem ersten Teil des inspirierenden Buches 
+	  <i>Quantum Non-Locality & Relativity</i> von Tim Maudlin. Ich hatte beim Lesen das Gefühl, 
 	  der Absonderlichkeit der Quanten sehr nahe zu kommen. Allerdings brauchte 
 	  ich noch ein paar mehr Grafiken und gedankliche Zwischenschritte, um alles zu verstehen.<br> 
 	  Hier lesen Sie das Ergebnis:<br>

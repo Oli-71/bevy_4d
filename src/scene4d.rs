@@ -80,7 +80,7 @@ impl Scene4D {
     /// compose a Scene from a Object4Ds
     pub fn new() -> Self {
         let size = 2.6;
-        let number_per_side = 16; // Total atoms will be number_per_side^4, 
+        let number_per_side = 8;//16; // Total atoms will be number_per_side^4, 
         // so be careful with this number to avoid performance issues.
         let spacing = size / number_per_side as f32;
 

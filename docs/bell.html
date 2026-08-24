@@ -53,11 +53,21 @@
       }
 
       img.wide-center {
-        display: block;             /* it is a block element */
-        max-width: 100%;            /* stays on screen on phones */
-        height: auto;               /* correct aspect ratio */
-        width: 75ch;                /* little more width than the text */
-        margin: 2rem calc(50% - 37.5ch); /* leave the body center the image; second number is half of the width! */
+        display: block;
+        height: auto; /* correct aspect ratio */
+        
+        /* Das Bild versucht 75ch breit zu sein, darf aber nie breiter als der Bildschirm sein */
+        width: min(75ch, 100vw); 
+        
+        /* Zentriert das Bild horizontal auf allen Bildschirmgrößen */
+        margin-inline: auto; 
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+
+        /* Dieser Trick erlaubt es dem Bild auf Desktops, symmetrisch aus dem body auszubrechen */
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
       }
     </style>
   </head>

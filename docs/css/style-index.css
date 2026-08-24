@@ -1,0 +1,93 @@
+	      /* local Century Gothic font*/
+      @font-face {
+        font-family: 'CenturyGothicPaneuropeanSemiBold';
+        src: url('assets/fonts/CenturyGothicPaneuropeanSemiBold.ttf') format('truetype');
+        font-weight: 100 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      :root {
+        --bg: #fff;
+        --fg: #000;
+        --link: #1a74cd;
+        --visited-link: #721c72;
+        --hover-link: #f0f0f0;
+      }
+
+      html, body { 
+        min-height: 100%; 
+        margin: 0; 
+        padding: 0;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      
+      body {
+        font-family: CenturyGothicPaneuropeanSemiBold, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Zentriert alles absolut auf dem Bildschirm */
+        justify-content: flex-start;
+        box-sizing: border-box;
+        width: 100%; 
+        padding: 0 16px 40px 16px; /* 40px Platz nach unten */
+      }
+
+      a:link { color: var(--link);}
+      a:visited { color: var(--visited-link);}
+      a:hover { background-color: var(--hover-link);}
+
+      /* Der Hauptcontainer zentriert nun auch seine inneren Elemente per Flexbox */
+      .container {
+        width: 100%;
+        max-width: 1280px; /* Maximale Breite der WASM-App */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative; 
+        margin: 20px auto 0 auto; 
+        box-sizing: border-box;
+      }
+
+      /* Begrenzt gezielt die Textelemente auf die angenehme Lesebreite */
+      .intro { 
+        width: 100%;
+        max-width: 75ch;
+        box-sizing: border-box;
+        position: relative; 
+        z-index: 2; 
+        display: block; 
+        background: rgb(255, 255, 255); 
+        padding: 12px; 
+        border-radius: 6px; 
+        text-align: center;
+      }
+
+      h1 { margin: 0 0 8px 0; font-size: clamp(1.8rem, 4vw, 2.8rem); text-align: left; }
+      p { margin: 0 0 16px 0; line-height: 1.5; font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); text-align: left; }
+
+      /* Radikale Zentrierung für JEDES Canvas-Element (egal ob Platzhalter oder von Bevy erzeugt) */
+      .container canvas, .wasm-canvas {
+        width: 1280px !important;
+        max-width: 1280px !important; /* Maximale Breite der WASM-App */
+        height: 720px !important;
+        display: block !important;
+        margin: 20px auto 0 auto !important; /* Zentriert das Canvas perfekt */
+        position: relative !important;
+        left: 0 !important;
+        transform: none !important;
+      }
+
+      .loader {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        border: 10px solid rgba(255,255,255,0.12);
+        border-top-color: #4aa3ff;
+        animation: spin 1s linear infinite;
+        margin: 18px auto 0;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>

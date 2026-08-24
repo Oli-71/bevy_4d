@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="keywords" content="quantum-mechanics, Bell-inequality, non-locality" />
-    <title>Essay non-locality</title>
-    <style>
-      /* local Century Gothic font*/
+	/* local Century Gothic font*/
       @font-face {
         font-family: 'CenturyGothicPaneuropeanSemiBold';
         src: url('assets/fonts/CenturyGothicPaneuropeanSemiBold.ttf') format('truetype');
@@ -20,6 +12,7 @@
         --fg: #000;
         --link: #1a74cd;
         --visited-link: #721c72;
+        --hover-link: #f0f0f0;
       }
 
       html { 
@@ -40,6 +33,7 @@
 
       a:link { color: var(--link); }
       a:visited { color: var(--visited-link); }
+      a:hover { background-color: var(--hover-link); }
 
       h1 { 
         margin: 0 0 8px 0; 
@@ -56,36 +50,16 @@
         display: block;
         height: auto; /* correct aspect ratio */
         
-        /* Das Bild versucht 75ch breit zu sein, darf aber nie breiter als der Bildschirm sein */
+        /* 75 characters is the maximum width of the image, but it should never be wider than the screen */
         width: min(75ch, 100vw); 
-        
-        /* Zentriert das Bild horizontal auf allen Bildschirmgrößen */
+
+        /* center image on all screens */
         margin-inline: auto; 
         margin-top: 2rem;
         margin-bottom: 2rem;
 
-        /* Dieser Trick erlaubt es dem Bild auf Desktops, symmetrisch aus dem body auszubrechen */
+        /* symmetric */
         position: relative;
         left: 50%;
         transform: translateX(-50%);
       }
-    </style>
-  </head>
-  <body>
-  <img src="./res/aspectsChatGPT.png" alt="Quantum Entanglement" class="wide-center" />
-	<h1>Quanten-Experiment von Alain Aspect und der Widerspruch zum klassischen Verständnis</h1>
-	<p>
-	  Niels Bohr: <em>„Wer von der Quantenmechanik nicht schockiert ist, der hat sie nicht verstanden.“</em><br>
-	  Lassen wir uns schockieren…<br>
-	  <br>
-	  Dieser Text basiert auf dem ersten Teil des inspirierenden Buches 
-	  <i>Quantum Non-Locality & Relativity</i> von Tim Maudlin. Ich hatte beim Lesen das Gefühl, 
-	  der Absonderlichkeit der Quanten sehr nahe zu kommen. Allerdings brauchte 
-	  ich noch ein paar mehr Grafiken und gedankliche Zwischenschritte, um alles zu verstehen.<br> 
-	  Hier lesen Sie das Ergebnis:<br>
-	  <a href="./res/Bell4.pdf">Essay als PDF</a><br>
-	  <br>
-	  <a href="index.html">zurück zur Simulation</a>
-	</p>
-  </body>
-</html>

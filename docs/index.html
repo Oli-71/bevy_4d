@@ -1,156 +1,25 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="keywords" content="bevy, rust, webassembly, 4d, physics-simulation, quantum-mechanics, Bell-inequality, non-locality, hyperspace, wormhole" />
-    <title>GroundTruthCAD</title>
-    <style>
-      /* local Century Gothic font*/
-      @font-face {
-        font-family: 'CenturyGothicPaneuropeanSemiBold';
-        src: url('assets/fonts/CenturyGothicPaneuropeanSemiBold.ttf') format('truetype');
-        font-weight: 100 400;
-        font-style: normal;
-        font-display: swap;
-      }
-
-      :root {
-        --bg: #fff;
-        --fg: #000;
-        --link: #1a74cd;
-        --visited-link: #721c72;
-      }
-
-      html, body { 
-        min-height: 100%; 
-        margin: 0; 
-        padding: 0;
-        background: var(--bg);
-        color: var(--fg);
-      }
-      
-      body {
-        font-family: CenturyGothicPaneuropeanSemiBold, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* Zentriert alles absolut auf dem Bildschirm */
-        justify-content: flex-start;
-        box-sizing: border-box;
-        width: 100%; 
-        padding: 0 16px 40px 16px; /* 40px Platz nach unten */
-      }
-
-      a:link { color: var(--link);}
-      a:visited { color: var(--visited-link);}
-
-      /* Der Hauptcontainer zentriert nun auch seine inneren Elemente per Flexbox */
-      .container {
-        width: 100%;
-        max-width: 1280px; /* Maximale Breite der WASM-App */
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        position: relative; 
-        margin: 20px auto 0 auto; 
-        box-sizing: border-box;
-      }
-
-      /* Begrenzt gezielt die Textelemente auf die angenehme Lesebreite */
-      .intro { 
-        width: 100%;
-        max-width: 75ch;
-        box-sizing: border-box;
-        position: relative; 
-        z-index: 2; 
-        display: block; 
-        background: rgb(255, 255, 255); 
-        padding: 12px; 
-        border-radius: 6px; 
-        text-align: center;
-      }
-
-      h1 { margin: 0 0 8px 0; font-size: clamp(1.8rem, 4vw, 2.8rem); text-align: left; }
-      p { margin: 0 0 16px 0; line-height: 1.5; font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); text-align: left; }
-
-      /* Radikale Zentrierung für JEDES Canvas-Element (egal ob Platzhalter oder von Bevy erzeugt) */
-      .container canvas, .wasm-canvas {
-        width: 1280px !important;
-        max-width: 1280px !important; /* Maximale Breite der WASM-App */
-        height: 720px !important;
-        display: block !important;
-        margin: 20px auto 0 auto !important; /* Zentriert das Canvas perfekt */
-        position: relative !important;
-        left: 0 !important;
-        transform: none !important;
-      }
-
-      .loader {
-        width: 72px;
-        height: 72px;
-        border-radius: 50%;
-        border: 10px solid rgba(255,255,255,0.12);
-        border-top-color: #4aa3ff;
-        animation: spin 1s linear infinite;
-        margin: 18px auto 0;
-      }
-
-      @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
-  </head>
-  <body>
-    <main class="container">
-      <section class="intro">
-        <h1>Hyperspace und Quantenverschränkung</h1>
-        <p>
-          Wie sähe unsere Welt aus, wenn man sie aus einer 4D-Perspektive betrachten könnte?<br>
-          Hier können Sie es ausprobieren!<br>
-          <br>
-          Die Simulation besteht aus sechs Szenen. Bitte lesen Sie immer zunächst den Text, 
-          bevor Sie mit den Parametern experimentieren.<br>
-          <br>
-          Bleibt zu überlegen, ob eine höhere räumliche Dimensionen nur Gehirnakrobatik ist 
-          oder ob es sie geben kann oder gar geben muss?
-          Siehe dazu einen <a href="bell.html">Essay über die Absurdität der Quantenwelt</a>. 
-          Ein 4D-Wurmloch - wie am Ende der Simulation 
-          angedeutet - könnte das Dilemma der Nicht-Lokalität lösen...<br>
-          <br>
-          Auf die Idee zu dieser Simulation (programmiert in Bevy/Rust) brachten mich der Roman <i>Quantum Space</i> 
-          von Douglas Phillips und Edwin Abbott's berühmte Novelle <i>Flatland</i>.<br>
-          <br>
-          Viel Vergnügen!<br>
-          <br>
-          Oliver Bringmann<br>
-          oli.rust@gmx.de
-          <br>
-          <br>
-        </p>
-      </section>
-
-      <div class="loader" aria-hidden="true"></div>
-
-      <!-- Canvas für die WASM-App -->
-      <canvas id="bevy-canvas" class="wasm-canvas" aria-label="bevy 4d canvas"></canvas>
-    </main>
-
-    <script type="module">
-      import init from './out/bevy_4d.js';
-      const loader = document.querySelector('.loader');
-      
-      init().then(() => {
-          const container = document.querySelector('.container');
-          const wasmCanvas = document.querySelector('canvas:not(#bevy-canvas)');
-          const placeholder = document.getElementById('bevy-canvas');
-          if (wasmCanvas && container) {
-            // HIER AKTIVIERT: Wir zwingen das neue Canvas in unsere CSS-Klasse
-            wasmCanvas.classList.add('wasm-canvas');
-            container.appendChild(wasmCanvas);
-            placeholder?.remove();
-          } else if (placeholder) {
-            placeholder.classList.add('wasm-canvas');
-          }
-          loader?.remove();
-      }).catch(() => loader?.remove());
-    </script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Forwarding...</title>
+  <script>
+    const userLang = navigator.language || navigator.userLanguage; 
+    if (userLang.startsWith('de')) {
+      window.location.href = "./de/index.html";
+    } else { // Default to English if not German
+      window.location.href = "./en/index.html";
+    }
+  </script>
+  <meta http-equiv="refresh" content="2; url=./en/index.html">
+</head>
+<body>
+  <p>
+    If forwarding fails select your language:
+	<ul>
+		<li><a href="./en/index.html">English</a></li>
+		<li><a href="./de/index.html">Deutsch</a></li>
+	</ul>
+  </p>
+</body>
 </html>

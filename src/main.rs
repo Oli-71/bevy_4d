@@ -765,7 +765,7 @@ fn setup_scene(
         ..default()
     };
     let text_style_thin = TextFont {
-        font: asset_server.load("fonts/CenturyGothicPaneuropeanThin.ttf"),
+        font: asset_server.load("fonts/CenturyGothicPaneuropeanSemiBold.ttf"),
         ..default()
     };
     
@@ -816,7 +816,7 @@ fn setup_scene(
             ..default()
         },
         TextFont {
-            font: asset_server.load("fonts/CenturyGothicPaneuropeanThin.ttf"),
+            font: asset_server.load("fonts/CenturyGothicPaneuropeanSemiBold.ttf"),
             font_size: 20.0,
             ..default()
         },

@@ -1,65 +1,80 @@
-	/* local Century Gothic font*/
-      @font-face {
-        font-family: 'CenturyGothicPaneuropeanSemiBold';
-        src: url('assets/fonts/CenturyGothicPaneuropeanSemiBold.ttf') format('truetype');
-        font-weight: 100 400;
-        font-style: normal;
-        font-display: swap;
-      }
+/* local Century Gothic font*/
+@font-face {
+  font-family: 'CenturyGothicPaneuropeanSemiBold';
+  src: url('assets/fonts/CenturyGothicPaneuropeanSemiBold.ttf') format('truetype');
+  font-weight: 100 400;
+  font-style: normal;
+  font-display: swap;
+}
 
-      :root {
-        --bg: #fff;
-        --fg: #000;
-        --link: #1a74cd;
-        --visited-link: #721c72;
-        --hover-link: #f0f0f0;
-      }
+:root {
+  --bg: #fff;
+  --fg: #000;
+  --link: #1a74cd;
+  --visited-link: #721c72;
+  --hover-link: #f0f0f0;
+}
 
-      html { 
-        min-height: 100%; 
-        background: var(--bg);
-        color: var(--fg);
-      }
+html { 
+  min-height: 100%; 
+  background: var(--bg);
+  color: var(--fg);
+}
 
-      body {
-        margin: 0 auto;        /* auto centers the block on handy and desktop */
-        padding: 1rem;         /* text has distance to the edges (all edges); the distance belongs to the object (same colors etc)  */
-        max-width: 77ch;       /* maximum number of characters per line */
-        box-sizing: border-box;
-        text-align: left;      
-        
-        font-family: CenturyGothicPaneuropeanSemiBold, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-      }
+body {
+  margin: 0 auto;        /* auto centers the block on handy and desktop */
+  padding: 1rem;         /* text has distance to the edges (all edges); the distance belongs to the object (same colors etc)  */
+  max-width: 77ch;       /* maximum number of characters per line */
+  box-sizing: border-box;
+  text-align: left;      
+  
+  font-family: CenturyGothicPaneuropeanSemiBold, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
 
-      a:link { color: var(--link); }
-      a:visited { color: var(--visited-link); }
-      a:hover { background-color: var(--hover-link); }
+a:link { color: var(--link); }
+a:visited { color: var(--visited-link); }
+a:hover { background-color: var(--hover-link); }
 
-      h1 { 
-        margin: 0 0 8px 0; 
-        font-size: clamp(1.2rem, 4vw, 1.8rem); 
-      }
+h1 { 
+  margin: 0 0 8px 0; 
+  font-size: clamp(1.2rem, 4vw, 1.8rem); 
+}
 
-      p { 
-        margin: 0 0 16px 0; 
-        line-height: 1.5; 
-        font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); 
-      }
+p { 
+  margin: 0 0 16px 0; 
+  line-height: 1.5; 
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.2rem); 
+}
 
-      img.wide-center {
-        display: block;
-        height: auto; /* correct aspect ratio */
-        
-        /* 75 characters is the maximum width of the image, but it should never be wider than the screen */
-        width: min(75ch, 100vw); 
+img.wide-center {
+  display: block;
+  height: auto; /* correct aspect ratio */
+  
+  /* 75 characters is the maximum width of the image, but it should never be wider than the screen */
+  width: min(75ch, 100vw); 
 
-        /* center image on all screens */
-        margin-inline: auto; 
-        margin-top: 2rem;
-        margin-bottom: 2rem;
+  /* center image on all screens */
+  margin-inline: auto; 
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 
-        /* symmetric */
-        position: relative;
-        left: 50%;
-        transform: translateX(-50%);
-      }
+  /* symmetric */
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.link-row {
+  display: flex;                /* Aktiviert das flexible Layout */
+  justify-content: space-between; /* Verteilt die 3 Links gleichmäßig (links, mitte, rechts) */
+  align-items: center;          /* Zentriert die Links und Bilder vertikal zueinander */
+  margin: 2rem 0;               /* Abstand nach oben und unten */
+}
+
+/* Optional: Damit die kleinen Icons sauber neben dem Text stehen */
+.link-row a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;                     /* Abstand zwischen Bild und Text im Link */
+  text-decoration: none;
+}

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
   <head>
-    <base href="../">
+    <base href="../"> <!-- WASM-App needs to find assets relative to this path -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="keywords" content="bevy, rust, webassembly, 4d, physics-simulation, quantum-mechanics, Bell-inequality, non-locality, hyperspace, wormhole" />
@@ -28,7 +28,7 @@
           Ein 4D-Wurmloch - wie am Ende der Simulation 
           angedeutet - könnte das Dilemma der Nicht-Lokalität lösen...<br>
           <br>
-          Auf die Idee zu dieser Simulation (programmiert in Bevy/Rust) brachten mich der Roman <i>Quantum Space</i> 
+          Auf die Idee zu dieser Simulation brachten mich der Roman <i>Quantum Space</i> 
           von Douglas Phillips und Edwin Abbott's berühmte Novelle <i>Flatland</i>.<br>
           <br>
           Viel Vergnügen!<br>
@@ -47,7 +47,7 @@
     </main>
 
     <script type="module">
-      import init from '../out/bevy_4d.js';
+      import init from '../out/bevy_4d.js'; // ignores <base> tag, so we need to use relative path
       const loader = document.querySelector('.loader');
       
       init().then(() => {

@@ -78,3 +78,28 @@ img.wide-center {
   gap: 8px;                     /* Abstand zwischen Bild und Text im Link */
   text-decoration: none;
 }
+
+/* list a) b) c)*/
+ol.variants {
+list-style-type: none;
+counter-reset: mylistcounter;
+padding-left: 40px;
+}
+
+ol.variants li {
+counter-increment: mylistcounter;
+position: relative;
+}
+
+ol.variants li::before {
+content: counter(mylistcounter, lower-alpha) ") ";
+position: absolute;
+left: -20px;
+}
+
+/* Monospace for circle sequencies */
+.circles {
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 2px; 
+  font-size: 1.5em;
+}

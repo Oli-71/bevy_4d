@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <base href="../">
+    <base href="../"> <!-- WASM-App needs to find assets relative to this path -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="keywords" content="bevy, rust, webassembly, 4d, physics-simulation, quantum-mechanics, Bell-inequality, non-locality, hyperspace, wormhole" />
@@ -23,9 +23,9 @@
           <br>
           It remains to be seen whether higher spatial dimensions are just mental gymnastics, 
           or whether they can — or even must — exist. See an <a href="en/bell.html">essay on the absurdity of the quantum world</a>. 
-          A 4D wormhole — as hinted at the end of the simulation — could solve the dilemma of non-locality...<br>
+          A 4D wormhole as hinted at the end of the simulation could solve the dilemma of non-locality...<br>
           <br>
-          I was inspired to create this simulation (programmed in Bevy/Rust) by the novel <i>Quantum Space</i> 
+          I was inspired to create this simulation by the novel <i>Quantum Space</i> 
           by Douglas Phillips and Edwin Abbott’s famous novella <i>Flatland</i>.<br>
           <br>
           Have fun!<br>
@@ -44,7 +44,7 @@
     </main>
 
     <script type="module">
-      import init from '../out/bevy_4d.js';
+      import init from '../out/bevy_4d.js'; // ignores <base> tag, so we need to use relative path
       const loader = document.querySelector('.loader');
       
       init().then(() => {

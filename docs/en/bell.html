@@ -10,7 +10,7 @@
   <body>
     <img src="../res/aspectsChatGPT.png" alt="Quantum Entanglement" class="wide-center" />
     <nav class="link-row">
-      <a href="../res/Bell5.pdf">
+      <a href="../res/Bell5_eng.pdf">
         <img src="../res/download.png" alt="Download PDF">Essay as PDF
       </a>
       <a href="index.html">
@@ -18,19 +18,269 @@
       </a>
       <a href="../de/bell.html">Deutsch</a>
     </nav>
-    <h1>Alain Aspect's Quantum Experiment and Its Contradiction with Classical Understanding</h1>
-    <p>
-      Niels Bohr: <em>„Wer von der Quantenmechanik nicht schockiert ist, der hat sie nicht verstanden.“</em><br>
-      Lassen wir uns schockieren…<br>
-      <br>
-      Dieser Text basiert auf dem ersten Teil des inspirierenden Buches 
-      <i>Quantum Non-Locality & Relativity</i> von Tim Maudlin. Ich hatte beim Lesen das Gefühl, 
-      der Absonderlichkeit der Quanten sehr nahe zu kommen. Allerdings brauchte 
-      ich noch ein paar mehr Grafiken und gedankliche Zwischenschritte, um alles zu verstehen.<br> 
-      Hier lesen Sie das Ergebnis:<br>
-    </p>
+    <H1>Alain Aspect's Quantum Experiment
+and the Contradiction to Classical Understanding</H1>
+<P>Niels Bohr: &ldquo;<I>Anyone who is not
+shocked by quantum theory has not understood
+it</I>.&rdquo;<BR>Let us be shocked&hellip;</P>
+<H2>Preliminary Considerations</H2>
+<P>This text is largely based on
+the first part of the inspiring book
+&ldquo;Quantum Non-Locality &amp; Relativity&rdquo; by Tim Maudlin.
+While reading it, I felt like I was getting very close to the
+core problem of quantum strangeness.
+However, I needed a few more diagrams and conceptual
+intermediate steps to fully understand it all. Here is the result.</P>
+<P>That the world is causal seems
+quite plausible: over the centuries, humanity came up with formulas
+and rules for both the most mundane and the most astonishing
+phenomena that traced an effect back to a cause:</P>
+<UL>
+	<LI><P>Water extinguishes fire<B>.</B>
+	(Cooling, smothering)</P>
+	<LI><P>Gas burns and produces
+	water!<B>!</B> (2 H<SUB>2 </SUB>+ O<SUB>2 </SUB>&rarr;
+	2 H<SUB>2</SUB>O)</P>
+</UL>
+<P>Even if one is convinced of strict
+causality in the world, randomness and probabilities can easily be explained.
+Here is how I look at it: when I roll a die, the result depends on
+how the die lay in my hand, the momentum I gave it, and how
+gravity, the tabletop, air currents, and mass distribution within the die interact.
+A vast number of influences culminates in a stable state—a number
+between 1 and 6 facing up at the end. If I knew every single
+influence, I could in principle predict the exact outcome...
+The superposition of many influences and the symmetry of the die's geometry
+lead to a uniform distribution: if I roll the die many times, each
+number will turn up with almost equal frequency.
+</P>
+<P>The probability P is:
+P(&ldquo;rolling a specific number&rdquo;) = 1/6.</P>
+<P>Such formulas for
+probabilities &ndash; and quantum physics is full of them &ndash;
+could be perceived as approximate solutions for causal chains of events that
+aren't fully manageable or transparent, without feeling shocked.
+Every single event appears to follow strictly causal physical rules.
+Perhaps to express this intuition, Einstein famously remarked:
+&ldquo;God does not play dice.&rdquo;
+</P>
+<P>A crucial foundation of physical theory for this text is the cosmic speed limit:
+nothing can travel faster than light. Causes can only affect their surroundings at the speed of light.
+In this sense, <I>locality</I> seems to be a fundamental property of our universe.
+In what follows, a simple and experimentally verifiable statement of quantum physics will shatter these assurances.
+Presumably, Einstein's discomfort with quantum theory was connected less with true randomness and far more with a
+&ldquo;spooky action at a distance&rdquo;—an effect acting at infinite speed in the realm of the smallest particles.</P>
+<P>Now let us consider a random event that brings us closer to a scale relevant to quantum physics:</P>
+<P>When light is sent through a polarizing filter, mostly light with a specific direction of oscillation is allowed through.</P>
+<img src="../res/PolfilterWikipedia.png" alt="Polarization Filter" class="wide-center" />
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm">Polarizing filter principle (Wikipedia)</P>
+<P>More precisely: the more tilted the plane of the waves is relative to the filter, the less light in that wave direction passes through.</P>
+<P>Now let us place two polarizing filters in sequence and rotate them relative to each other.
+</P>
+<P>If the filters are aligned in the same direction (0&deg;), all the light that passed through the first polarizing filter also emerges behind the second. At 90&deg;, the light is completely blocked. In intermediate positions, more or less light is absorbed by the second filter. The relationship is as follows: Intensity as a function of the angle between the polarizing filters:</P>
+<img src="../res/malus_eng.png" alt="Malus Law" class="wide-center" />
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm">Malus's Law</P>
+<P>This effect is exploited in 3D movies. Each image on the screen consists of two superimposed pictures, one for the left eye and one for the right eye. The two images are polarized at 90&deg; relative to each other. The glasses are fitted with two polarizing filters rotated 90&deg; relative to one another. As a result, each eye receives only its corresponding image.</P>
+<P>Here is the effect of polarized light from my smartphone screen passing through polarized sunglasses:</P>
+<img src="../res/Polfilter.png" alt="Quantum Entanglement" class="wide-center" />
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm">Polarized sunglasses</P>
+<P>Let us consider the intermediate settings between 0&deg; and 90&deg;. The beam of light consists of a stream of particles. Contrary to what one might expect, the polarizing filter does not reduce the energy of all photons by a certain fraction depending on the angle. No. All photons that arrive behind the second polarizing filter have the exact same energy as before! The filter simply allows more or fewer photons to pass through. This follows directly from Einstein's work on the photoelectric effect, for which he received his Nobel Prize.</P>
+<P>Suppose the first polarizing filter lets 16 photons through. These photons now all align with its orientation. At a 60&deg; rotation of the second polarizing filter, &frac14; of all photons would pass through this second filter (<span class="circles">●</span> means the photon arrives and <span class="circles">○</span> means the photon is absorbed):</P>
+<P><span class="circles">○○○●○○○○○●○○●●○○</span></P>
+<P>or</P>
+<P><span class="circles">○●○○●○○●○○○○●○○○</span></P>
+<P>The distribution is random, and for a large number of photons, the fraction of transmitted photons approaches the probability cos&sup2;(angle between the two polarizing filters).
+</P>
+<P>The following question might not seem particularly relevant at the moment, but it will become crucial later: Where is the final decision made as to whether a specific photon is absorbed or penetrates the second polarizing filter? There are two possibilities:</P>
+<P>a) the <B>polarizing filter decides</B> or</P>
+<P>b) the <B>photon decides</B>.</P>
+<P>We do not wish to search for real physical causes for either variant here, but merely establish that these two possibilities exist and that one can imagine mechanisms for their realization.</P>
+<P><B>Re a) Option &bdquo;Polarizing filter decides&ldquo;:</B> One could imagine that polarizing filters feature evenly distributed &ldquo;pores&rdquo; with different angular orientations. Depending on the random point of impact of the photon, it is either absorbed or transmitted. At 60&deg;, 25% of the pores are oriented such that the photon can pass through. 
+</P>
+<P><B>Re b)</B><B> Option &bdquo;Photon decides&ldquo;:</B> The photon itself could evaluate the rotation of the filter relative to its own polarization direction and make a random decision. To achieve a probability of &frac14;, it could roll a die and decide to pass through the second polarizing filter whenever it rolls a 1 or a 6.</P>
+<H2>Entangled Photons</H2>
+<P>Through certain physical processes, photon pairs are produced that exhibit striking behavior. They are described as <I>entangled</I>. The two photons fly out in opposite directions from a common source at the speed of light. If the two photons are sent through polarizing filters—potentially at places very far apart—they obey the exact diagram above (Malus's Law): The angle between the two filters determines how frequently both photons exhibit the same behavior:</P>
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm"><B>Probability</B>
+(&bdquo;Both photons are absorbed or both pass through.&ldquo;) 
+</P>
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm">= 
+</P>
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm"><B>cos&sup2;</B>(angle between the two polarizing filters).</P>
+<P>Incidentally, only the angle between the two polarizing filters matters. There is no absolute zero angle. This simple law will shatter our classical preconceptions. But let us proceed step by step... 
+</P>
+<P>If entangled photon pairs are sent through polarizing filters <I>with the same orientation</I>, they always decide exactly the same way: either both are absorbed or both pass through the filter. 
+</P>
+<img src="../res/Photons1_eng.png" alt="Entangled Photons" class="wide-center" />
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm">Entangled photons</P>
+<P>Here is an example of 16 entangled photon pairs arriving one after another at the left and right identically aligned polarizing filters:</P>
+<table>
+  <tr>
+    <td>Left photons:</td> <td><span class="circles">○○●●○●○○●●●○●○○●</span></td>
+  </tr>
+  <tr>
+    <td>Right photons:</td> <td><span class="circles">○○●●○●○○●●●○●○○●</span></td>
+  </tr>
+</table>
+<br>
+<P>The probability for passing/absorption of individual photon pairs is random, but averages out to 50% for each. By the way, this can be used for the unbreakable encryption of messages: a sender (at filter L) and a receiver (at filter R) obtain the exact same binary random number, which they can use for encryption and decryption. 
+</P>
+<P>This outcome, predicted by quantum theory and observed in actual experiments, is quite extraordinary. First, it answers the question posed earlier: it is not the filter, but the photon that decides the outcome of the experiment. The reason: both photons behave identically, regardless of where they strike the filter. Thus, the photons—not the filters—must be the cause of the pass/absorb decision. One question remains open: Can there be a logical explanation within classical concepts for why the photons always make the exact same decision? 
+</P>
+<P>Einstein called this identical behavior of the photons &bdquo;spooky action at a distance&ldquo; because it appears as though the two photons make the exact same decision simultaneously despite being far apart. If the photons are widely separated when hitting their respective filters, wouldn't they have to communicate faster than light?! That would contradict established physics. But it doesn't necessarily have to be that way. To resolve the contradiction, Einstein conjectured that &bdquo;hidden variables&rdquo; are initialized in the photons during entanglement. Did the entangling creation process set a physical variable to the exact same value in <I>both</I> photons, encoding the following:</P>
+<P><B>Pass</B>:
+&bdquo;If you reach a polarizing filter later, pass through it.&ldquo;
+<BR>or: 
+</P>
+<P><B>Absorb</B>:
+&bdquo;If you reach a polarizing filter at some point, allow yourself to be absorbed&ldquo;? 
+</P>
+<P>That would be conceivable and would make superluminal communication unnecessary. The photons would have &bdquo;known&rdquo; all along, ever since their entangled creation, how they would behave upon encountering the filters later on. They would have somehow agreed on the same strategy: either both hidden variables store <B>Pass</B> or both store <B>Absorb</B>.</P>
+<P>Searching for and discovering a physical quantity that determines the future behavior of photons at the moment of entanglement would be an important research task to eliminate the &bdquo;incomplete&rdquo; nature of quantum theory suspected by Einstein.
+In the following sections, we aim to demonstrate nothing less than the fact that these &bdquo;hidden variables&rdquo; cannot exist...
+The two photons must—no matter how far apart they strike their polarizing filters—&bdquo;communicate&rdquo; with each other at that very moment. 
+</P>
+<P>Let us try to construct a clever experiment that renders a prior &bdquo;agreement&rdquo; between the photons during their creation process—and its storage in &bdquo;hidden variables&rdquo;—impossible.
+Let us make the above experimental setup slightly more complex:</P>
+<P>A series of entangled polarized photon pairs is sent through two widely separated polarizing filters at various rotations. On the left and right, switches allow the photons to be directed to filters rotated to different angles, say 0&deg; and 30&deg;. These switches are toggled independently and at random. Thus, for each attempt/photon pair, the polarizing filter targeted by the left photon has an orientation of either L=0&deg; or L=30&deg;. The right filter likewise has an orientation of R=0&deg; or R=30&deg;.</P>
+<img src="../res/Photons2_eng.png" alt="Entangled Photons" class="wide-center" />
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm">Identical polarizing filters (0&deg; and 30&deg;) behind randomly controlled switches</P>
+<P>Quantum theory predicts the following results (which experiments confirm): when filters with the same rotation are active, both photons will always decide identically. When filters with different rotations are active, both photons will decide identically with a probability of 75%. Here are possible outcomes of the experiment (<span class="circles">●</span> yes, <span class="circles">○</span> no):</P>
+<P>Polarizing filter angles 
+</P>
+
+<table>
+  <tr>
+    <td>L=0&deg; R=0&deg;</td> <td><B>L</B>eft photon passes?</td>  <td><span class="circles">○○●●○●○○●●●○●○○●</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td><B>R</B>ight photon passes?</td> <td><span class="circles">○○●●○●○○●●●○●○○●</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td>Same behavior?</td>             <td><span class="circles">●●●●●●●●●●●●●●●●</span> (100%)</td>
+  </tr>
+  
+  <tr>
+    <td>L=30&deg; R=30&deg;</td> <td><B>L</B>eft photon passes?</td><td><span class="circles">○●○○●●○○●○○●●●○●</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td><B>R</B>ight photon passes?</td> <td><span class="circles">○●○○●●○○●○○●●●○●</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td>Same behavior?</td>             <td><span class="circles">●●●●●●●●●●●●●●●●</span> (100%)</td>
+  </tr>
+  
+  <tr>
+    <td>L=0&deg; R=30&deg;</td> <td><B>L</B>eft photon passes?</td> <td><span class="circles">○○○○○●○●●●○●○●●●</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td><B>R</B>ight photon passes?</td> <td><span class="circles">○○○○●●○○●●○●●●●○</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td>Same behavior?</td>             <td><span class="circles">●●●●○●●○●●●●○●●○</span> (75%)</td>
+  </tr>
+  
+  <tr>
+    <td>L=30&deg; R=0&deg;</td> <td><B>L</B>eft photon passes?</td> <td><span class="circles">○●○●●●○○○○○●○●●●</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td><B>R</B>ight photon passes?</td> <td><span class="circles">○●●●●○○○○○●●○○●●</span></td>
+  </tr>
+  <tr>
+    <td></td>                  <td>Same behavior?</td>             <td><span class="circles">●●○●●○●●●●○●●○●●</span> (75%)</td>
+  </tr>
+</table>
+
+<P>For identically oriented polarizing filters, all photon pairs make the same decision. At a relative filter angle of 30&deg; to each other, identical behavior is observed in 75% of the cases. 
+</P>
+<P>To allow for all possible physical theories, no matter how strange they might seem, we will place no restrictions on what the photon source can do. Thus, the entire experimental setup shall be &bdquo;known&rdquo; to the photons at the moment of entanglement, however that might occur.</P>
+<P>Upon separation (entanglement), the photons thus &bdquo;know&rdquo; that in the future they can only encounter filters set to 0&deg; or 30&deg;. Therefore, they only need to &bdquo;devise&rdquo; a strategy for these two angles. By &bdquo;strategy,&rdquo; we mean that during entanglement—while they can still influence each other locally without issue—the photons agree on how they will behave at the respective angular settings. In any case, the photons must guarantee that for identical angles, both photons always make the exact same decision (pass/absorb). Here, there is no room for randomness. However, whether both pass through or both get blocked is less predetermined. A different decision can be made for each photon pair and stored within the hidden variables of the photons. An (unknown) physical law could dictate during the course of the experiment which photon pair adopts which strategy. 
+</P>
+<P>Can this approach yield an overall probability of 75% for identical behavior at different angle settings over many trials?</P>
+<P>With every creation of a photon pair, there are exactly four possible deterministic strategies:</P>
+<OL class="variants">
+	<LI><P>If we (both photons at different locations) encounter a 0&deg; filter, <I>we both pass through</I>. <BR>If we encounter a 30&deg; filter, <I>we both pass through</I>. 
+	</P>
+	<LI><P>If we encounter a 0&deg; filter, we both allow ourselves to be absorbed. <BR>If we encounter a 30&deg; filter, we both allow ourselves to be absorbed.</P>
+	<LI><P>If we encounter a 0&deg; filter, <I>we both pass through</I>. <BR>If we encounter a 30&deg; filter, we both allow ourselves to be absorbed. 
+	</P>
+	<LI><P>If we encounter a 0&deg; filter, we both allow ourselves to be absorbed. <BR>If we encounter a 30&deg; filter, <I>we both pass through</I>.</P>
+</OL>
+<P>To emphasize once more: strategies based on random decisions made at the filter are ruled out, because neither photon can exclude the possibility that the other photon hit a filter with the same angular setting, in which case both photons must always act identically.</P>
+<P>Strategies a) and b) both result in the photons behaving identically even at different angles. According to Malus's Law, this must occur in 75% of cases. If strategy c) or d) is chosen, the photons behave differently when the filters are rotated relative to each other. This should happen in 25% of cases.</P>
+<P>Suppose 1,000 photon pairs are emitted. If strategies a) or b) are selected in 750 cases during pair creation, the &bdquo;desired&rdquo; outcome is achieved. Whether a) or b) is picked is decided randomly. 
+</P>
+<P>For 250 pairs, c) or d) is chosen randomly. 
+</P>
+<P>While the outcome at the filter is deterministic, the selection of strategy a)b) versus c)d) and the sub-strategies a) versus b) or c) versus d) are indeed random decisions—but ones made at the photon source.</P>
+<P>Thus—at least for this specific setup—there is a method that can explain everything. The photons do not need to communicate with each other upon hitting their filter. 
+</P>
+<P>The following small, crucial modification to the experiment forces us to abandon hope for such a method in the general case:</P>
+<H2>Aspect's Experiment</H2>
+<P>Many pairs of entangled polarized photons are sent through two widely separated polarizing filters with random rotations. For each trial/photon pair, the left filter is set to either L=0&deg; or L=30&deg;, while the right filter is set to R=30&deg; or R=60&deg;.</P>
+<img src="../res/Photons3_eng.png" alt="Entangled Photons - Aspects configuration" class="wide-center" />
+<P ALIGN=CENTER STYLE="margin-bottom: 0.28cm">Partially differing polarizing filters behind randomly controlled switches</P>
+<P>In full agreement with quantum theoretical predictions, the following is observed: 
+</P>
+<UL>
+	<LI><P>At <B>L=30&deg; and R=30&deg;</B>, both photons always exhibit the same behavior. They either both pass through or are both blocked.</P>
+	<LI><P>At <B>L=30&deg; and R=60&deg;</B><B> </B>, both photons exhibit the same behavior with a frequency of <B>75%</B>.</P>
+	<LI><P>At <B>L=0&deg; and R=30&deg;</B>, both photons exhibit the same behavior with a frequency of <B>75%</B>.</P>
+	<LI><P>At <B>L=0&deg; and R=60&deg;</B>, both photons exhibit the same behavior with a frequency of <B>25%</B>.</P>
+</UL>
+<P>Since two entangled photons always exhibit identical behavior at the same angle setting (not just at 30&deg; as in this experiment), blocking/passage is determined not by the filters, but by the photons themselves. What could their &bdquo;strategy&rdquo; (a yet unknown classical physical principle) be to account for the observed frequencies above?</P>
+<P>Due to the deterministic behavior at identical angle settings, no strategy can be used that decides on blocking/passage only upon hitting the filter.</P>
+<P>It must therefore be assumed that a decision (blocking/passage as a function of the encountered filter rotation angle) is already stored in the photons during entanglement. 
+</P>
+<P>In this experiment, there are exactly <B>four alternative possibilities</B> for how the photons can &bdquo;agree&rdquo; during entanglement on their future behavior at the polarizing filters. Each of these strategies represents valid behavior for an individual pair of photons. For cases where the strategy demands identical behavior, a die is rolled randomly during entanglement to determine whether both pass through or both are blocked.</P>
+<OL class="variants">
+	<LI><P>At all angles <B>0&deg;, 30&deg;, 60&deg;</B>, the photons behave identically.</P>
+	<LI><P>At <B>0&deg; and 30&deg;</B>, the photons behave identically. At <B>60&deg;</B>, they behave differently.</P>
+	<LI><P>At <B>30&deg; and 60&deg;</B>, the photons behave identically; at <B>0&deg;</B>, they behave differently.</P>
+	<LI><P>At <B>0&deg; and 60&deg;</B>, the photons behave identically. At <B>30&deg;</B>, they behave differently.</P>
+</OL>
+<P>During each entanglement, the two photons must first agree on exactly one of the four strategies. Furthermore, any remaining random decisions are settled during entanglement:</P>
+<UL>
+	<LI><P>If the strategy demands identical behavior, it is determined by chance whether L=<span class="circles">○</span>, R=<span class="circles">○</span> or L=<span class="circles">●</span>, R=<span class="circles">●</span> shall occur.</P>
+	<LI><P>If the strategy demands differing behavior, it is determined by chance whether L=<span class="circles">○</span>, R=<span class="circles">●</span> or L=<span class="circles">●</span>, R=<span class="circles">○</span> shall occur.</P>
+</UL>
+<P>We now want to clarify how frequently each of the four strategies must be applied so that Malus's Law emerges over many trials (see above: 25% identical behavior at a 60&deg; angle difference, 75% at 30&deg;, and 100% for identical filter orientation). 
+</P>
+<P>Let us assume strategy a) is selected in a% of all cases, b) in b% of all cases, and so forth.</P>
+<P>Since exactly one strategy can be applied in each trial, the sum a+b+c+d must equal the total of all cases: <B>a+b+c+d = 100%</B></P>
+<P>What other statements can be made?</P>
+<UL>
+	<LI><P>No matter which strategy is chosen, at L=30&deg; and R=30&deg; the photons exhibit identical behavior. Thus, all strategies were just selected.</P>
+	<LI><P>Either strategy a) or b) must be chosen for both photons to show identical behavior at L=0&deg; and R=30&deg;. Thus: <B>a+b = 75%</B><B>.</B></P>
+	<LI><P>Either strategy a) or c) must be chosen for both photons to show identical behavior at L=30&deg; and R=60&deg;. Thus: <B>a+c = 75%</B><B>.</B></P>
+	<LI><P>Either strategy a) or d) must be chosen for both photons to show identical behavior at L=0&deg; and R=60&deg;. Thus: <B>a+d = 25%</B><B>.</B></P>
+</UL>
+<P>Adding the lower three equations yields <B>3a+b+c+d = 175%</B> <BR>or 2a+(a+b+c+d) = 175%. 
+</P>
+<P>Since we know that the sum of all probabilities (a+b+c+d) = 100%, we can substitute this to obtain 2a + 100% = 175%. From this follows 2a = 75%, so <B>a = 37.5%</B>.</P>
+<P>From the equation <B>a+d = 25% </B>above, it immediately follows:</P>
+<P ALIGN=CENTER><B>d = 25%&minus;37.5% = &minus;12.5%</B>.</P>
+<P>A negative probability cannot exist. This is the promised shock at the level of probability theory. But what does this mean for our worldview? 
+</P>
+<P>There is no way to explain the measured frequencies by any prior agreement at the photon source. Somehow, the photons must communicate between hitting the random switches (where they could theoretically &bdquo;know&rdquo; which filter angle awaits them) and reaching their respective polarizing filter (where they must either be absorbed or pass through). However, if the random switches are separated far enough apart that classical communication at the speed of light is impossible, there really is a &bdquo;spooky action at a distance&rdquo; between the two photons.</P>
+<P>Thus, our world is not merely characterized by true randomness—which might not be a huge issue on its own—but we must accept the following:</P>
+<P>Physics is non-local: widely separated entities (entangled particles) are sometimes connected in an extraordinarily strange manner. Does this happen across an additional spatial dimension—a 4D wormhole of sorts? Or are there other (physically far less plausible) explanations? For example, faster-than-light particles (tachyons) could link the photons. Or does an absolute, perfect determinism exist? That would mean everything that happens has been fixed since the beginning of time. Including the positions of the random switches and the outcomes of all Aspect-style experiments (see below). Or do measurement results simply not exist unless they are measured? All these interpretations seem at least unsatisfactory when compared to the rest of physics (including classical mechanics, relativity, and electrodynamics). Physics and philosophy still have work to do... 
+</P>
+<P>Here is a brief philosophical excursion:</P>
+<H2>The Nuclear Option: Superdeterminism</H2>
+<P>In all our considerations regarding the Aspect experiment, we have made a fundamental, seemingly self-evident assumption: we—or rather our switches and random number generators—have the <I>free choice</I> of how to set the polarizing filters. We assume without question that the decision for the measurement angle (0&deg;, 30&deg;, or 60&deg;) is made completely independently of the creation of the photons.</P>
+<P>But what if precisely that is an illusion?</P>
+<P>This is where superdeterminism enters the stage. It is, in a sense, the nuclear option of classical physics to banish Einstein's &quot;spook&quot; once and for all. It states: from the exact moment of the Big Bang, the universe has been a gigantic, unalterably ticking clockwork. Everything has been set in stone for 13.8 billion years.</P>
+<P>For our experiment, this means: the photon source, the polarizing filters, and even the atoms in the switches (or in the brains of the researchers) were always part of the exact same, absolutely deterministic system. The photons didn't suddenly need to communicate faster than light at the filters. The universe was simply &quot;preset&quot; from the beginning such that the random generator would <I>inevitably</I> select precisely those filter settings that perfectly match the hidden variables of the passing photons. A colossal, cosmic synchronization that only appears like quantum magic.</P>
+<P>Why does everything inside us recoil from this thought? When studying cognitive biases and the art of thinking clearly, one inevitably encounters the &bdquo;illusion of control.&rdquo; Our brain clings to the sensation of its own agency. We insist on being the independent observer outside the system, freely operating the levers in isolation.</P>
+<P>Superdeterminism ruthlessly tears this illusion away. While it saves the beloved locality of traditional physics (no faster-than-light signals required), it demands the ultimate price: it sacrifices not only free will, but the foundation of all empirical science. For if the state of the experimenter and their measuring instruments is inevitably entangled with the measured object, objective and independent experimentation ceases to exist. We would all be mere cogs watching ourselves turn. 
+</P>
+<P>(Does this final &bdquo;nuclear&rdquo; section read differently than the rest of the text? Yes? Correct! That is because it isn't by me: Gemini Pro proactively suggested it to me—including the heading—after proofreading the rest of my draft. I think Gemini's contribution is fantastic. Somehow, it fits superdeterminism perfectly: the AI machine, condensed global knowledge, acts convincingly engaged and super creative... only to ultimately question itself as a creative subject.)</P>
+<H2>Concluding Remarks</H2>
+<P>The contradiction in probabilities derived above (<B>a = 37.5%</B> versus <B>a+d = 25%</B>) is a special case of the violation of <I>Bell's inequality</I> by quantum theoretical predictions.</P>
+<P>In addition to Gemini and the many good sources on the internet it anticipated, I would like to thank the author of the underlying book. I stumbled upon Tim Maudlin in an article in the weekly newspaper &ldquo;Die Zeit&rdquo;: <A HREF="https://www.zeit.de/wissen/2025-12/zeit-physik-astronomie-philosophie-tim-maudlin">https://www.zeit.de/wissen/2025-12/zeit-physik-astronomie-philosophie-tim-maudlin</A></P>
+<P>Oliver Bringmann, 2026</P>
     <nav class="link-row">
-      <a href="../res/Bell5.pdf">
+      <a href="../res/Bell5_eng.pdf">
         <img src="../res/download.png" alt="Download PDF">Essay as PDF
       </a>
       <a href="index.html">

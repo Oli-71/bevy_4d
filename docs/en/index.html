@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <base href="../"> <!-- WASM-App needs to find assets relative to this path -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="keywords" content="bevy, rust, webassembly, 4d, physics-simulation, quantum-mechanics, Bell-inequality, non-locality, hyperspace, wormhole" />
     <title>GroundTruthCAD</title>
-    <link rel="stylesheet" href="css/style-index.css">
+    <link rel="stylesheet" href="../css/style.css">
   </head>
   <body>
     <main class="container">
       <section class="intro">
         <p>
-          <a href="de/index.html">German</a>
+          <a href="../de/index.html">German</a>
         </p>
         <h1>Hyperspace and Quantum Entanglement</h1>
         <p>
@@ -22,10 +21,10 @@
           The simulation consists of six scenes. Please be sure to read the text first before experimenting with the parameters.<br>
           <br>
           It remains to be seen whether higher spatial dimensions are just mental gymnastics, 
-          or whether they can — or even must — exist. See an <a href="en/bell.html">essay on the absurdity of the quantum world</a>. 
+          or whether they can — or even must — exist. See an <a href="bell.html">essay on the absurdity of the quantum world</a>. 
           A 4D wormhole as hinted at the end of the simulation could solve the dilemma of non-locality...<br>
           <br>
-          I was inspired to create this simulation by the novel <i>Quantum Space</i> 
+          I was inspired to create this <a href="simulation.html">simulation</a> by the novel <i>Quantum Space</i> 
           by Douglas Phillips and Edwin Abbott’s famous novella <i>Flatland</i>.<br>
           <br>
           Have fun!<br>
@@ -36,31 +35,6 @@
           <br>
         </p>
       </section>
-
-      <div class="loader" aria-hidden="true"></div>
-
-      <!-- Canvas für die WASM-App -->
-      <canvas id="bevy-canvas" class="wasm-canvas" aria-label="bevy 4d canvas"></canvas>
     </main>
-
-    <script type="module">
-      import init from '../out/bevy_4d.js'; // ignores <base> tag, so we need to use relative path
-      const loader = document.querySelector('.loader');
-      
-      init().then(() => {
-          const container = document.querySelector('.container');
-          const wasmCanvas = document.querySelector('canvas:not(#bevy-canvas)');
-          const placeholder = document.getElementById('bevy-canvas');
-          if (wasmCanvas && container) {
-            // HIER AKTIVIERT: Wir zwingen das neue Canvas in unsere CSS-Klasse
-            wasmCanvas.classList.add('wasm-canvas');
-            container.appendChild(wasmCanvas);
-            placeholder?.remove();
-          } else if (placeholder) {
-            placeholder.classList.add('wasm-canvas');
-          }
-          loader?.remove();
-      }).catch(() => loader?.remove());
-    </script>
   </body>
 </html>

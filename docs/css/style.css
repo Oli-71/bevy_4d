@@ -64,6 +64,14 @@ img.wide-center {
   transform: translateX(-50%);
 }
 
+.pic-top-left {
+  float: left;            /* Lässt das Bild links stehen, Text fließt rechts vorbei */
+  margin-right: 8px;      /* Abstand zum nachfolgenden Text */
+  margin-bottom: 4px;     /* Abstand zur Zeile darunter */
+  height: 10em;            /* Höhe des Bildes angepasst an ca. 3 Textzeilen */
+  width: auto;            /* Behält das Seitenverhältnis bei */
+}
+
 .link-row {
   display: flex;                /* Aktiviert das flexible Layout */
   justify-content: space-between; /* Verteilt die 3 Links gleichmäßig (links, mitte, rechts) */

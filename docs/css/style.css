@@ -66,7 +66,7 @@ img.wide-center {
 
 .pic-top-left {
   float: left;            /* Lässt das Bild links stehen, Text fließt rechts vorbei */
-  margin-right: 8px;      /* Abstand zum nachfolgenden Text */
+  margin-right: 18px;      /* Abstand zum nachfolgenden Text */
   margin-bottom: 4px;     /* Abstand zur Zeile darunter */
   height: 10em;            /* Höhe des Bildes angepasst an ca. 3 Textzeilen */
   width: auto;            /* Behält das Seitenverhältnis bei */

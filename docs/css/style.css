@@ -53,7 +53,6 @@ img.wide-center {
   
   /* 75 characters is the maximum width of the image, but it should never be wider than the screen */
   width: min(75ch, 100vw);
-  max-width: 100%;
 
   /* center image on all screens */
   margin-inline: auto; 
@@ -64,6 +63,14 @@ img.wide-center {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
+}
+
+img.center {
+  display: block;
+  width: 100%;
+  max-width: 75ch;
+  height: auto;
+  margin: 2rem auto;
 }
 
 .pic-top-left {

@@ -25,6 +25,7 @@ body {
   margin: 0 auto;        /* auto centers the block on handy and desktop */
   padding: 1rem;         /* text has distance to the edges (all edges); the distance belongs to the object (same colors etc)  */
   max-width: 77ch;       /* maximum number of characters per line */
+  overflow-x: clip;
   box-sizing: border-box;
   text-align: left;      
   
@@ -51,7 +52,8 @@ img.wide-center {
   height: auto; /* correct aspect ratio */
   
   /* 75 characters is the maximum width of the image, but it should never be wider than the screen */
-  width: min(75ch, 100vw); 
+  width: min(75ch, 100vw);
+  max-width: 100%;
 
   /* center image on all screens */
   margin-inline: auto; 

@@ -38,8 +38,8 @@ const CAMERA_FLATLAND_POSITION: Vec3 = vec3(0., 0., 140.);
 
 const SLIDER_HEIGHT_CONTROL_OFFSET_Y: f32 = 5. * SCALE;
 
-const LABEL_VIEW_POINT: &str = "Top View";
-const LABEL_VIEW_POINT_GERMAN: &str = "Draufsicht";
+const LABEL_VIEW_POINT: &str = "Inclined View";
+const LABEL_VIEW_POINT_GERMAN: &str = "Schrägansicht";
 const LABEL_HYPER: &str = "__Hyper";
 const LABEL_HYPER_GERMAN: &str = "__Hyper";
 const LABEL_PROJECTION: &str = "Projection";
@@ -56,8 +56,8 @@ const LABEL_SPACELAND: &str = "3D Spaceland";
 const LABEL_SPACELAND_GERMAN: &str = "3D-raumland"; // Bug :-) capital R renders a Bladerunner logo
 const LABEL_SHOW_MORE: &str = "Show more";
 const LABEL_SHOW_MORE_GERMAN: &str = "Mehr anzeigen";
-const LABEL_LANGUAGE: &str = "Deutsch/English";
-const LABEL_LANGUAGE_GERMAN: &str = "English/Deutsch";
+const LABEL_LANGUAGE: &str = "Deutsch";
+const LABEL_LANGUAGE_GERMAN: &str = "English";
 
 const INSTRUCTIONS_INITIAL: &str = r#"What would our three-dimensional world look like from a location in the fourth dimension? Let’s start with what inhabitants of a two-dimensional world see:
 Look into the flatland gap below. Flatlanders can only see what happens between the red lines. Drag the objects... If you understand what they represent, try the gray controls at the top.
@@ -1194,6 +1194,9 @@ fn show_more_on_press(
             for (_entity, mut atom) in &mut atoms {
                 atom.visible = true;
             }
+
+            // tripods for control of Hyper rotation
+            spawn_tripods(&mut commands, &mut meshes, &mut materials);
         },
         StateScene::Aquarium => {
             // instructions
@@ -1222,7 +1225,7 @@ fn show_more_on_press(
             spawn_scene(&mut commands, &mut meshes, &mut materials, &scene);
 
             // tripods for control of Hyper rotation
-            spawn_tripods(&mut commands, &mut meshes, &mut materials);
+            //spawn_tripods(&mut commands, &mut meshes, &mut materials);
 
             // Light
             commands.spawn((

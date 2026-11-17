@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.runnables.extraEnv": {
+        "BEVY_ASSET_ROOT": "${workspaceFolder}"
+    }
+}

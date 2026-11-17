@@ -126,7 +126,8 @@ Das Ende der Demo ist erreicht. Vielen Dank!"#;
 fn main() {
     App::new()
         // MeshPickingPlugin is not a default plugin
-        .add_plugins((DefaultPlugins, MeshPickingPlugin))
+        .add_plugins((DefaultPlugins.build().disable::<bevy::gilrs::GilrsPlugin>(), MeshPickingPlugin))
+        //.add_plugins()
         .insert_resource(Scene {
             scene_4d: Scene4D::new(),
             new_positions: Vec::new(),
@@ -339,7 +340,7 @@ fn update_photon_lights(
     let target_emissive = if is_emitting { LinearRgba::rgb(3.0, 3.0, 2.0) } else { LinearRgba::BLACK };
 
     for material_handle in photon_query.iter_mut() {
-        if let Some(material) = standard_materials.get_mut(material_handle) {
+        if let Some(mut material) = standard_materials.get_mut(material_handle) {
             material.emissive = target_emissive;
         }
     }
@@ -376,10 +377,10 @@ fn setup_scene(
             Transform::from_xyz(left, Y_CTR_ROW1, 0.),
             Visibility::Visible, 
         ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
         .observe(toggle_language_on_press)
         .id();
     
@@ -392,10 +393,10 @@ fn setup_scene(
             Visibility::Hidden,
             AdvancedControl,
         ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
         .observe(toggle_view_point_on_press)
         .id();
     
@@ -422,10 +423,10 @@ fn setup_scene(
             MeshMaterial3d(materials.add(Color::from(Srgba::RED))),
             Transform::from_xyz(0.,size_of_controls,0.),
         ));})
-    .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-    .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-    .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-    .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+    .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+    .observe(update_material_on::<PointerOut>(white_matl.clone()))
+    .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+    .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
     .observe(toggle_4d_on_press)
     .id();
 
@@ -437,10 +438,10 @@ fn setup_scene(
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW1, 0.),
             Visibility::Visible,
         ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
         .observe(toggle_drag_all_on_press)
         .id();
     
@@ -460,10 +461,10 @@ fn setup_scene(
             MeshMaterial3d(white_matl.clone()),
             Transform::from_xyz(-3. * SCALE, Y_CTR_ROW2, 0.),
         ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
         .observe(drag_to_adjust_speed)
         .id();
 
@@ -483,10 +484,10 @@ fn setup_scene(
             Transform::from_xyz(6. * SCALE, Y_CTR_ROW2, 0.),
             SeeMore,
         ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
         .observe(show_more_on_press)
         .id();
 
@@ -499,10 +500,10 @@ fn setup_scene(
             Visibility::Hidden,
             AdvancedControl,
         ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
         .observe(toggle_projection_on_press)
         .id();
 
@@ -525,10 +526,10 @@ fn setup_scene(
             AdvancedControl,
             HighDimOffset,
         ))
-        .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()))
         .observe(drag_to_adjust_higher_dimension_height)
         .id();
 
@@ -697,7 +698,7 @@ fn setup_scene(
     // Light
     commands.spawn((
         PointLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             intensity: 50_000_000. * SCALE,
             range: 500.0 * SCALE,
             shadow_depth_bias: 0.2,
@@ -708,7 +709,7 @@ fn setup_scene(
 
     commands.spawn((
         PointLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             intensity: 50_000_000. * SCALE,
             range: 500.0 * SCALE,
             shadow_depth_bias: 0.2,
@@ -720,9 +721,9 @@ fn setup_scene(
     // Light for flatland
     commands.spawn((
         PointLight {//DirectionalLight
-            shadows_enabled: true,
             intensity: 50_000_000. * SCALE,
             range: 500.0 * SCALE,
+            shadow_maps_enabled: true,
             ..default()
         },
         NotShadowCaster, // this light should not cast shadows to avoid too dark shadows in the flatland view
@@ -761,11 +762,11 @@ fn setup_scene(
     // Text Labels
     let text_style_bold = TextFont {
         //font: asset_server.load("fonts/CenturyGothicPaneuropeanBlack.ttf"),// Bug: does not work
-        font: asset_server.load("fonts/BLADRMF_.TTF"),
+        font: asset_server.load("fonts/BLADRMF_.TTF").into(),
         ..default()
     };
     let text_style_thin = TextFont {
-        font: asset_server.load("fonts/CenturyGothicPaneuropeanSemiBold.ttf"),
+        font: asset_server.load("fonts/CenturyGothicPaneuropeanSemiBold.ttf").into(),
         ..default()
     };
     
@@ -816,8 +817,8 @@ fn setup_scene(
             ..default()
         },
         TextFont {
-            font: asset_server.load("fonts/CenturyGothicPaneuropeanSemiBold.ttf"),
-            font_size: 20.0,
+            font: asset_server.load("fonts/CenturyGothicPaneuropeanSemiBold.ttf").into(),
+            font_size: FontSize::Px(20.0),
             ..default()
         },
         TextColor(Color::srgb(1., 1., 1.)),
@@ -956,7 +957,7 @@ fn monitor_scene_4d(
 
 /// An observer to trigger synchronized dragging of all objects.
 fn toggle_drag_all_on_press(
-    _press: On<Pointer<Press>>,
+    _press: On<PointerPress>,
     mut scene: ResMut<Scene>,
     on_off: Query<(&mut Visibility, &mut OnOffMarker)>,
 ) {
@@ -969,7 +970,7 @@ fn toggle_drag_all_on_press(
     }
 }
 
-fn toggle_language_on_press(_press: On<Pointer<Press>>,
+fn toggle_language_on_press(_press: On<PointerPress>,
     mut scene: ResMut<Scene>,
     mut instruction_texts: Query<&mut Text, (With<Instructions>, Without<Label>)>,
     mut label_texts: Query<(&mut Text, &LabelId), Without<Instructions>>,
@@ -990,7 +991,7 @@ fn toggle_language_on_press(_press: On<Pointer<Press>>,
 
 /// An observer to switch global view
 fn toggle_view_point_on_press(
-    _press: On<Pointer<Press>>,
+    _press: On<PointerPress>,
     mut scene: ResMut<Scene>,
     mut camera3ds: Query<&mut smooth::PositionTarget, With<Camera3d>>,
     on_off: Query<(&mut Visibility, &mut OnOffMarker)>
@@ -1013,7 +1014,7 @@ fn toggle_view_point_on_press(
 }
 
 /// An observer to trigger toggle_projection when the ControlShape is pressed.
-fn toggle_projection_on_press(_press: On<Pointer<Press>>, 
+fn toggle_projection_on_press(_press: On<PointerPress>, 
     mut scene: ResMut<Scene>, 
     vis: Query<(&mut Visibility, Option<&OnOffMarker>, Option<&HighDimOffset>)> // could be both
 ) {
@@ -1033,7 +1034,7 @@ fn toggle_projection_on_press(_press: On<Pointer<Press>>,
 
 /// An observer to toggle_rotation when the tripod is pressed.
 fn toggle_rotation_on_press(
-    press: On<Pointer<Press>>,
+    press: On<PointerPress>,
     mut tripods: Query<&mut Tripod>,
     mut scene: ResMut<Scene>,
     on_off: Query<(&mut Visibility, &OnOffMarkerRotation)>,
@@ -1069,7 +1070,7 @@ fn toggle_rotation_on_press(
 
 /// An observer to trigger toggle_4d when the ControlShape is pressed.
 fn toggle_4d_on_press(
-    _press: On<Pointer<Press>>, 
+    _press: On<PointerPress>, 
     mut scene: ResMut<Scene>, 
     time: Res<Time>,
     on_off: Query<(&mut Visibility, &OnOffMarkerRotation)>,
@@ -1092,7 +1093,7 @@ fn toggle_4d_on_press(
 
 /// An observer to switch to the next scene state.
 fn show_more_on_press(
-    _press: On<Pointer<Press>>,
+    _press: On<PointerPress>,
     mut text: Query<(&mut Text, &mut Node), With<Instructions>>,
     mut atoms: Query<(Entity, &mut Atom)>,
     light: Query<(Entity, &LightAquarium)>,
@@ -1230,7 +1231,7 @@ fn show_more_on_press(
             // Light
             commands.spawn((
                 PointLight {
-                    shadows_enabled: true,
+                    shadow_maps_enabled: true,
                     intensity: 50_000_000. * SCALE,
                     range: 500.0 * SCALE,
                     shadow_depth_bias: 0.2,
@@ -1242,10 +1243,10 @@ fn show_more_on_press(
             // Light inside aquarium
             commands.spawn((
                 PointLight {
-                    shadows_enabled: true,
                     intensity: 1_000_000. * SCALE,
                     range: 50.0 * SCALE,
                     shadow_depth_bias: 0.2,
+                    shadow_maps_enabled: true,
                     ..default()
                 },
                 Transform::from_xyz(-3.0 * SCALE, 2.0 * SCALE, 1.0 * SCALE),
@@ -1302,7 +1303,7 @@ fn show_more_on_press(
 
 /// An observer to adjust the speed of 3D rotation in the 4D scene.
 fn drag_to_adjust_speed(
-    drag: On<Pointer<Drag>>,
+    drag: On<PointerDrag>,
     mut transforms: Query<&mut Transform>,
     mut scene: ResMut<Scene>,
 ) {
@@ -1321,7 +1322,7 @@ fn drag_to_adjust_speed(
 
 /// An observer to adjust the higher dimension height.
 fn drag_to_adjust_higher_dimension_height(
-    drag: On<Pointer<Drag>>,
+    drag: On<PointerDrag>,
     mut transforms: Query<&mut Transform>,
     mut scene: ResMut<Scene>,
 ) {
@@ -1344,7 +1345,7 @@ fn drag_to_adjust_higher_dimension_height(
 
 /// An observer to rotate an Object4d entity.
 fn drag_to_rotate_object(
-    drag: On<Pointer<Drag>>,
+    drag: On<PointerDrag>,
     mut atoms: Query<&mut Atom>,
     mut scene: ResMut<Scene>,
 ){
@@ -1396,7 +1397,7 @@ fn spawn_scene (
             .with_children(|parent| {
                 parent.spawn((
                     SpotLight {
-                        shadows_enabled: true,
+                        shadow_maps_enabled: true,
                         intensity: 5_000_000. * SCALE,
                         range: 500.0 * SCALE,
                         shadow_depth_bias: 0.2,
@@ -1516,10 +1517,10 @@ fn spawn_tripod (
         parent.spawn((
             Mesh3d(meshes.add(Sphere::new(5. * radius))),
             MeshMaterial3d(white_matl.clone()),
-        )).observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-        .observe(update_material_on::<Pointer<Out>>(white_matl.clone()))
-        .observe(update_material_on::<Pointer<Press>>(pressed_matl.clone()))
-        .observe(update_material_on::<Pointer<Release>>(hover_matl.clone()));
+        )).observe(update_material_on::<PointerOver>(hover_matl.clone()))
+        .observe(update_material_on::<PointerOut>(white_matl.clone()))
+        .observe(update_material_on::<PointerPress>(pressed_matl.clone()))
+        .observe(update_material_on::<PointerRelease>(hover_matl.clone()));
 
         // On/Off marker
         parent.spawn((
